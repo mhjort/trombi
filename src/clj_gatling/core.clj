@@ -7,18 +7,23 @@
   (:gen-class))
 
 (defn process [id]
-  (println (str "executing" id))
-  (str "processed " id))
+  (let [start (System/currentTimeMillis)]
+    (println (str "Doing some heavy calculation for " id))
+    (Thread/sleep (rand 1000))
+    {:id id :start start :end (System/currentTimeMillis)}))
+
 
 (defn run-simulation [threads]
   (println (str "Run simulation with " threads " threads"))
   (let [cs (repeatedly threads async/chan)
         ps (map vector (iterate inc 1) cs)]
     (doseq [[i c] ps] (go (>! c (process i))))
-    (dotimes [i threads]
+    (let [result (for [i (range threads)]
       (let [[v c] (async/alts!! cs)]
-        (println v)))
-    (doseq [c cs] (async/close! c))))
+        v))]
+      (println result)
+      (doseq [c cs] (async/close! c))
+      result)))
 
 (defn create-chart [dir]
   (let [conf (scala.collection.mutable.HashMap.)]
@@ -26,14 +31,23 @@
     (GatlingConfiguration/setUp conf)
     (ReportsGenerator/generateFor "out" (FileDataReader. "23"))))
 
+(defn map-request [line]
+  (let [start (.toString (:start line))
+        end (.toString (:end line))]
+    ["REQUEST" "Scenario name" "0" "" "request_1" start start "1390591841245" end "OK" "\u0020"]))
+
+(defn map-scenario [line]
+  (let [start (.toString (:start line))
+        end (.toString (:end line))]
+    ["SCENARIO"	"Scenario name"	"0"	start end]))
+
+(defn create-result [times]
+  (let [header ["RUN" "20140124213040" "basicexamplesimulation" "\u0020"]]
+    [header (map-request (first times)) (map-scenario (first times))]))
+
 (defn -main [threads]
-  (run-simulation (read-string threads))
-  (let [result (csv/write-csv [
-    ["RUN" "20140124213040" "basicexamplesimulation" "\u0020"]
-    ["REQUEST" "Scenario name" "0" "" "request_1" "1390591841187" "1390591841187" "1390591841245" "1390591841338" "OK" "\u0020"]
-    ["SCENARIO"	"Scenario name"	"0"	"1390591841156"	"1390591841393"]
-                               ]
-    :delimiter "\t" :end-of-line "\n")]
-    (println result)
-    (spit "results/23/simulation.log" result)
+  (let [result (run-simulation (read-string threads))
+        csv (csv/write-csv (create-result result) :delimiter "\t" :end-of-line "\n")]
+    (println csv)
+    (spit "results/23/simulation.log" csv)
     (create-chart "results")))
