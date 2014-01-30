@@ -49,4 +49,5 @@
         csv (csv/write-csv (create-result result) :delimiter "\t" :end-of-line "\n")]
     (println csv)
     (spit "results/23/simulation.log" csv)
-    (create-chart "results")))
+    (create-chart "results")
+    (println "Open results/out/index.html")))
