@@ -12,11 +12,10 @@
     (Thread/sleep (rand 1000))
     {:id id :start start :end (System/currentTimeMillis)}))
 
-
 (defn run-simulation [threads]
   (println (str "Run simulation with " threads " threads"))
   (let [cs (repeatedly threads async/chan)
-        ps (map vector (iterate inc 1) cs)]
+        ps (map vector (iterate inc 0) cs)]
     (doseq [[i c] ps] (go (>! c (process i))))
     (let [result (for [i (range threads)]
       (let [[v c] (async/alts!! cs)]
