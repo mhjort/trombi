@@ -33,20 +33,21 @@
 (defn map-request [line]
   (let [start (.toString (:start line))
         end (.toString (:end line))]
-    ["REQUEST" "Scenario name" "0" "" "request_1" start start "1390591841245" end "OK" "\u0020"]))
+    ["REQUEST" "Scenario name" (.toString (:id line)) "" "request_1" start start "1390591841245" end "OK" "\u0020"]))
 
 (defn map-scenario [line]
   (let [start (.toString (:start line))
         end (.toString (:end line))]
-    ["SCENARIO"	"Scenario name"	"0"	start end]))
+    ["SCENARIO"	"Scenario name"	(.toString (:id line)) start end]))
 
-(defn create-result [times]
-  (let [header ["RUN" "20140124213040" "basicexamplesimulation" "\u0020"]]
-    [header (map-request (first times)) (map-scenario (first times))]))
+(defn create-result-lines [result]
+  (let [header ["RUN" "20140124213040" "basicexamplesimulation" "\u0020"] 
+        reqs-and-scenarios (apply concat (map #(vector (map-request %) (map-scenario %)) result))]
+    (conj reqs-and-scenarios header)))
 
 (defn -main [threads]
   (let [result (run-simulation (read-string threads))
-        csv (csv/write-csv (create-result result) :delimiter "\t" :end-of-line "\n")]
+        csv (csv/write-csv (create-result-lines result) :delimiter "\t" :end-of-line "\n")]
     (println csv)
     (spit "results/23/simulation.log" csv)
     (create-chart "results")
