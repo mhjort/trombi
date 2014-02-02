@@ -6,11 +6,18 @@
             [clojure-csv.core :as csv])
   (:gen-class))
 
+(defmacro bench [expr]
+  `(let [start# (System/currentTimeMillis)
+         result# ~expr]
+      {:result result# :start start# :end (System/currentTimeMillis) }))
+
+(defn request [id]
+  (println (str "Simulating request for " id))
+  (Thread/sleep (rand 1000)))
+
 (defn process [id]
-  (let [start (System/currentTimeMillis)]
-    (println (str "Doing some heavy calculation for " id))
-    (Thread/sleep (rand 1000))
-    {:id id :start start :end (System/currentTimeMillis)}))
+  (let [bench-result (bench (request id))]
+    {:id id :start (:start bench-result) :end (:end bench-result)}))
 
 (defn run-simulation [threads]
   (println (str "Run simulation with " threads " threads"))
