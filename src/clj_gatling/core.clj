@@ -7,23 +7,25 @@
             [clojure-csv.core :as csv])
   (:gen-class))
 
-(def test-scenario {:requests ["Request1" "Request2"]})
+(defn run-request [id]
+  ;(println (str "Simulating request for " id))
+  (Thread/sleep (rand 1000))
+  "OK")
+
+(def test-scenario
+  {:requests [{:name "Request1" :fn run-request}
+              {:name "Request2" :fn run-request}]})
 
 (defmacro bench [expr]
   `(let [start# (System/currentTimeMillis)
          result# ~expr]
       {:result result# :start start# :end (System/currentTimeMillis) }))
 
-(defn run-request [name id]
-  ;(println (str "Simulating request for " id))
-  (Thread/sleep (rand 1000))
-  "OK")
-
 (defn run-scenario [scenario id]
   (assoc
     (rename-keys 
       (bench
-        (map #(assoc (bench (run-request % id)) :name % :id id) (:requests scenario)))
+        (map #(assoc (bench ((:fn %) id)) :name (:name %) :id id) (:requests scenario)))
       {:result :requests})
     :id id))
 
