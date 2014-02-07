@@ -49,8 +49,12 @@
 
 (defn map-request [request]
   (let [start (.toString (:start request))
-        end (.toString (:end request))]
-    ["REQUEST" "Scenario name" (.toString (:id request)) "" (:name request) start start "1390591841245" end "OK" "\u0020"]))
+        end (.toString (:end request))
+        execution-start start
+        request-end start
+        response-start end
+        execution-end end]
+    ["REQUEST" "Scenario name" (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end "OK" "\u0020"]))
 
 (defn flatten-one-level [coll]  
   (mapcat #(if (sequential? %) % [%]) coll))
