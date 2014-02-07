@@ -29,12 +29,12 @@
       {:result :requests})
     :id id))
 
-(defn run-simulation [threads]
-  (println (str "Run simulation with " threads " threads"))
-  (let [cs (repeatedly threads async/chan)
+(defn run-simulation [users]
+  (println (str "Run simulation with " users " users"))
+  (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
     (doseq [[i c] ps] (go (>! c (run-scenario test-scenario i))))
-    (let [result (for [i (range threads)]
+    (let [result (for [i (range users)]
       (let [[v c] (async/alts!! cs)]
         v))]
       (println result)
@@ -72,8 +72,8 @@
     (println result-lines)
     result-lines))
 
-(defn -main [threads]
-  (let [result (run-simulation (read-string threads))
+(defn -main [users]
+  (let [result (run-simulation (read-string users))
         csv (csv/write-csv (create-result-lines result) :delimiter "\t" :end-of-line "\n")]
     (println csv)
     (spit "results/23/simulation.log" csv)
