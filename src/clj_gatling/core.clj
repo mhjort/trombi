@@ -1,6 +1,8 @@
 (ns clj-gatling.core
-  (:use [clojure.set :only [rename-keys]])
-  (:import (io.gatling.charts.report ReportsGenerator)
+  (:use [clojure.set :only [rename-keys]]
+        [clj-time.format :only [formatter unparse-local]])
+  (:import (org.joda.time LocalDateTime)
+           (io.gatling.charts.report ReportsGenerator)
            (io.gatling.charts.result.reader FileDataReader)
            (io.gatling.core.config GatlingConfiguration))
   (:require [clojure.core.async :as async :refer [go <! >!]]
@@ -66,7 +68,8 @@
     (conj requests ["SCENARIO" "Scenario name" (.toString (:id scenario)) start end])))
 
 (defn create-result-lines [result]
-  (let [header ["RUN" "20140124213040" "basicexamplesimulation" "\u0020"]
+  (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") (LocalDateTime.))
+        header ["RUN" timestamp "simulation" "\u0020"]
         scenarios (apply concat (map #(vector (map-scenario %)) result))
        result-lines (conj (flatten-one-level scenarios) header)]
     (println result-lines)
