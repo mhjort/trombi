@@ -15,7 +15,8 @@
   "OK")
 
 (def test-scenario
-  {:requests [{:name "Request1" :fn run-request}
+  {:name "Test scenario"
+   :requests [{:name "Request1" :fn run-request}
               {:name "Request2" :fn run-request}]})
 
 (defmacro bench [expr]
@@ -29,7 +30,7 @@
       (bench
         (map #(assoc (bench ((:fn %) id)) :name (:name %) :id id) (:requests scenario)))
       {:result :requests})
-    :id id))
+    :id id :name (:name scenario)))
 
 (defn run-simulation [users]
   (println (str "Run simulation with " users " users"))
@@ -49,14 +50,14 @@
     (GatlingConfiguration/setUp conf)
     (ReportsGenerator/generateFor "out" (FileDataReader. "23"))))
 
-(defn map-request [request]
+(defn map-request [scenario-name request]
   (let [start (.toString (:start request))
         end (.toString (:end request))
         execution-start start
         request-end start
         response-start end
         execution-end end]
-    ["REQUEST" "Scenario name" (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end "OK" "\u0020"]))
+    ["REQUEST" scenario-name (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end "OK" "\u0020"]))
 
 (defn flatten-one-level [coll]  
   (mapcat #(if (sequential? %) % [%]) coll))
@@ -64,8 +65,8 @@
 (defn map-scenario [scenario]
   (let [start (.toString (:start scenario))
         end (.toString (:end scenario))
-        requests (apply concat (map #(vector (map-request %)) (:requests scenario)))]
-    (conj requests ["SCENARIO" "Scenario name" (.toString (:id scenario)) start end])))
+        requests (apply concat (map #(vector (map-request (:name scenario) %)) (:requests scenario)))]
+    (conj requests ["SCENARIO" (:name scenario) (.toString (:id scenario)) start end])))
 
 (defn create-result-lines [result]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") (LocalDateTime.))
