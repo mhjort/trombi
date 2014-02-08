@@ -1,12 +1,11 @@
 (ns clj-gatling.core
-  (:use [clojure.set :only [rename-keys]]
-        [clj-time.format :only [formatter unparse-local]])
-  (:import (org.joda.time LocalDateTime)
-           (io.gatling.charts.report ReportsGenerator)
+  (:use [clojure.set :only [rename-keys]])
+  (:import (io.gatling.charts.report ReportsGenerator)
            (io.gatling.charts.result.reader FileDataReader)
            (io.gatling.core.config GatlingConfiguration))
   (:require [clojure.core.async :as async :refer [go <! >!]]
-            [clojure-csv.core :as csv])
+            [clojure-csv.core :as csv]
+            [clj-gatling.report :as report])
   (:gen-class))
 
 (defn run-request [id]
@@ -50,35 +49,9 @@
     (GatlingConfiguration/setUp conf)
     (ReportsGenerator/generateFor "out" (FileDataReader. "23"))))
 
-(defn map-request [scenario-name request]
-  (let [start (.toString (:start request))
-        end (.toString (:end request))
-        execution-start start
-        request-end start
-        response-start end
-        execution-end end]
-    ["REQUEST" scenario-name (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end "OK" "\u0020"]))
-
-(defn flatten-one-level [coll]  
-  (mapcat #(if (sequential? %) % [%]) coll))
-
-(defn map-scenario [scenario]
-  (let [start (.toString (:start scenario))
-        end (.toString (:end scenario))
-        requests (apply concat (map #(vector (map-request (:name scenario) %)) (:requests scenario)))]
-    (conj requests ["SCENARIO" (:name scenario) (.toString (:id scenario)) start end])))
-
-(defn create-result-lines [result]
-  (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") (LocalDateTime.))
-        header ["RUN" timestamp "simulation" "\u0020"]
-        scenarios (apply concat (map #(vector (map-scenario %)) result))
-       result-lines (conj (flatten-one-level scenarios) header)]
-    (println result-lines)
-    result-lines))
-
 (defn -main [users]
   (let [result (run-simulation (read-string users))
-        csv (csv/write-csv (create-result-lines result) :delimiter "\t" :end-of-line "\n")]
+        csv (csv/write-csv (report/create-result-lines result) :delimiter "\t" :end-of-line "\n")]
     (println csv)
     (spit "results/23/simulation.log" csv)
     (create-chart "results")
