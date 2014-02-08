@@ -1,5 +1,6 @@
 (ns clj-gatling.core
-  (:import (io.gatling.charts.report ReportsGenerator)
+  (:import (scala.collection.mutable HashMap)
+           (io.gatling.charts.report ReportsGenerator)
            (io.gatling.charts.result.reader FileDataReader)
            (io.gatling.core.config GatlingConfiguration))
   (:require [clojure-csv.core :as csv]
@@ -9,7 +10,7 @@
   (:gen-class))
 
 (defn create-chart [dir]
-  (let [conf (scala.collection.mutable.HashMap.)]
+  (let [conf (HashMap.)]
     (.put conf "gatling.core.directory.results" dir)
     (GatlingConfiguration/setUp conf)
     (ReportsGenerator/generateFor "out" (FileDataReader. "23"))))
