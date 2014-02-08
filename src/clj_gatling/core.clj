@@ -5,18 +5,9 @@
            (io.gatling.core.config GatlingConfiguration))
   (:require [clojure.core.async :as async :refer [go <! >!]]
             [clojure-csv.core :as csv]
-            [clj-gatling.report :as report])
+            [clj-gatling.report :as report]
+            [clj-gatling.example :as example])
   (:gen-class))
-
-(defn run-request [id]
-  ;(println (str "Simulating request for " id))
-  (Thread/sleep (rand 1000))
-  "OK")
-
-(def test-scenario
-  {:name "Test scenario"
-   :requests [{:name "Request1" :fn run-request}
-              {:name "Request2" :fn run-request}]})
 
 (defmacro bench [expr]
   `(let [start# (System/currentTimeMillis)
@@ -35,7 +26,7 @@
   (println (str "Run simulation with " users " users"))
   (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
-    (doseq [[i c] ps] (go (>! c (run-scenario test-scenario i))))
+    (doseq [[i c] ps] (go (>! c (run-scenario example/test-scenario i))))
     (let [result (for [i (range users)]
       (let [[v c] (async/alts!! cs)]
         v))]
