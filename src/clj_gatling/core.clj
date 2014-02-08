@@ -22,11 +22,11 @@
       {:result :requests})
     :id id :name (:name scenario)))
 
-(defn run-simulation [users]
+(defn run-simulation [scenario users]
   (println (str "Run simulation with " users " users"))
   (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
-    (doseq [[i c] ps] (go (>! c (run-scenario example/test-scenario i))))
+    (doseq [[i c] ps] (go (>! c (run-scenario scenario i))))
     (let [result (for [i (range users)]
       (let [[v c] (async/alts!! cs)]
         v))]
@@ -41,7 +41,7 @@
     (ReportsGenerator/generateFor "out" (FileDataReader. "23"))))
 
 (defn -main [users]
-  (let [result (run-simulation (read-string users))
+  (let [result (run-simulation example/test-scenario (read-string users))
         csv (csv/write-csv (report/create-result-lines result) :delimiter "\t" :end-of-line "\n")]
     (println csv)
     (spit "results/23/simulation.log" csv)
