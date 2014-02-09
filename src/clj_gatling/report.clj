@@ -11,8 +11,9 @@
         execution-start start
         request-end start
         response-start end
-        execution-end end]
-    ["REQUEST" scenario-name (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end "OK" "\u0020"]))
+        execution-end end
+        result (if (:result request) "OK" "KO")]
+    ["REQUEST" scenario-name (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end result "\u0020"]))
 
 (defn map-scenario [scenario]
   (let [start (.toString (:start scenario))
