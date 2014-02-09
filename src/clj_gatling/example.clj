@@ -3,7 +3,7 @@
 (defn run-request [id]
   ;(println (str "Simulating request for " id))
   (Thread/sleep (rand 1000))
-  "OK")
+  (> 0.7 (rand 1)))
 
 (def test-scenario
   {:name "Test scenario"
