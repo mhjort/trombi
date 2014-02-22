@@ -18,6 +18,6 @@ See example project from [here](https://github.com/mhjort/clj-gatling-example)
 
 ## License
 
-Copyright © 204 Markus Hjort
+Copyright (C) 2014 Markus Hjort
 
-Distributed under the Eclipse Public License version 1.0
+Distributed under the Eclipse Public License, the same as Clojure.
