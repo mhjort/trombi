@@ -22,6 +22,7 @@
 (defn run-simulation [scenario users]
   (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
+    (println (str "Running scenario " (:name scenario) " with " users " users."))
     (doseq [[i c] ps] (go (>! c (run-scenario scenario i))))
     (let [results (repeatedly users (partial collect-result cs))]
       (dorun results) ;Lazy results must be evaluated before channels are closed

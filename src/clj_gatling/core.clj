@@ -19,7 +19,6 @@
 (defn run-simulation [scenario users]
  (let [result (simulation/run-simulation scenario users)
        csv (csv/write-csv (report/create-result-lines result) :delimiter "\t" :end-of-line "\n")]
-   (println (str "Running scenario " (:name scenario) " with " users " users."))
    (create-results-dir)
    (spit "results/1/simulation.log" csv)
    (create-chart "results")
