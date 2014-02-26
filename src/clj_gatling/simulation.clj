@@ -15,13 +15,15 @@
       {:result :requests})
     :id id :name (:name scenario)))
 
+(defn collect-result [cs]
+  (let [[result c] (async/alts!! cs)]
+    result))
+
 (defn run-simulation [scenario users]
   (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
     (doseq [[i c] ps] (go (>! c (run-scenario scenario i))))
-    (let [result (for [i (range users)]
-      (let [[v c] (async/alts!! cs)]
-        v))]
-      (println result)
+    (let [results (repeatedly users (partial collect-result cs))]
+      (dorun results) ;Lazy results must be evaluated before channels are closed
       (doseq [c cs] (async/close! c))
-      result)))
+      results)))
