@@ -2,7 +2,8 @@
 
 Create and run performance tests using Clojure. For reporting uses Gatling under the hood.
 
-Note! Currently the version is at proof-of-concept stage and lacks lot of features.
+Note! Currently this is more of a proof-of-concept and lacks lot of features.
+The integration to Gatling is also far from perfect.
 
 ## Installation
 
