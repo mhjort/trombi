@@ -9,7 +9,7 @@ Note! Currently the version is at proof-of-concept stage and lacks lot of featur
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.0.1"]
+[clj-gatling "0.0.2"]
 ```
 
 ## Usage
