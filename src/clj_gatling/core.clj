@@ -5,9 +5,7 @@
            (io.gatling.core.config GatlingConfiguration))
   (:require [clojure-csv.core :as csv]
             [clj-gatling.report :as report]
-            [clj-gatling.simulation :as simulation]
-            [clj-gatling.example :as example])
-  (:gen-class))
+            [clj-gatling.simulation :as simulation]))
 
 (defn create-results-dir []
   (dorun (map #(.mkdir (java.io.File. %)) ["results", "results/1"])))
@@ -26,6 +24,3 @@
    (spit "results/1/simulation.log" csv)
    (create-chart "results")
    (println "Open results/out/index.html")))
-
-(defn -main [users]
-  (run-simulation example/test-scenario (read-string users)))
