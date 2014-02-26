@@ -16,7 +16,6 @@
     :id id :name (:name scenario)))
 
 (defn run-simulation [scenario users]
-  (println (str "Run simulation with " users " users"))
   (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
     (doseq [[i c] ps] (go (>! c (run-scenario scenario i))))

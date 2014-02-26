@@ -27,7 +27,5 @@
 (defn create-result-lines [result]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") (first-scenario-start result))
         header ["RUN" timestamp "simulation" "\u0020"]
-        scenarios (apply concat (map #(vector (map-scenario %)) result))
-       result-lines (conj (flatten-one-level scenarios) header)]
-    (println result-lines)
-    result-lines))
+        scenarios (apply concat (map #(vector (map-scenario %)) result))]
+    (conj (flatten-one-level scenarios) header)))
