@@ -20,9 +20,6 @@
         requests (apply concat (map #(vector (map-request (:name scenario) %)) (:requests scenario)))]
     (conj requests ["SCENARIO" (:name scenario) (.toString (:id scenario)) start end])))
 
-(defn first-scenario-start [result]
-  (LocalDateTime. (:start (first (sort-by :id result)))))
-
 (defn create-result-lines [start-time result]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
         header ["RUN" timestamp "simulation" "\u0020"]
