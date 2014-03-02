@@ -2,7 +2,8 @@
   (:import (scala.collection.mutable HashMap)
            (io.gatling.charts.report ReportsGenerator)
            (io.gatling.charts.result.reader FileDataReader)
-           (io.gatling.core.config GatlingConfiguration))
+           (io.gatling.core.config GatlingConfiguration)
+           (org.joda.time LocalDateTime))
   (:require [clojure-csv.core :as csv]
             [clj-gatling.report :as report]
             [clj-gatling.simulation :as simulation]))
@@ -17,8 +18,9 @@
     (ReportsGenerator/generateFor "out" (FileDataReader. "1"))))
 
 (defn run-simulation [scenario users]
- (let [result (simulation/run-simulation scenario users)
-       csv (csv/write-csv (report/create-result-lines result) :delimiter "\t" :end-of-line "\n")]
+ (let [start-time (LocalDateTime.)
+       result (simulation/run-simulation scenario users)
+       csv (csv/write-csv (report/create-result-lines start-time result) :delimiter "\t" :end-of-line "\n")]
    (create-results-dir)
    (spit "results/1/simulation.log" csv)
    (create-chart "results")

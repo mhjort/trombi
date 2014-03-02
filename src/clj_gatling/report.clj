@@ -1,6 +1,5 @@
 (ns clj-gatling.report
-  (:use [clj-time.format :only [formatter unparse-local]])
-  (:import (org.joda.time LocalDateTime)))
+  (:use [clj-time.format :only [formatter unparse-local]]))
 
 (defn flatten-one-level [coll]  
   (mapcat #(if (sequential? %) % [%]) coll))
@@ -24,8 +23,8 @@
 (defn first-scenario-start [result]
   (LocalDateTime. (:start (first (sort-by :id result)))))
 
-(defn create-result-lines [result]
-  (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") (first-scenario-start result))
+(defn create-result-lines [start-time result]
+  (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
         header ["RUN" timestamp "simulation" "\u0020"]
         scenarios (apply concat (map #(vector (map-scenario %)) result))]
     (conj (flatten-one-level scenarios) header)))

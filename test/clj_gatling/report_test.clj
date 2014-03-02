@@ -1,5 +1,6 @@
 (ns clj-gatling.report-test
-  (:use clojure.test)
+  (:use [clojure.test]
+        [clj-time.core :only [local-date-time]])
   (:require [clj-gatling.report :as report]))
 
 (def scenario-result 
@@ -29,7 +30,8 @@
   (is (= (nth expected 2) (nth actual 2))))
 
 (deftest maps-scenario-results-to-log-lines
-  (let [result-lines (report/create-result-lines scenario-result)]
+  (let [start-time (local-date-time 2014 2 9 11 1 36)
+        result-lines (report/create-result-lines start-time scenario-result)]
     (run-line-match expected-lines result-lines)
     (scenario-line-match expected-lines result-lines)
     (request-line-match expected-lines result-lines)
