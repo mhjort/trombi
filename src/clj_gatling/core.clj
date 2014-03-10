@@ -8,20 +8,22 @@
             [clj-gatling.report :as report]
             [clj-gatling.simulation :as simulation]))
 
-(defn create-results-dir []
-  (dorun (map #(.mkdir (java.io.File. %)) ["results", "results/1"])))
+(def results-dir "target/results")
 
-(defn create-chart [dir]
+(defn create-dir [dir]
+  (.mkdirs (java.io.File. dir)))
+
+(defn create-chart [results-dir]
   (let [conf (HashMap.)]
-    (.put conf "gatling.core.directory.results" dir)
+    (.put conf "gatling.core.directory.results" results-dir)
     (GatlingConfiguration/setUp conf)
-    (ReportsGenerator/generateFor "out" (FileDataReader. "1"))))
+    (ReportsGenerator/generateFor "output" (FileDataReader. "input"))))
 
 (defn run-simulation [scenario users]
  (let [start-time (LocalDateTime.)
        result (simulation/run-simulation scenario users)
        csv (csv/write-csv (report/create-result-lines start-time result) :delimiter "\t" :end-of-line "\n")]
-   (create-results-dir)
-   (spit "results/1/simulation.log" csv)
-   (create-chart "results")
-   (println "Open results/out/index.html")))
+   (create-dir (str results-dir "/input"))
+   (spit (str results-dir "/input/simulation.log") csv)
+   (create-chart results-dir)
+   (println (str results-dir "/output/index.html"))))
