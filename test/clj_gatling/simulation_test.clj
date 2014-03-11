@@ -10,12 +10,23 @@
    :requests [{:name "Request1" :fn successful-request}
               {:name "Request2" :fn failing-request}]})
 
+(def scenario2
+  {:name "Test scenario2"
+   :requests [{:name "Request1" :fn successful-request}
+              {:name "Request2" :fn failing-request}]})
+
 (defn get-result [requests request-name]
   (:result (first (filter #(= request-name (:name %)) requests))))
 
 (deftest simulation-returns-result-when-run-with-one-user
   (let [result (first (simulation/run-simulation [scenario] 1))]
     (is (= "Test scenario" (:name result)))
+    (is (= true (get-result (:requests result) "Request1")))
+    (is (= false (get-result (:requests result) "Request2")))))
+
+(deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
+  (let [result (last (simulation/run-simulation [scenario scenario2] 1))]
+    (is (= "Test scenario2" (:name result)))
     (is (= true (get-result (:requests result) "Request1")))
     (is (= false (get-result (:requests result) "Request2")))))
 
