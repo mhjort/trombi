@@ -1,6 +1,7 @@
 (ns clj-gatling.core
   (:import (org.joda.time LocalDateTime))
-  (:require [clj-gatling.chart :as chart]
+  (:require [clojure-csv.core :as csv]
+            [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
             [clj-gatling.simulation :as simulation]))
 
