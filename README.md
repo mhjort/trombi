@@ -10,7 +10,7 @@ The integration to Gatling is also far from perfect.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.0.2"]
+[clj-gatling "0.0.3"]
 ```
 
 ## Usage
@@ -25,8 +25,8 @@ Add the following to your `project.clj` `:dependencies`:
   true)
 
 (run-simulation
-  {:name "Test-scenario"
-   :requests [{:name "Example-request" :fn example-request}]} 2)
+  [{:name "Test-scenario"
+   :requests [{:name "Example-request" :fn example-request}]}] 2)
 ```
 
 See example project from [here](https://github.com/mhjort/clj-gatling-example)
