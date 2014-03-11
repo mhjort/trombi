@@ -14,7 +14,7 @@
   (:result (first (filter #(= request-name (:name %)) requests))))
 
 (deftest simulation-returns-result-when-run-with-one-user
-  (let [result (first (simulation/run-simulation scenario 1))]
+  (let [result (first (simulation/run-simulation [scenario] 1))]
     (is (= "Test scenario" (:name result)))
     (is (= true (get-result (:requests result) "Request1")))
     (is (= false (get-result (:requests result) "Request2")))))
