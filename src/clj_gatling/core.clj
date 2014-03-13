@@ -5,13 +5,14 @@
             [clj-gatling.report :as report]
             [clj-gatling.simulation :as simulation]))
 
-(def results-dir "target/results")
-
 (defn create-dir [dir]
   (.mkdirs (java.io.File. dir)))
 
-(defn run-simulation [scenario users]
+(defn run-simulation [scenario users & [options]]
  (let [start-time (LocalDateTime.)
+       results-dir (if (nil? (:root options))
+                      "target/results"
+                      (:root options))
        result (simulation/run-simulation scenario users)
        csv (csv/write-csv (report/create-result-lines start-time result) :delimiter "\t" :end-of-line "\n")]
    (create-dir (str results-dir "/input"))
