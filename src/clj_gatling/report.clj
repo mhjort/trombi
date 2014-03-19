@@ -1,7 +1,7 @@
 (ns clj-gatling.report
   (:use [clj-time.format :only [formatter unparse-local]]))
 
-(defn flatten-one-level [coll]  
+(defn- flatten-one-level [coll]
   (mapcat #(if (sequential? %) % [%]) coll))
 
 (defn map-request [scenario-name request]
@@ -14,7 +14,7 @@
         result (if (:result request) "OK" "KO")]
     ["REQUEST" scenario-name (.toString (:id request)) "" (:name request) execution-start request-end response-start execution-end result "\u0020"]))
 
-(defn map-scenario [scenario]
+(defn- map-scenario [scenario]
   (let [start (.toString (:start scenario))
         end (.toString (:end scenario))
         requests (apply concat (map #(vector (map-request (:name scenario) %)) (:requests scenario)))]

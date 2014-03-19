@@ -7,7 +7,7 @@
          result# ~expr]
       {:result result# :start start# :end (System/currentTimeMillis) }))
 
-(defn run-scenario [scenario id]
+(defn- run-scenario [scenario id]
   (assoc
     (rename-keys 
       (bench
@@ -15,11 +15,11 @@
       {:result :requests})
     :id id :name (:name scenario)))
 
-(defn collect-result [cs]
+(defn- collect-result [cs]
   (let [[result c] (async/alts!! cs)]
     result))
 
-(defn run-scenario-with-multiple-users [scenario users]
+(defn- run-scenario-with-multiple-users [scenario users]
   (let [cs (repeatedly users async/chan)
         ps (map vector (iterate inc 0) cs)]
     (println (str "Running scenario " (:name scenario) " with " users " users."))
