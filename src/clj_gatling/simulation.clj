@@ -19,21 +19,21 @@
   (let [[result c] (async/alts!! cs)]
     result))
 
-(defn- run-scenario-with-multiple-users [scenario users]
-  (let [cs (repeatedly users async/chan)
+(defn- run-parallel-and-collect-results [function times]
+  (let [cs (repeatedly times async/chan)
         ps (map vector (iterate inc 0) cs)]
-    (println (str "Running scenario " (:name scenario) " with " users " users."))
-    (doseq [[i c] ps] (go (>! c (run-scenario scenario i))))
-    (let [results (repeatedly users (partial collect-result cs))]
+    (doseq [[i c] ps] (go (>! c (function i))))
+    (let [results (repeatedly times (partial collect-result cs))]
       (dorun results) ;Lazy results must be evaluated before channels are closed
       (doseq [c cs] (async/close! c))
       results)))
 
+(defn- run-nth-scenario-with-multiple-users [scenarios users i]
+  (let [scenario (nth scenarios i)]
+     (println (str "Running scenario " (:name scenario) " with " users " users."))
+     (run-parallel-and-collect-results (partial run-scenario scenario) users)))
+
 (defn run-simulation [scenarios users]
-  (let [cs (repeatedly (count scenarios) async/chan)
-        ps (map vector (iterate inc 0) cs)]
-    (doseq [[i c] ps] (go (>! c (run-scenario-with-multiple-users (nth scenarios i) users))))
-    (let [results (repeatedly (count scenarios) (partial collect-result cs))]
-      (dorun results) ;Lazy results must be evaluated before channels are closed
-      (doseq [c cs] (async/close! c))
-      (flatten results))))
+  (let [function (partial run-nth-scenario-with-multiple-users scenarios users) 
+        results (run-parallel-and-collect-results function (count scenarios))]
+    (flatten results)))
