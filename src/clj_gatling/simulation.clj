@@ -1,17 +1,28 @@
 (ns clj-gatling.simulation
   (:use [clojure.set :only [rename-keys]])
-  (:require [clojure.core.async :as async :refer [go <! >!]]))
+  (:require [org.httpkit.client :as http]
+            [clojure.core.async :as async :refer [go <! >!]]))
 
 (defmacro bench [expr]
   `(let [start# (System/currentTimeMillis)
          result# ~expr]
       {:result result# :start start# :end (System/currentTimeMillis) }))
 
+(defn- http-request [url user-id]
+  (let [{:keys [status]} @(http/get url)]
+    (= 200 status)))
+
+(defn- run-request [request id]
+  (let [request-fn (if-let [url (:http request)]
+                     (partial http-request url)
+                     (:fn request))]
+    (bench (request-fn id))))
+
 (defn- run-scenario [scenario id]
   (assoc
     (rename-keys 
       (bench
-        (map #(assoc (bench ((:fn %) id)) :name (:name %) :id id) (:requests scenario)))
+        (map #(assoc (run-request % id) :name (:name %) :id id) (:requests scenario)))
       {:result :requests})
     :id id :name (:name scenario)))
 
