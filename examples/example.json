@@ -1,0 +1,8 @@
+{ "users": "5",
+  "scenarios": 
+    [{ "name": "Test http scenario",
+       "requests": [
+        { "name": "Request1", "http": "http://www.google.fi"},
+        { "name": "Request2", "http": "http://www.reaktor.fi"}]
+    }]
+}
