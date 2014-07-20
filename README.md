@@ -10,7 +10,7 @@ The integration to Gatling is also far from perfect.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.0.4"]
+[clj-gatling "0.0.5"]
 ```
 
 ## Usage
