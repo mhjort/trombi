@@ -15,6 +15,23 @@ Add the following to your `project.clj` `:dependencies`:
 
 ## Usage
 
+### Non-blocking HTTP
+
+This method uses asynchronous http-kit under the hood. Currently this is the best way to generate load.
+
+```clojure
+
+(use 'clj-gatling.core)
+
+(run-simulation
+  [{:name "Test-scenario"
+   :requests [{:name "Localhost request" :http "http://localhost"}]}] 200)
+```
+
+### Blocking functions
+
+Currently this is suitable only for a small number of parallel users (< 100).
+
 ```clojure
 
 (use 'clj-gatling.core)
