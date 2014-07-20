@@ -3,10 +3,16 @@
   (:require [clj-gatling.simulation :as simulation]))
 
 (defn successful-request [id] true)
-(defn failing-request [id] false)
-(defn- fake-http [url id]
+
+(defn slow-request [id]
   (Thread/sleep 50)
-  (= "success" url))
+  true)
+
+(defn failing-request [id] false)
+
+(defn- fake-async-http [url id callback]
+  (Thread/sleep 50)
+  (callback (= "success" url)))
 
 (def scenario
   {:name "Test scenario"
@@ -15,7 +21,7 @@
 
 (def scenario2
   {:name "Test scenario2"
-   :requests [{:name "Request1" :fn successful-request}
+   :requests [{:name "Request1" :fn slow-request}
               {:name "Request2" :fn failing-request}]})
 
 (def http-scenario
@@ -33,7 +39,7 @@
     (is (= false (get-result (:requests result) "Request2")))))
 
 (deftest simulation-returns-result-when-run-with-http-requests
-  (with-redefs [simulation/http-request fake-http]
+  (with-redefs [simulation/async-http-request fake-async-http]
     (let [result (first (simulation/run-simulation [http-scenario] 1))]
       (is (= "Test http scenario" (:name result)))
       (is (= true (get-result (:requests result) "Request1")))
@@ -44,4 +50,3 @@
     (is (= "Test scenario2" (:name result)))
     (is (= true (get-result (:requests result) "Request1")))
     (is (= false (get-result (:requests result) "Request2")))))
-
