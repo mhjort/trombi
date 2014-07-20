@@ -5,7 +5,7 @@
 
 (defn- collect-result [cs]
   (let [[result c] (async/alts!! cs)]
-    result))
+    @result))
 
 (defn- run-parallel-and-collect-results [function times]
   (let [cs (repeatedly times async/chan)
@@ -41,12 +41,14 @@
               (req-fn id (fn [success]
                            (run-requests (rest requests) (conj result {:id id :name (:name request) :result success :start start :end (now)})))))))]
     (run-requests-fn (map #(assoc % :fn (wrap-with-callback (:fn %))) (:requests scenario)) [])
-    @end-result))
+    end-result))
 
 (defn- run-nth-scenario-with-multiple-users [scenarios users i]
-  (let [scenario (nth scenarios i)]
+  (let [result (promise)
+        scenario (nth scenarios i)]
      (println (str "Running scenario " (:name scenario) " with " users " users."))
-     (run-parallel-and-collect-results (partial run-scenario-async scenario) users)))
+     (deliver result (run-parallel-and-collect-results (partial run-scenario-async scenario) users))
+    result))
 
 (defn run-simulation [scenarios users]
   (let [function (partial run-nth-scenario-with-multiple-users scenarios users) 
