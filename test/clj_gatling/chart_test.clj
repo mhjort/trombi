@@ -16,9 +16,9 @@
 (deftest creates-chart-from-simulation-file
   (create-dir "target/test-results/input")
   (copy-file "test/simulation.log" "target/test-results/input/simulation.log")
-  (delete-file-if-exists "target/test-results/output/index.html")
+  (delete-file-if-exists "target/test-results/index.html")
   (chart/create-chart "target/test-results")
-  (is (.exists (io/as-file "target/test-results/output/index.html"))))
+  (is (.exists (io/as-file "target/test-results/index.html"))))
 
  
 
