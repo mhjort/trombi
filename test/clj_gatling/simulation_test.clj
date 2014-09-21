@@ -2,17 +2,17 @@
   (:use clojure.test)
   (:require [clj-gatling.simulation :as simulation]))
 
-(defn successful-request [id] true)
+(defn successful-request [id cb] (cb true))
 
-(defn slow-request [id]
-  (Thread/sleep 50)
-  true)
+(defn slow-request [id cb]
+  (future (Thread/sleep 50)
+          (cb true)))
 
-(defn failing-request [id] false)
+(defn failing-request [id cb] (cb false))
 
 (defn- fake-async-http [url id callback]
-  (Thread/sleep 50)
-  (callback (= "success" url)))
+  (future (Thread/sleep 50)
+          (callback (= "success" url))))
 
 (def scenario
   {:name "Test scenario"
