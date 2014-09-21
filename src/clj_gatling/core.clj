@@ -24,7 +24,7 @@
    (create-dir (str results-dir "/input"))
    (spit (str results-dir "/input/simulation.log") csv)
    (chart/create-chart results-dir)
-   (println (str "Open " results-dir "/output/index.html"))))
+   (println (str "Open " results-dir "/index.html"))))
 
 (defroutes all-routes
   (GET "/ping" [] "pong")
