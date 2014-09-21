@@ -1,16 +1,14 @@
 # clj-gatling [![Build Status](https://travis-ci.org/mhjort/clj-gatling.png?branch=master)](https://travis-ci.org/mhjort/clj-gatling)
 
-Create and run performance tests using Clojure. For reporting uses Gatling under the hood.
-
-Note! Currently this is more of a proof-of-concept and lacks lot of features.
-The integration to Gatling is also far from perfect.
+Create and run performance tests using Clojure (and get fancy reports). 
+For reporting clj-gatling uses Gatling under the hood.
 
 ## Installation
 
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.0.6"]
+[clj-gatling "0.1.0"]
 ```
 
 ## Usage
