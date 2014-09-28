@@ -19,7 +19,7 @@
        results-dir (if (nil? (:root options))
                       "target/results"
                       (:root options))
-       result (simulation/run-simulation scenario users)
+       result (simulation/run-simulation scenario users options)
        csv (csv/write-csv (report/create-result-lines start-time result) :delimiter "\t" :end-of-line "\n")]
    (create-dir (str results-dir "/input"))
    (spit (str results-dir "/input/simulation.log") csv)
