@@ -40,6 +40,15 @@ Be careful to check that your function will timeout on error.
    :requests [{:name "Example-request" :fn example-request}]}] 2)
 ```
 
+You can also run same scenario multiple times to generate constant load
+within a longer time period by specifying option :rounds.
+Default number of rounds is 1 if not given.
+
+```clojure
+(run-simulation [test-scenario] 10 {:rounds 5})
+
+```
+
 ### Non-blocking HTTP
 
 This method uses asynchronous http-kit under the hood. 
