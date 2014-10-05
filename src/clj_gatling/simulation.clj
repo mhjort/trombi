@@ -7,14 +7,19 @@
   (let [[result c] (async/alts!! cs)]
     @result))
 
+(defn- with-channels [channel-count function]
+  (let [cs (repeatedly channel-count async/chan)
+        result (function cs)]
+    (dorun result) ;Lazy results must be evaluated before channels are closed
+    (doseq [c cs] (async/close! c))
+    result))
+
 (defn- run-parallel-and-collect-results [function times]
-  (let [cs (repeatedly times async/chan)
-        ps (map vector (iterate inc 0) cs)]
-    (doseq [[i c] ps] (go (>! c (function i))))
-    (let [results (repeatedly times (partial collect-result cs))]
-      (dorun results) ;Lazy results must be evaluated before channels are closed
-      (doseq [c cs] (async/close! c))
-      results)))
+  (with-channels times (fn [cs]
+    (let [ps (map vector (iterate inc 0) cs)]
+      (doseq [[i c] ps]
+        (go (>! c (function i))))
+      (repeatedly times (partial collect-result cs))))))
 
 (defn- collect-result-and-run-next [cs run]
   (let [[result c] (async/alts!! cs)
@@ -23,15 +28,13 @@
     ret))
 
 (defn- run-scenarios-in-parallel [scenario-runners parallel-count]
-  (let [cs (repeatedly parallel-count async/chan)
-        ps (map vector (iterate inc 0) cs)]
-    (doseq [[i c] ps] (go (>! c ((nth scenario-runners i)))))
-    (let [results-with-new-run (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners))
-          results-rest (repeatedly parallel-count (partial collect-result cs))]
-      (dorun results-with-new-run) ;Lazy results must be evaluated before channels are closed
-      (dorun results-rest) ;Lazy results must be evaluated before channels are closed
-      (doseq [c cs] (async/close! c))
-      (concat results-with-new-run results-rest))))
+  (with-channels parallel-count (fn [cs]
+    (let [ps (map vector (iterate inc 0) cs)]
+      (doseq [[i c] ps]
+        (go (>! c ((nth scenario-runners i)))))
+      (let [results-with-new-run (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners))
+            results-rest (repeatedly parallel-count (partial collect-result cs))]
+        (concat results-with-new-run results-rest))))))
 
 (defn- now [] (System/currentTimeMillis))
 
