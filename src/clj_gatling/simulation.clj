@@ -7,19 +7,19 @@
   (let [[result c] (async/alts!! cs)]
     @result))
 
-(defn- with-channels [channel-count function]
-  (let [cs (repeatedly channel-count async/chan)
-        result (function cs)]
-    (dorun result) ;Lazy results must be evaluated before channels are closed
-    (doseq [c cs] (async/close! c))
-    result))
+(defmacro with-channels [binding & body]
+  `(let [~(first binding) (repeatedly ~(second binding) async/chan)
+         ~'result (do ~@body)]
+    (dorun ~'result) ;Lazy results must be evaluated before channels are closed
+    (doseq [~'c ~(first binding)] (async/close! ~'c))
+    ~'result))
 
 (defn- run-parallel-and-collect-results [function times]
-  (with-channels times (fn [cs]
+  (with-channels [cs times]
     (let [ps (map vector (iterate inc 0) cs)]
       (doseq [[i c] ps]
         (go (>! c (function i))))
-      (repeatedly times (partial collect-result cs))))))
+      (repeatedly times (partial collect-result cs)))))
 
 (defn- collect-result-and-run-next [cs run]
   (let [[result c] (async/alts!! cs)
@@ -28,13 +28,13 @@
     ret))
 
 (defn- run-scenarios-in-parallel [scenario-runners parallel-count]
-  (with-channels parallel-count (fn [cs]
+  (with-channels [cs parallel-count]
     (let [ps (map vector (iterate inc 0) cs)]
       (doseq [[i c] ps]
         (go (>! c ((nth scenario-runners i)))))
       (let [results-with-new-run (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners))
             results-rest (repeatedly parallel-count (partial collect-result cs))]
-        (concat results-with-new-run results-rest))))))
+        (concat results-with-new-run results-rest)))))
 
 (defn- now [] (System/currentTimeMillis))
 
@@ -68,6 +68,6 @@
 
 (defn run-simulation [scenarios users & [options]]
   (let [rounds (or (:rounds options) 1)
-        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users rounds) 
+        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users rounds)
         results (run-parallel-and-collect-results scenario-runner (count scenarios))]
     (flatten results)))
