@@ -1,6 +1,8 @@
 (ns clj-gatling.simulation
   (:use [clojure.set :only [rename-keys]])
   (:require [org.httpkit.client :as http]
+            [clj-time.core :as time]
+            [clj-time.local :as local-time]
             [clojure.core.async :as async :refer [go <! >!]]))
 
 (defn- collect-result [cs]
@@ -58,16 +60,26 @@
     (run-requests-fn (:requests scenario) [])
     end-result)))
 
-(defn- run-nth-scenario-with-multiple-users [scenarios users rounds i]
-  (let [result (promise)
+(defn- run-nth-scenario-with-multiple-users [scenarios users rounds duration i]
+  (let [scenario-start (local-time/local-now)
+        result (promise)
         scenario (nth scenarios i)
-        scenario-runs (map (partial run-scenario-async scenario) (range (* users rounds)))]
-     (println (str "Running scenario " (:name scenario) " with " users " users and " rounds " rounds."))
-     (deliver result (run-scenarios-in-parallel scenario-runs users (fn [{:keys [id]}] (<= id (* users rounds)))))
+        ;TODO Implement these using protocols instead of multiple ifs
+        range-seq (if (nil? duration) (range (* users rounds)) (range))
+        extra-info (if (nil? duration)
+                     (str "rounds " rounds)
+                     (str "duration " duration))
+        end-fn (if (nil? duration)
+                 (fn [{:keys [id]}] (<= id (* users rounds)))
+                 (fn [_] (time/before? (local-time/local-now) (time/plus scenario-start duration))))
+        scenario-runs (map (partial run-scenario-async scenario) range-seq)]
+     (println (str "Running scenario " (:name scenario) " with " users " users and " extra-info "."))
+     (deliver result (run-scenarios-in-parallel scenario-runs users end-fn))
     result))
 
 (defn run-simulation [scenarios users & [options]]
   (let [rounds (or (:rounds options) 1)
-        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users rounds)
+        duration (:duration options)
+        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users rounds duration)
         results (run-parallel-and-collect-results scenario-runner (count scenarios))]
     (flatten results)))

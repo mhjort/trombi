@@ -1,6 +1,7 @@
 (ns clj-gatling.simulation-test
   (:use clojure.test)
-  (:require [clj-gatling.simulation :as simulation]))
+  (:require [clj-gatling.simulation :as simulation]
+            [clj-time.core :as time]))
 
 (defn successful-request [id cb] (cb true))
 
@@ -57,3 +58,7 @@
     (is (= 2 (-> result first :requests count)))
     (is (= "Test scenario" (-> result second :name)))
     (is (= 2 (-> result second :requests count)))))
+
+(deftest duration-given
+  (let [result (simulation/run-simulation [scenario] 1 {:duration (time/millis 50)})]
+    (is (not (empty? result)))))
