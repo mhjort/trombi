@@ -8,7 +8,7 @@ For reporting clj-gatling uses Gatling under the hood.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.1.3"]
+[clj-gatling "0.2.0"]
 ```
 
 ## Usage
@@ -40,12 +40,22 @@ Be careful to check that your function will timeout on error.
    :requests [{:name "Example-request" :fn example-request}]}] 2)
 ```
 
-You can also run same scenario multiple times to generate constant load
+You can run same scenario multiple times to generate constant load
 within a longer time period by specifying option :rounds.
 Default number of rounds is 1 if not given.
 
 ```clojure
 (run-simulation [test-scenario] 10 {:rounds 5})
+
+```
+
+You can run same scenario multiple times within given time period 
+to generate constant load by specifying option :duration.
+
+```clojure
+(require '[clj-time.core :as t])
+
+(run-simulation [test-scenario] 10 {:duration (t/minutes 2)})
 
 ```
 
