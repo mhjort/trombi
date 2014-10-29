@@ -27,12 +27,12 @@
     (go (>! c (run)))
     ret))
 
-(defn- run-scenarios-in-parallel [scenario-runners parallel-count]
+(defn- run-scenarios-in-parallel [scenario-runners parallel-count end-fn]
   (with-channels [cs parallel-count]
     (let [ps (map vector (iterate inc 0) cs)]
       (doseq [[i c] ps]
         (go (>! c ((nth scenario-runners i)))))
-      (let [results-with-new-run (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners))
+      (let [results-with-new-run (take-while end-fn (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners)))
             results-rest (repeatedly parallel-count (partial collect-result cs))]
         (concat results-with-new-run results-rest)))))
 
@@ -63,7 +63,7 @@
         scenario (nth scenarios i)
         scenario-runs (map (partial run-scenario-async scenario) (range (* users rounds)))]
      (println (str "Running scenario " (:name scenario) " with " users " users and " rounds " rounds."))
-     (deliver result (run-scenarios-in-parallel scenario-runs users))
+     (deliver result (run-scenarios-in-parallel scenario-runs users (fn [{:keys [id]}] (<= id (* users rounds)))))
     result))
 
 (defn run-simulation [scenarios users & [options]]
