@@ -29,12 +29,31 @@
     (go (>! c (run)))
     ret))
 
-(defn- run-scenarios-in-parallel [scenario-runners parallel-count end-fn]
+(defprotocol RunnerProtocol
+  (continue-run? [runner current-time])
+  (run-range [runner number-of-users])
+  (runner-info [runner]))
+
+(deftype DurationRunner [duration]
+  RunnerProtocol
+  (continue-run? [_ start] (time/before? (local-time/local-now) (time/plus start duration)))
+  (run-range [_ _] (range))
+  (runner-info [_] (str "duration " duration)))
+
+(deftype RoundsRunner [number-of-rounds]
+  RunnerProtocol
+  (continue-run? [_ _] true)
+  (run-range [_ number-of-users] (range (* number-of-users number-of-rounds)))
+  (runner-info [_] (str "rounds " number-of-rounds)))
+
+(defn- run-scenarios-in-parallel [scenario-runners parallel-count runner]
   (with-channels [cs parallel-count]
-    (let [ps (map vector (iterate inc 0) cs)]
+    (let [scenario-start (local-time/local-now)
+          ps (map vector (iterate inc 0) cs)]
       (doseq [[i c] ps]
         (go (>! c ((nth scenario-runners i)))))
-      (let [results-with-new-run (take-while end-fn (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners)))
+      (let [results-with-new-run (take-while (fn [_] (continue-run? runner scenario-start)) 
+                                             (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners)))
             results-rest (repeatedly parallel-count (partial collect-result cs))]
         (concat results-with-new-run results-rest)))))
 
@@ -61,20 +80,16 @@
     end-result)))
 
 (defn- run-nth-scenario-with-multiple-users [scenarios users rounds duration i]
-  (let [scenario-start (local-time/local-now)
+  (let [
+        scenario-start (local-time/local-now)
         result (promise)
         scenario (nth scenarios i)
-        ;TODO Implement these using protocols instead of multiple ifs
-        range-seq (if (nil? duration) (range (* users rounds)) (range))
-        extra-info (if (nil? duration)
-                     (str "rounds " rounds)
-                     (str "duration " duration))
-        end-fn (if (nil? duration)
-                 (fn [{:keys [id]}] (<= id (* users rounds)))
-                 (fn [_] (time/before? (local-time/local-now) (time/plus scenario-start duration))))
-        scenario-runs (map (partial run-scenario-async scenario) range-seq)]
-     (println (str "Running scenario " (:name scenario) " with " users " users and " extra-info "."))
-     (deliver result (run-scenarios-in-parallel scenario-runs users end-fn))
+        runner (if (nil? duration)
+                 (RoundsRunner. rounds)
+                 (DurationRunner. duration))
+        scenario-runs (map (partial run-scenario-async scenario) (run-range runner users))]
+     (println (str "Running scenario " (:name scenario) " with " users " users and " (runner-info runner) "."))
+     (deliver result (run-scenarios-in-parallel scenario-runs users runner))
     result))
 
 (defn run-simulation [scenarios users & [options]]
