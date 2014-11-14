@@ -5,8 +5,8 @@
 
 (defn successful-request [id cb] (cb true))
 
-(defn slow-request [id cb]
-  (future (Thread/sleep 50)
+(defn slow-request [sleep-time id cb]
+  (future (Thread/sleep sleep-time)
           (cb true)))
 
 (defn failing-request [id cb] (cb false))
@@ -22,8 +22,12 @@
 
 (def scenario2
   {:name "Test scenario2"
-   :requests [{:name "Request1" :fn slow-request}
+   :requests [{:name "Request1" :fn (partial slow-request 50)}
               {:name "Request2" :fn failing-request}]})
+
+(def timeout-scenario
+  {:name "Timeout scenario"
+   :requests [{:name "Request1" :fn (partial slow-request 2000)}]})
 
 (def http-scenario
   {:name "Test http scenario"
@@ -62,3 +66,7 @@
 (deftest duration-given
   (let [result (simulation/run-simulation [scenario] 1 {:duration (time/millis 50)})]
     (is (not (empty? result)))))
+
+(deftest fails-requests-when-they-take-longer-than-timeout
+  (let [result (first (simulation/run-simulation [timeout-scenario] 1 {:timeout-in-ms 100}))]
+    (is (= false (get-result (:requests result) "Request1")))))

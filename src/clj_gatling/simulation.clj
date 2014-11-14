@@ -62,23 +62,39 @@
   (let [check-status (fn [{:keys [status]}] (callback (= 200 status)))]
     (http/get url {} check-status)))
 
-(defn run-scenario-async [scenario id]
+(defn- request-fn [request]
+  (if-let [url (:http request)]
+    (partial async-http-request url)
+    (:fn request)))
+
+(defn- request-result [id request-name success start]
+  {:id id :name request-name :result success :start start :end (now)})
+
+(defn- callback->chan [step-fn id]
+  (let [c (async/chan)]
+    (step-fn id (fn [success] (async/put! c success)))
+    c))
+
+(defn- run-scenario-async [scenario step-timeout id]
   (fn [] (let [scenario-start (now)
         end-result (promise)
         run-requests-fn (fn run-requests [requests result]
           (if (empty? requests)
             (deliver end-result {:id id :name (:name scenario) :start scenario-start :end (now) :requests result})
             (let [request (first requests)
-                  req-fn (if-let [url (:http request)]
-                            (partial async-http-request url)
-                            (:fn request))
                   start (now)]
-              (req-fn id (fn [success]
-                           (run-requests (rest requests) (conj result {:id id :name (:name request) :result success :start start :end (now)})))))))]
+              (go
+                (let [response (callback->chan (request-fn request) id)
+                      timeout  (async/timeout step-timeout)
+                      [s channel] (async/alts! [response timeout])
+                      success (if (= channel timeout)
+                                false
+                                s)]
+                  (run-requests (rest requests) (conj result (request-result id (:name request) success start))))))))]
     (run-requests-fn (:requests scenario) [])
     end-result)))
 
-(defn- run-nth-scenario-with-multiple-users [scenarios users rounds duration i]
+(defn- run-nth-scenario-with-multiple-users [scenarios users step-timeout rounds duration i]
   (let [
         scenario-start (local-time/local-now)
         result (promise)
@@ -86,7 +102,7 @@
         runner (if (nil? duration)
                  (RoundsRunner. rounds)
                  (DurationRunner. duration))
-        scenario-runs (map (partial run-scenario-async scenario) (run-range runner users))]
+        scenario-runs (map (partial run-scenario-async scenario step-timeout) (run-range runner users))]
      (println (str "Running scenario " (:name scenario) " with " users " users and " (runner-info runner) "."))
      (deliver result (run-scenarios-in-parallel scenario-runs users runner))
     result))
@@ -94,6 +110,7 @@
 (defn run-simulation [scenarios users & [options]]
   (let [rounds (or (:rounds options) 1)
         duration (:duration options)
-        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users rounds duration)
+        step-timeout (or (:timeout-in-ms options) 5000)
+        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout rounds duration)
         results (run-parallel-and-collect-results scenario-runner (count scenarios))]
     (flatten results)))
