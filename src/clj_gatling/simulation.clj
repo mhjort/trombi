@@ -1,5 +1,4 @@
 (ns clj-gatling.simulation
-  (:use [clojure.set :only [rename-keys]])
   (:require [org.httpkit.client :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
