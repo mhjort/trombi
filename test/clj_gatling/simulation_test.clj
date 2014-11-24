@@ -56,8 +56,8 @@
     (is (= true (get-result (:requests result) "Request1")))
     (is (= false (get-result (:requests result) "Request2")))))
 
-(deftest multiple-rounds
-  (let [result (simulation/run-simulation [scenario] 1 {:rounds 2})]
+(deftest with-given-number-of-requests
+  (let [result (simulation/run-simulation [scenario] 1 {:requests 2})]
     (is (= "Test scenario" (-> result first :name)))
     (is (= 2 (-> result first :requests count)))
     (is (= "Test scenario" (-> result second :name)))

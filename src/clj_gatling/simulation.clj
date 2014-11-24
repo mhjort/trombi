@@ -39,11 +39,11 @@
   (run-range [_ _] (range))
   (runner-info [_] (str "duration " duration)))
 
-(deftype RoundsRunner [number-of-rounds]
+(deftype FixedRequestNumberRunner [requests]
   RunnerProtocol
   (continue-run? [_ _] true)
-  (run-range [_ number-of-users] (range (* number-of-users number-of-rounds)))
-  (runner-info [_] (str "rounds " number-of-rounds)))
+  (run-range [_ number-of-users] (range requests))
+  (runner-info [_] (str "requests " requests)))
 
 (defn- run-scenarios-in-parallel [scenario-runners parallel-count runner]
   (with-channels [cs parallel-count]
@@ -51,7 +51,7 @@
           ps (map vector (iterate inc 0) cs)]
       (doseq [[i c] ps]
         (go (>! c ((nth scenario-runners i)))))
-      (let [results-with-new-run (take-while (fn [_] (continue-run? runner scenario-start)) 
+      (let [results-with-new-run (take-while (fn [_] (continue-run? runner scenario-start))
                                              (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners)))
             results-rest (repeatedly parallel-count (partial collect-result cs))]
         (concat results-with-new-run results-rest)))))
@@ -94,13 +94,13 @@
     (run-requests-fn (:requests scenario) [])
     end-result)))
 
-(defn- run-nth-scenario-with-multiple-users [scenarios users step-timeout rounds duration i]
+(defn- run-nth-scenario-with-multiple-users [scenarios users step-timeout requests duration i]
   (let [
         scenario-start (local-time/local-now)
         result (promise)
         scenario (nth scenarios i)
         runner (if (nil? duration)
-                 (RoundsRunner. rounds)
+                 (FixedRequestNumberRunner. requests)
                  (DurationRunner. duration))
         scenario-runs (map (partial run-scenario-async scenario step-timeout) (run-range runner users))]
      (println (str "Running scenario " (:name scenario) " with " users " users and " (runner-info runner) "."))
@@ -108,9 +108,9 @@
     result))
 
 (defn run-simulation [scenarios users & [options]]
-  (let [rounds (or (:rounds options) 1)
+  (let [requests (or (:requests options) users)
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)
-        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout rounds duration)
+        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout requests duration)
         results (run-parallel-and-collect-results scenario-runner (count scenarios))]
     (flatten results)))
