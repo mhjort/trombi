@@ -1,6 +1,6 @@
 # clj-gatling [![Build Status](https://travis-ci.org/mhjort/clj-gatling.png?branch=master)](https://travis-ci.org/mhjort/clj-gatling)
 
-Create and run performance tests using Clojure (and get fancy reports). 
+Create and run performance tests using Clojure (and get fancy reports).
 For reporting clj-gatling uses Gatling under the hood.
 
 ## Installation
@@ -8,7 +8,7 @@ For reporting clj-gatling uses Gatling under the hood.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.2.0"]
+[clj-gatling "0.3.0"]
 ```
 
 ## Usage
@@ -23,8 +23,9 @@ Ideally your testing functions should be asynchronous and non-blocking
 to make sure the performance testing client machine can generate as much
 as possible load.
 
-Currently clj-gatling has no timeout for custom functions.
-Be careful to check that your function will timeout on error.
+By default clj-gatling uses timeout for 5000 ms for all functions.
+You can override that behaviour by setting option :timeout-in-ms
+
 
 ```clojure
 
@@ -41,15 +42,17 @@ Be careful to check that your function will timeout on error.
 ```
 
 You can run same scenario multiple times to generate constant load
-within a longer time period by specifying option :rounds.
-Default number of rounds is 1 if not given.
+within a longer time period by specifying option :requests.
+Default number of requests is same as number of users (which means
+run only once)
+
 
 ```clojure
-(run-simulation [test-scenario] 10 {:rounds 5})
+(run-simulation [test-scenario] 10 {:requests 500})
 
 ```
 
-You can run same scenario multiple times within given time period 
+You can run same scenario multiple times within given time period
 to generate constant load by specifying option :duration.
 
 ```clojure
