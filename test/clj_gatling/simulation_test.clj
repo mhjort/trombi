@@ -51,7 +51,7 @@
       (is (= false (get-result (:requests result) "Request2"))))))
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
-  (let [result (last (simulation/run-simulation [scenario scenario2] 1))]
+  (let [result (first (simulation/run-simulation [scenario scenario2] 1))]
     (is (= "Test scenario2" (:name result)))
     (is (= true (get-result (:requests result) "Request1")))
     (is (= false (get-result (:requests result) "Request2")))))
@@ -62,6 +62,10 @@
     (is (= 2 (-> result first :requests count)))
     (is (= "Test scenario" (-> result second :name)))
     (is (= 2 (-> result second :requests count)))))
+
+(deftest with-multiple-number-of-requests
+  (let [result (simulation/run-simulation [scenario] 10 {:requests 100})]
+    (is (= 100 (->> result (map :requests) count)))))
 
 (deftest duration-given
   (let [result (simulation/run-simulation [scenario] 1 {:duration (time/millis 50)})]

@@ -2,7 +2,7 @@
   (:require [org.httpkit.client :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
-            [clojure.core.async :as async :refer [go <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop <! >!]]))
 
 (defn- collect-result [cs]
   (let [[result c] (async/alts!! cs)]
@@ -29,32 +29,34 @@
     ret))
 
 (defprotocol RunnerProtocol
-  (continue-run? [runner current-time])
-  (run-range [runner number-of-users])
+  (continue-run? [runner current-time i])
   (runner-info [runner]))
 
 (deftype DurationRunner [duration]
   RunnerProtocol
-  (continue-run? [_ start] (time/before? (local-time/local-now) (time/plus start duration)))
-  (run-range [_ _] (range))
+  (continue-run? [_ start i] (time/before? (local-time/local-now) (time/plus start duration)))
   (runner-info [_] (str "duration " duration)))
 
 (deftype FixedRequestNumberRunner [requests]
   RunnerProtocol
-  (continue-run? [_ _] true)
-  (run-range [_ number-of-users] (range requests))
+  (continue-run? [_ _ i] (< i requests))
   (runner-info [_] (str "requests " requests)))
 
 (defn- run-scenarios-in-parallel [scenario-runners parallel-count runner]
-  (with-channels [cs parallel-count]
-    (let [scenario-start (local-time/local-now)
-          ps (map vector (iterate inc 0) cs)]
+    (let [cs (repeatedly parallel-count async/chan)
+          scenario-start (local-time/local-now)
+          ps (map vector (iterate inc 0) cs)
+          results (async/chan)]
       (doseq [[i c] ps]
         (go (>! c ((nth scenario-runners i)))))
-      (let [results-with-new-run (take-while (fn [_] (continue-run? runner scenario-start))
-                                             (map (partial collect-result-and-run-next cs) (drop parallel-count scenario-runners)))
-            results-rest (repeatedly parallel-count (partial collect-result cs))]
-        (concat results-with-new-run results-rest)))))
+      (let [count-c (go-loop [i 0]
+                      (let [[result c] (async/alts! cs)]
+                        (async/put! c ((nth scenario-runners (+ i parallel-count))))
+                        (async/put! results result)
+                      (if (continue-run? runner scenario-start i)
+                        (recur (inc i))
+                        i)))]
+        (repeatedly (async/<!! count-c) (fn []  @(async/<!! results))))))
 
 (defn- now [] (System/currentTimeMillis))
 
@@ -102,7 +104,7 @@
         runner (if (nil? duration)
                  (FixedRequestNumberRunner. requests)
                  (DurationRunner. duration))
-        scenario-runs (map (partial run-scenario-async scenario step-timeout) (run-range runner users))]
+        scenario-runs (map (partial run-scenario-async scenario step-timeout) (range))]
      (println (str "Running scenario " (:name scenario) " with " users " users and " (runner-info runner) "."))
      (deliver result (run-scenarios-in-parallel scenario-runs users runner))
     result))
