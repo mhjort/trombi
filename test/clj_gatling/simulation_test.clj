@@ -51,10 +51,8 @@
       (is (= false (get-result (:requests result) "Request2"))))))
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
-  (let [result (first (simulation/run-simulation [scenario scenario2] 1))]
-    (is (= "Test scenario2" (:name result)))
-    (is (= true (get-result (:requests result) "Request1")))
-    (is (= false (get-result (:requests result) "Request2")))))
+  (let [result (simulation/run-simulation [scenario scenario2] 1)]
+    (is (= 2 (count result)))))
 
 (deftest with-given-number-of-requests
   (let [result (simulation/run-simulation [scenario] 1 {:requests 2})]
