@@ -146,19 +146,20 @@
   (let [cs       (repeatedly concurrency async/chan)
         ps       (map vector (iterate inc 0) cs)
         results  (async/chan)
-        requests (-> scenario :requests)]
+        requests (-> scenario :requests)
+        scenario-start (local-time/local-now)]
     (doseq [[user-id c] ps]
       (run-requests requests timeout user-id c))
     (go-loop [^long i 0]
       (let [[result c] (alts! cs)]
-        (when (< i (- number-of-requests concurrency))
+        (when (continue-run? runner scenario-start (+ i concurrency))
           (run-requests requests timeout (+ i concurrency) c))
         (>! results {:name (:name scenario)
                      :id (:id (first result))
                      :start (:start (first result))
                      :end (:end (last result))
                      :requests result})
-        (when (<= i number-of-requests)
+        (when (continue-run? runner scenario-start i)
           (recur (inc i)))))
     (repeatedly number-of-requests #(<!! results))))
 
