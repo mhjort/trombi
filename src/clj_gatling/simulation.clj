@@ -138,7 +138,7 @@
         request  (-> scenario :requests first)]
     (doseq [[user-id c] ps]
       (async-function-with-timeout request timeout user-id c))
-    (go-loop [i 0]
+    (go-loop [^long i 0]
       (let [[result c] (alts! cs)]
         (when (< i (- number-of-requests concurrency))
           (async-function-with-timeout request timeout (+ i concurrency) c))
