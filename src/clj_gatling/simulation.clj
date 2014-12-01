@@ -152,7 +152,7 @@
         (when (< i (- number-of-requests concurrency))
           (run-requests requests timeout (+ i concurrency) c))
         (>! results {:name (:name scenario)
-                     :id (:id result)
+                     :id (:id (first result))
                      :start (:start (first result))
                      :end (:end (last result))
                      :requests result})
@@ -160,15 +160,23 @@
           (recur (inc i)))))
     (repeatedly number-of-requests #(<!! results))))
 
+(defn run-scenarios-version2 [concurrency number-of-requests timeout scenarios]
+  (let [results (async/chan)]
+    (go-loop [s scenarios]
+      (>! results
+          (run-scenario-version2 concurrency number-of-requests timeout (first scenarios)))
+      (when-not (empty? (rest s))
+        (recur (rest s))))
+  (apply concat (repeatedly (count scenarios) #(<!! results)))))
 
 (defn run-simulation [scenarios users & [options]]
   (let [requests (or (:requests options) users)
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)]
         ; TODO The new implementation utilizes core.async better and it can generate
-        ;      more load. However, it currently supports only simple one scenario case
-        (if (and (nil? duration) (= 1 (count scenarios)))
-          (run-scenario-version2 users requests step-timeout (first scenarios))
+        ;      more load. However, it currently does not support running duration option
+        (if (nil? duration)
+          (run-scenarios-version2 users requests step-timeout scenarios)
           (let [scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout requests duration)
                 results (run-parallel-and-collect-results scenario-runner (count scenarios))]
                 (flatten results)))))
