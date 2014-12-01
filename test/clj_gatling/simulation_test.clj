@@ -3,6 +3,10 @@
   (:require [clj-gatling.simulation :as simulation]
             [clj-time.core :as time]))
 
+(def request-count (atom 0))
+
+(defn counting-request [id cb] (do (swap! request-count inc) (cb true)))
+
 (defn successful-request [id cb] (cb true))
 
 (defn slow-request [sleep-time id cb]
@@ -19,6 +23,10 @@
   {:name "Test scenario"
    :requests [{:name "Request1" :fn successful-request}
               {:name "Request2" :fn failing-request}]})
+
+(def counting-scenario
+  {:name "Counting scenario"
+   :requests [{:name "Request1" :fn counting-request}]})
 
 (def scenario2
   {:name "Test scenario2"
@@ -62,8 +70,10 @@
     (is (= 2 (-> result second :requests count)))))
 
 (deftest with-multiple-number-of-requests
-  (let [result (simulation/run-simulation [scenario] 10 {:requests 100})]
-    (is (= 100 (->> result (map :requests) count)))))
+  (reset! request-count 0)
+  (let [result (simulation/run-simulation [counting-scenario] 100 {:requests 2000})]
+    (is (= 2000 (->> result (map :requests) count))
+    (is (= 2000 @request-count)))))
 
 (deftest duration-given
   (let [result (simulation/run-simulation [scenario] 1 {:duration (time/millis 50)})]
