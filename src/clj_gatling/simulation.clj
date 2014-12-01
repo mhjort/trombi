@@ -2,7 +2,7 @@
   (:require [org.httpkit.client :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
-            [clojure.core.async :as async :refer [go go-loop <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
 
 (defn- collect-result [cs]
   (let [[result c] (async/alts!! cs)]
@@ -109,10 +109,58 @@
      (deliver result (run-scenarios-in-parallel scenario-runs users runner))
     result))
 
+(defn async-function-with-timeout [request timeout user-id result-channel]
+  (let [
+now      #(System/currentTimeMillis)
+        start    (now)
+        response (async/chan)
+        function (memoize (request-fn request))]
+    (go
+      (function user-id #(put! response
+                               {:name (:name request)
+                                :id user-id
+                                :start start
+                                :end (now)
+                                :result %}))
+      (let [[result c] (alts! [response (async/timeout timeout)])]
+        (if (= c response)
+          (>! result-channel result)
+          (>! result-channel {:name (:name request)
+                              :id user-id
+                              :start start
+                              :end (now)
+                              :result false}))))))
+
+
+(defn run-scenario-version2 [concurrency number-of-requests timeout scenario]
+  (let [cs       (repeatedly concurrency async/chan)
+        ps       (map vector (iterate inc 0) cs)
+        results  (async/chan)
+        request  (-> scenario :requests first)]
+    (doseq [[user-id c] ps]
+      (async-function-with-timeout request timeout user-id c))
+    (go-loop [i 0]
+      (let [[result c] (alts! cs)]
+        (when (< i (- number-of-requests concurrency))
+          (async-function-with-timeout request timeout (+ i concurrency) c))
+        (>! results {:name (:name scenario)
+                     :id (:id result)
+                     :start (:start result)
+                     :end (:end result)
+                     :requests [result]})
+        (when (<= i number-of-requests)
+          (recur (inc i)))))
+    (repeatedly number-of-requests #(<!! results))))
+
+
 (defn run-simulation [scenarios users & [options]]
   (let [requests (or (:requests options) users)
         duration (:duration options)
-        step-timeout (or (:timeout-in-ms options) 5000)
-        scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout requests duration)
-        results (run-parallel-and-collect-results scenario-runner (count scenarios))]
-    (flatten results)))
+        step-timeout (or (:timeout-in-ms options) 5000)]
+        ; TODO The new implementation utilizes core.async better and it can generate
+        ;      more load. However, it currently supports only one scenario with one request case
+        (if (and (nil? duration) (= 1 (count scenarios)) (= 1 (-> scenarios first :requests count)))
+          (run-scenario-version2 users requests step-timeout (first scenarios))
+          (let [scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout requests duration)
+                results (run-parallel-and-collect-results scenario-runner (count scenarios))]
+                (flatten results)))))
