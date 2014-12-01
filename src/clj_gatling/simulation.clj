@@ -110,8 +110,7 @@
     result))
 
 (defn async-function-with-timeout [request timeout user-id result-channel]
-  (let [
-now      #(System/currentTimeMillis)
+  (let [now      #(System/currentTimeMillis)
         start    (now)
         response (async/chan)
         function (memoize (request-fn request))]
