@@ -130,23 +130,32 @@
                               :end (now)
                               :result false}))))))
 
+(defn- run-requests [requests timeout user-id result-channel]
+  (let [c (async/chan)]
+    (go-loop [r requests
+              results []]
+      (async-function-with-timeout (first r) timeout user-id c)
+      (let [result (<! c)]
+        (if (empty? (rest r))
+          (>! result-channel (conj results result))
+          (recur (rest r) (conj results result)))))))
 
 (defn run-scenario-version2 [concurrency number-of-requests timeout scenario]
   (let [cs       (repeatedly concurrency async/chan)
         ps       (map vector (iterate inc 0) cs)
         results  (async/chan)
-        request  (-> scenario :requests first)]
+        requests (-> scenario :requests)]
     (doseq [[user-id c] ps]
-      (async-function-with-timeout request timeout user-id c))
+      (run-requests requests timeout user-id c))
     (go-loop [^long i 0]
       (let [[result c] (alts! cs)]
         (when (< i (- number-of-requests concurrency))
-          (async-function-with-timeout request timeout (+ i concurrency) c))
+          (run-requests requests timeout (+ i concurrency) c))
         (>! results {:name (:name scenario)
                      :id (:id result)
-                     :start (:start result)
-                     :end (:end result)
-                     :requests [result]})
+                     :start (:start (first result))
+                     :end (:end (last result))
+                     :requests result})
         (when (<= i number-of-requests)
           (recur (inc i)))))
     (repeatedly number-of-requests #(<!! results))))
@@ -157,8 +166,8 @@
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)]
         ; TODO The new implementation utilizes core.async better and it can generate
-        ;      more load. However, it currently supports only one scenario with one request case
-        (if (and (nil? duration) (= 1 (count scenarios)) (= 1 (-> scenarios first :requests count)))
+        ;      more load. However, it currently supports only simple one scenario case
+        (if (and (nil? duration) (= 1 (count scenarios)))
           (run-scenario-version2 users requests step-timeout (first scenarios))
           (let [scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout requests duration)
                 results (run-parallel-and-collect-results scenario-runner (count scenarios))]
