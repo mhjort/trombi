@@ -14,7 +14,7 @@
                  [ring-json-response "0.2.0"]
                  [http-kit "2.1.16"]
                  [clj-time "0.8.0"]
-                 [io.gatling/gatling-charts "2.0.1"]
-                 [io.gatling.highcharts/gatling-charts-highcharts "2.0.1"]]
+                 [io.gatling/gatling-charts "2.0.3"]
+                 [io.gatling.highcharts/gatling-charts-highcharts "2.0.3"]]
   :repositories { "excilys" "http://repository.excilys.com/content/groups/public" }
   :main clj-gatling.core)
