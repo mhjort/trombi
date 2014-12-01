@@ -4,30 +4,6 @@
             [clj-time.local :as local-time]
             [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
 
-(defn- collect-result [cs]
-  (let [[result c] (async/alts!! cs)]
-    @result))
-
-(defmacro with-channels [binding & body]
-  `(let [~(first binding) (repeatedly ~(second binding) async/chan)
-         ~'result (do ~@body)]
-    (dorun ~'result) ;Lazy results must be evaluated before channels are closed
-    (doseq [~'c ~(first binding)] (async/close! ~'c))
-    ~'result))
-
-(defn- run-parallel-and-collect-results [function times]
-  (with-channels [cs times]
-    (let [ps (map vector (iterate inc 0) cs)]
-      (doseq [[i c] ps]
-        (go (>! c (function i))))
-      (repeatedly times (partial collect-result cs)))))
-
-(defn- collect-result-and-run-next [cs run]
-  (let [[result c] (async/alts!! cs)
-        ret @result]
-    (go (>! c (run)))
-    ret))
-
 (defprotocol RunnerProtocol
   (continue-run? [runner current-time i])
   (runner-info [runner]))
@@ -41,22 +17,6 @@
   RunnerProtocol
   (continue-run? [_ _ i] (< i requests))
   (runner-info [_] (str "requests " requests)))
-
-(defn- run-scenarios-in-parallel [scenario-runners parallel-count runner]
-    (let [cs (repeatedly parallel-count async/chan)
-          scenario-start (local-time/local-now)
-          ps (map vector (iterate inc 0) cs)
-          results (async/chan)]
-      (doseq [[i c] ps]
-        (go (>! c ((nth scenario-runners i)))))
-      (let [count-c (go-loop [i 0]
-                      (let [[result c] (async/alts! cs)]
-                        (async/put! c ((nth scenario-runners (+ i parallel-count))))
-                        (async/put! results result)
-                      (if (continue-run? runner scenario-start i)
-                        (recur (inc i))
-                        i)))]
-        (repeatedly (async/<!! count-c) (fn []  @(async/<!! results))))))
 
 (defn- now [] (System/currentTimeMillis))
 
@@ -72,46 +32,8 @@
 (defn- request-result [id request-name success start]
   {:id id :name request-name :result success :start start :end (now)})
 
-(defn- callback->chan [step-fn id]
-  (let [c (async/chan)]
-    (step-fn id (fn [success] (async/put! c success)))
-    c))
-
-(defn- run-scenario-async [scenario step-timeout id]
-  (fn [] (let [scenario-start (now)
-        end-result (promise)
-        run-requests-fn (fn run-requests [requests result]
-          (if (empty? requests)
-            (deliver end-result {:id id :name (:name scenario) :start scenario-start :end (now) :requests result})
-            (let [request (first requests)
-                  start (now)]
-              (go
-                (let [response (callback->chan (request-fn request) id)
-                      timeout  (async/timeout step-timeout)
-                      [s channel] (async/alts! [response timeout])
-                      success (if (= channel timeout)
-                                false
-                                s)]
-                  (run-requests (rest requests) (conj result (request-result id (:name request) success start))))))))]
-    (run-requests-fn (:requests scenario) [])
-    end-result)))
-
-(defn- run-nth-scenario-with-multiple-users [scenarios users step-timeout requests duration i]
-  (let [
-        scenario-start (local-time/local-now)
-        result (promise)
-        scenario (nth scenarios i)
-        runner (if (nil? duration)
-                 (FixedRequestNumberRunner. requests)
-                 (DurationRunner. duration))
-        scenario-runs (map (partial run-scenario-async scenario step-timeout) (range))]
-     (println (str "Running scenario " (:name scenario) " with " users " users and " (runner-info runner) "."))
-     (deliver result (run-scenarios-in-parallel scenario-runs users runner))
-    result))
-
 (defn async-function-with-timeout [request timeout user-id result-channel]
-  (let [now      #(System/currentTimeMillis)
-        start    (now)
+  (let [start    (now)
         response (async/chan)
         function (memoize (request-fn request))]
     (go
