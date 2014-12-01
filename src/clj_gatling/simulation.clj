@@ -179,10 +179,4 @@
         runner (if (nil? duration)
                  (FixedRequestNumberRunner. requests)
                  (DurationRunner. duration))]
-        ; TODO The new implementation utilizes core.async better and it can generate
-        ;      more load. However, it currently does not support running duration option
-        (if (nil? duration)
-          (run-scenarios-version2 runner users requests step-timeout scenarios)
-          (let [scenario-runner (partial run-nth-scenario-with-multiple-users scenarios users step-timeout requests duration)
-                results (run-parallel-and-collect-results scenario-runner (count scenarios))]
-                (flatten results)))))
+    (run-scenarios-version2 runner users requests step-timeout scenarios)))
