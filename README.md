@@ -31,7 +31,7 @@ You can override that behaviour by setting option :timeout-in-ms
 
 (use 'clj-gatling.core)
 
-(defn example-request [user-id callback]
+(defn example-request [user-id context callback]
   (future (println (str "Simulating request for user #" user-id))
           (Thread/sleep (rand 1000))
           (callback true)))

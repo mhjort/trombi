@@ -20,7 +20,7 @@
 
 (defn- now [] (System/currentTimeMillis))
 
-(defn- async-http-request [url user-id callback]
+(defn- async-http-request [url user-id context callback]
   (let [check-status (fn [{:keys [status]}] (callback (= 200 status)))]
     (http/get url {} check-status)))
 
@@ -32,35 +32,37 @@
 (defn- request-result [id request-name success start]
   {:id id :name request-name :result success :start start :end (now)})
 
-(defn async-function-with-timeout [request timeout user-id result-channel]
+(defn async-function-with-timeout [request timeout user-id context result-channel]
   (let [start    (now)
         response (async/chan)
-        function (memoize (request-fn request))]
+        function (memoize (request-fn request))
+        callback (fn [result & context]
+                   (put! response [{:name (:name request)
+                                   :id user-id
+                                   :start start
+                                   :end (now)
+                                   :result result} (first context)]))]
     (go
-      (function user-id #(put! response
-                               {:name (:name request)
-                                :id user-id
-                                :start start
-                                :end (now)
-                                :result %}))
+      (function user-id context callback)
       (let [[result c] (alts! [response (async/timeout timeout)])]
         (if (= c response)
           (>! result-channel result)
-          (>! result-channel {:name (:name request)
-                              :id user-id
-                              :start start
-                              :end (now)
-                              :result false}))))))
+          (>! result-channel [{:name (:name request)
+                               :id user-id
+                               :start start
+                               :end (now)
+                               :result false} (first context)]))))))
 
 (defn- run-requests [requests timeout user-id result-channel]
   (let [c (async/chan)]
     (go-loop [r requests
+              context {}
               results []]
-      (async-function-with-timeout (first r) timeout user-id c)
-      (let [result (<! c)]
+      (async-function-with-timeout (first r) timeout user-id context c)
+      (let [[result new-ctx] (<! c)]
         (if (empty? (rest r))
           (>! result-channel (conj results result))
-          (recur (rest r) (conj results result)))))))
+          (recur (rest r) new-ctx (conj results result)))))))
 
 (defn run-scenario [runner concurrency number-of-requests timeout scenario]
   (println (str "Running scenario " (:name scenario) " with " concurrency " concurrency and

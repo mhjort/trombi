@@ -5,17 +5,24 @@
 
 (def request-count (atom 0))
 
-(defn counting-request [id cb] (do (swap! request-count inc) (cb true)))
+(defn counting-request [id context cb]
+  (do
+    (swap! request-count inc)
+    (cb true)))
 
-(defn successful-request [id cb] (cb true))
+(defn successful-request [id context cb]
+  (cb true (assoc context :to-next-request true)))
 
-(defn slow-request [sleep-time id cb]
+(defn read-return-value-from-context-request [id context cb]
+  (cb (:to-next-request context) context))
+
+(defn slow-request [sleep-time id context cb]
   (future (Thread/sleep sleep-time)
           (cb true)))
 
-(defn failing-request [id cb] (cb false))
+(defn failing-request [id context cb] (cb false))
 
-(defn- fake-async-http [url id callback]
+(defn- fake-async-http [url id context callback]
   (future (Thread/sleep 50)
           (callback (= "success" url))))
 
@@ -23,6 +30,11 @@
   {:name "Test scenario"
    :requests [{:name "Request1" :fn successful-request}
               {:name "Request2" :fn failing-request}]})
+
+(def context-testing-scenario
+  {:name "Context testing scenario"
+   :requests [{:name "Request1" :fn successful-request}
+              {:name "Request2" :fn read-return-value-from-context-request}]})
 
 (def counting-scenario
   {:name "Counting scenario"
@@ -50,6 +62,10 @@
     (is (= "Test scenario" (:name result)))
     (is (= true (get-result (:requests result) "Request1")))
     (is (= false (get-result (:requests result) "Request2")))))
+
+(deftest simulation-passes-context-through-requests-in-scenario
+  (let [result (first (simulation/run-simulation [context-testing-scenario] 1))]
+    (is (= true (get-result (:requests result) "Request2")))))
 
 (deftest simulation-returns-result-when-run-with-http-requests
   (with-redefs [simulation/async-http-request fake-async-http]
