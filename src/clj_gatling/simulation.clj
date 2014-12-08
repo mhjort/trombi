@@ -62,7 +62,7 @@
           (>! result-channel (conj results result))
           (recur (rest r) (conj results result)))))))
 
-(defn run-scenario-version2 [runner concurrency number-of-requests timeout scenario]
+(defn run-scenario [runner concurrency number-of-requests timeout scenario]
   (println (str "Running scenario " (:name scenario) " with " concurrency " concurrency and
             " (runner-info runner) "."))
   (let [cs       (repeatedly concurrency async/chan)
@@ -85,11 +85,11 @@
           (recur (inc i)))))
     (repeatedly number-of-requests #(<!! results))))
 
-(defn run-scenarios-version2 [runner concurrency number-of-requests timeout scenarios]
+(defn run-scenarios [runner concurrency number-of-requests timeout scenarios]
   (let [results (async/chan)]
     (go-loop [s scenarios]
       (>! results
-          (run-scenario-version2 runner concurrency number-of-requests timeout (first scenarios)))
+          (run-scenario runner concurrency number-of-requests timeout (first scenarios)))
       (when-not (empty? (rest s))
         (recur (rest s))))
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
@@ -101,4 +101,4 @@
         runner (if (nil? duration)
                  (FixedRequestNumberRunner. requests)
                  (DurationRunner. duration))]
-    (run-scenarios-version2 runner users requests step-timeout scenarios)))
+    (run-scenarios runner users requests step-timeout scenarios)))
