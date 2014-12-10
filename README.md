@@ -13,33 +13,84 @@ Add the following to your `project.clj` `:dependencies`:
 
 ## Usage
 
-### Custom functions
+### Simple example
 
-Custom functions are the most flexible way for implementing tests.
-Functions will get a user id and a callback as a parameter
-and they must call the callback when they have done their job.
-
-Ideally your testing functions should be asynchronous and non-blocking
-to make sure the performance testing client machine can generate as much
-as possible load.
-
-By default clj-gatling uses timeout for 5000 ms for all functions.
-You can override that behaviour by setting option :timeout-in-ms
-
+This will make 100 simultaneous http get requests to localhost.
+Single request is considered to be ok if it returns http status code 200.
 
 ```clojure
 
 (use 'clj-gatling.core)
 
-(defn example-request [user-id context callback]
-  (future (println (str "Simulating request for user #" user-id))
-          (Thread/sleep (rand 1000))
-          (callback true)))
-
 (run-simulation
-  [{:name "Test-scenario"
-   :requests [{:name "Example-request" :fn example-request}]}] 2)
+  [{:name "Localhost test cenario"
+   :requests [{:name "Root request" :http "http://localhost"}]}] 100)
 ```
+
+Simulation run shows some important statistics in console and also
+generates exactly the same kind of a html report that Gatling does. 
+(clj-gatling uses Gatling internally to do this)
+
+### Defining test scenarios
+
+clj-gatling runs scenarios concurrently. Scenario consists of one or
+more steps called requests. Scenario is defined as a Clojure map.
+
+```clojure
+
+{:name "Order book scenario"
+ :requests [{:name "Open frontpage" :fn open-frontpage}
+            {:name "Select book"    :fn select-book
+             :name "Pay order"      :fn pay-order}]}
+```
+
+Scenario above consists of three requests. Requests are defined as
+a Clojure maps. In request you can specify actual action either
+by giving keyword :http which will do http get request or by
+giving :fn keyword which lets you to specify your own function.
+The latter option is a preferred way in clj-gatling.
+
+Your own functions should look like this:
+
+
+```clojure
+
+(defn open-frontpage [user-id context callback]
+  (let [was-call-succesful? (do-your-call-here)
+    (callback was-call-succesful? context)))
+
+```
+
+Ideally your calls should be asynchronous and non-blocking.
+That's why in function signature clj-gatling uses callback instead
+of function return value. When calling callback function the first
+parameter is boolean which tells clj-gatling whether call was
+succesful.
+
+The second parameter to callback is context that is passed through
+requests within same scenario and virtual user. You can utilize it
+in a following way:
+
+```clojure
+
+;In "Select book" request
+(callback true (assoc context :book-id 1}))
+
+;And then in next requst
+(defn pay-order [user-id context callback]
+  (pay-order-call-with-book-id (:book-id context))
+    ...)
+
+```
+
+### Options
+
+#### Request timeout
+
+By default clj-gatling uses timeout for 5000 ms for all functions.
+You can override that behaviour by setting option :timeout-in-ms
+
+#### Constant load
 
 You can run same scenario multiple times to generate constant load
 within a longer time period by specifying option :requests.
@@ -60,20 +111,6 @@ to generate constant load by specifying option :duration.
 
 (run-simulation [test-scenario] 10 {:duration (t/minutes 2)})
 
-```
-
-### Non-blocking HTTP
-
-This method uses asynchronous http-kit under the hood. 
-Get request succeeds if it returns http status code 200.
-
-```clojure
-
-(use 'clj-gatling.core)
-
-(run-simulation
-  [{:name "Test-scenario"
-   :requests [{:name "Localhost request" :http "http://localhost"}]}] 100)
 ```
 
 ## License
