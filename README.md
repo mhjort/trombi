@@ -119,6 +119,36 @@ AFAIK there are no other performance testing tool where you can specify
 your tests in Clojure. In my opiniton Clojure syntax is very good for
 this purpose.
 
+
+## Design Philosophy
+
+### Real life scenarios
+
+clj-gatling has same kind of an approach that Gatling has in this sense.
+Idea is to simulate a situation where multiple users use your application
+concurrently. Users do actions and based on the results do next actions etc.
+After the simulation you comprehensive results (nice graphs etc.)
+
+If you want to just execute single request with high level of concurrency
+simpler tools like Apache Benchmark can do that. Of course, clj-gatling
+can do that also but it might be an bit of an overkill for that job.
+
+### No DSL
+
+I am not a fan of complex DSLs. clj-gatling tries to avoid DSL approach.
+Idea is that you should write just ordinary Clojure code to specify the
+actions and the actual scenario definition is an map.
+
+Note! This also means clj-gatling does not have full API for simulating
+http requests. There is :http keyword for executing simple http get.
+But anything more complex than that (http post, checking special
+response codes etc.) you should do yourself. I recommend using http-kit
+for that.
+
+### Distributed load testing
+
+This is a long term plan but no actual stuff implemented yet.
+
 ## License
 
 Copyright (C) 2014 Markus Hjort
