@@ -113,6 +113,12 @@ to generate constant load by specifying option :duration.
 
 ```
 
+## Why
+
+AFAIK there are no other performance testing tool where you can specify
+your tests in Clojure. In my opiniton Clojure syntax is very good for
+this purpose.
+
 ## License
 
 Copyright (C) 2014 Markus Hjort
