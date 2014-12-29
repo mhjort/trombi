@@ -79,7 +79,7 @@
     (is (= 2 (count result)))))
 
 (deftest with-given-number-of-requests
-  (let [result (simulation/run-simulation [scenario] 1 {:requests 2})]
+  (let [result (simulation/run-simulation [scenario] 1 {:requests 4})]
     (is (= "Test scenario" (-> result first :name)))
     (is (= 2 (-> result first :requests count)))
     (is (= "Test scenario" (-> result second :name)))

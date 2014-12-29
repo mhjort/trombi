@@ -87,17 +87,21 @@
           (recur (inc i)))))
     (repeatedly number-of-requests #(<!! results))))
 
+(defn- distinct-request-count [scenarios]
+  (reduce + (map #(count (:requests %)) scenarios)))
+
 (defn run-scenarios [runner concurrency number-of-requests timeout scenarios]
-  (let [results (async/chan)]
+  (let [requests-for-scenario  (int (/ number-of-requests (distinct-request-count scenarios)))
+        results                (async/chan)]
     (go-loop [s scenarios]
       (>! results
-          (run-scenario runner concurrency number-of-requests timeout (first scenarios)))
+          (run-scenario runner concurrency requests-for-scenario timeout (first scenarios)))
       (when-not (empty? (rest s))
         (recur (rest s))))
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
 
 (defn run-simulation [scenarios users & [options]]
-  (let [requests (or (:requests options) users)
+  (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)
         runner (if (nil? duration)
