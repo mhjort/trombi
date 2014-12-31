@@ -88,7 +88,16 @@
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
   (let [result (simulation/run-simulation [scenario scenario2] 1)]
-    (is (= 2 (count result)))))
+    (contains-exactly? result [{:name "Test scenario"
+                                :id 0
+                                :start anything
+                                :end anything
+                                :requests anything}
+                               {:name "Test scenario2"
+                                :id 0
+                                :start anything
+                                :end anything
+                                :requests anything}])))
 
 (deftest with-given-number-of-requests
   (let [result (simulation/run-simulation [scenario] 1 {:requests 4})]

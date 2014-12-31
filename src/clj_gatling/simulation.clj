@@ -95,7 +95,7 @@
         results                (async/chan)]
     (go-loop [s scenarios]
       (>! results
-          (run-scenario runner concurrency requests-for-scenario timeout (first scenarios)))
+          (run-scenario runner concurrency requests-for-scenario timeout (first s)))
       (when-not (empty? (rest s))
         (recur (rest s))))
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
