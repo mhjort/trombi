@@ -1,6 +1,7 @@
 (ns clj-gatling.simulation-test
   (:use clojure.test)
   (:require [clj-gatling.simulation :as simulation]
+            [clj-containment-matchers.core :refer [contains-exactly? anything]]
             [clj-time.core :as time]))
 
 (def request-count (atom 0))
@@ -58,10 +59,21 @@
   (:result (first (filter #(= request-name (:name %)) requests))))
 
 (deftest simulation-returns-result-when-run-with-one-user
-  (let [result (first (simulation/run-simulation [scenario] 1))]
-    (is (= "Test scenario" (:name result)))
-    (is (= true (get-result (:requests result) "Request1")))
-    (is (= false (get-result (:requests result) "Request2")))))
+  (let [result (simulation/run-simulation [scenario] 1)]
+    (contains-exactly? result [{:name "Test scenario"
+                                :id 0
+                                :start anything
+                                :end anything
+                                :requests [{:name "Request1"
+                                            :id 0
+                                            :start anything
+                                            :end anything
+                                            :result true}
+                                           {:name "Request2"
+                                            :id 0
+                                            :start anything
+                                            :end anything
+                                            :result false}]}])))
 
 (deftest simulation-passes-context-through-requests-in-scenario
   (let [result (first (simulation/run-simulation [context-testing-scenario] 1))]
