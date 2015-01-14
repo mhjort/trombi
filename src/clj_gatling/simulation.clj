@@ -70,7 +70,7 @@
   (let [cs       (repeatedly concurrency async/chan)
         ps       (map vector (iterate inc 0) cs)
         results  (async/chan)
-        requests (-> scenario :requests)
+        requests (:requests scenario)
         scenario-start (local-time/local-now)]
     (doseq [[user-id c] ps]
       (run-requests requests timeout user-id c))
@@ -96,7 +96,7 @@
     (go-loop [s scenarios]
       (>! results
           (run-scenario runner concurrency requests-for-scenario timeout (first s)))
-      (when-not (empty? (rest s))
+      (when (seq (rest s))
         (recur (rest s))))
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
 
