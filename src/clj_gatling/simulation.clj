@@ -2,7 +2,10 @@
   (:require [org.httpkit.client :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
-            [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]])
+  (:import  [org.httpkit PrefixThreadFactory]
+            [org.httpkit.client HttpClient]
+            [java.util.concurrent ThreadPoolExecutor LinkedBlockingQueue TimeUnit]))
 
 (defprotocol RunnerProtocol
   (continue-run? [runner current-time i])
@@ -20,9 +23,23 @@
 
 (defn- now [] (System/currentTimeMillis))
 
+
+(defonce pool-size (* 2 (.availableProcessors (Runtime/getRuntime))))
+
+(defonce httpkit-pool (repeatedly pool-size #(HttpClient.)))
+
+(defn- get-httpkit-client [^long idx]
+  (nth httpkit-pool (mod idx pool-size)))
+
+(defonce httpkit-callback-pool (let [pool-size (.availableProcessors (Runtime/getRuntime))
+                                     queue (LinkedBlockingQueue.)
+                                     factory (PrefixThreadFactory. "httpkit-callback-worker-")]
+                                     (ThreadPoolExecutor. pool-size pool-size 60 TimeUnit/SECONDS queue factory)))
+
 (defn- async-http-request [url user-id context callback]
-  (let [check-status (fn [{:keys [status]}] (callback (= 200 status)))]
-    (http/get url {} check-status)))
+  (let [check-status (fn [{:keys [^long status]}]
+                        (callback (= 200 status)))]
+    (http/get url {:worker-pool httpkit-callback-pool :client (get-httpkit-client user-id)} check-status)))
 
 (defn- request-fn [request]
   (if-let [url (:http request)]
