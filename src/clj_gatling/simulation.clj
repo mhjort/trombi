@@ -10,7 +10,7 @@
 
 (deftype DurationRunner [duration]
   RunnerProtocol
-  (continue-run? [_ start i] (time/before? (local-time/local-now) (time/plus start duration)))
+  (continue-run? [_ start _] (time/before? (local-time/local-now) (time/plus start duration)))
   (runner-info [_] (str "duration " duration)))
 
 (deftype FixedRequestNumberRunner [requests]
