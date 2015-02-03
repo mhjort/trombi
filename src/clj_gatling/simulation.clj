@@ -37,11 +37,11 @@
         response (async/chan)
         function (memoize (request-fn request))
         callback (fn [result & context]
-                   (put! response [{:name (:name request)
+                   (go (>! response [{:name (:name request)
                                    :id user-id
                                    :start start
                                    :end (now)
-                                   :result result} (first context)]))]
+                                   :result result} (first context)])))]
     (go
       (function user-id context callback)
       (let [[result c] (alts! [response (async/timeout timeout)])]
