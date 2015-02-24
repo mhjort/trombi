@@ -1,11 +1,8 @@
 (ns clj-gatling.simulation
-  (:require [org.httpkit.client :as http]
+  (:require [clj-gatling.httpkit :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
-            [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]])
-  (:import  [org.httpkit PrefixThreadFactory]
-            [org.httpkit.client HttpClient]
-            [java.util.concurrent ThreadPoolExecutor LinkedBlockingQueue TimeUnit]))
+            [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
 
 (defprotocol RunnerProtocol
   (continue-run? [runner current-time i])
@@ -23,27 +20,9 @@
 
 (defn- now [] (System/currentTimeMillis))
 
-
-(defonce pool-size (* 2 (.availableProcessors (Runtime/getRuntime))))
-
-(defonce httpkit-pool (repeatedly pool-size #(HttpClient.)))
-
-(defn- get-httpkit-client [^long idx]
-  (nth httpkit-pool (mod idx pool-size)))
-
-(defonce httpkit-callback-pool (let [pool-size (.availableProcessors (Runtime/getRuntime))
-                                     queue (LinkedBlockingQueue.)
-                                     factory (PrefixThreadFactory. "httpkit-callback-worker-")]
-                                     (ThreadPoolExecutor. pool-size pool-size 60 TimeUnit/SECONDS queue factory)))
-
-(defn- async-http-request [url user-id context callback]
-  (let [check-status (fn [{:keys [^long status]}]
-                        (callback (= 200 status)))]
-    (http/get url {:worker-pool httpkit-callback-pool :client (get-httpkit-client user-id)} check-status)))
-
 (defn- request-fn [request]
   (if-let [url (:http request)]
-    (partial async-http-request url)
+    (partial http/async-http-request url)
     (:fn request)))
 
 (defn- request-result [id request-name success start]
@@ -118,6 +97,7 @@
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
 
 (defn run-simulation [scenarios users & [options]]
+ (java.security.Security/setProperty "networkaddress.cache.ttl" "-1")
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)

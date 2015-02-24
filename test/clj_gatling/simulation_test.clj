@@ -1,6 +1,7 @@
 (ns clj-gatling.simulation-test
   (:use clojure.test)
   (:require [clj-gatling.simulation :as simulation]
+            [clj-gatling.httpkit :as httpkit]
             [clj-containment-matchers.core :refer [contains-exactly? anything]]
             [clj-time.core :as time]))
 
@@ -80,7 +81,7 @@
     (is (= true (get-result (:requests result) "Request2")))))
 
 (deftest simulation-returns-result-when-run-with-http-requests
-  (with-redefs [simulation/async-http-request fake-async-http]
+  (with-redefs [httpkit/async-http-request fake-async-http]
     (let [result (first (simulation/run-simulation [http-scenario] 1))]
       (is (= "Test http scenario" (:name result)))
       (is (= true (get-result (:requests result) "Request1")))
