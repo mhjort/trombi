@@ -1,5 +1,5 @@
 (ns clj-gatling.simulation
-  (:require [org.httpkit.client :as http]
+  (:require [clj-gatling.httpkit :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
             [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
@@ -20,13 +20,9 @@
 
 (defn- now [] (System/currentTimeMillis))
 
-(defn- async-http-request [url user-id context callback]
-  (let [check-status (fn [{:keys [status]}] (callback (= 200 status)))]
-    (http/get url {} check-status)))
-
 (defn- request-fn [request]
   (if-let [url (:http request)]
-    (partial async-http-request url)
+    (partial http/async-http-request url)
     (:fn request)))
 
 (defn- request-result [id request-name success start]
@@ -37,11 +33,11 @@
         response (async/chan)
         function (memoize (request-fn request))
         callback (fn [result & context]
-                   (put! response [{:name (:name request)
+                   (go (>! response [{:name (:name request)
                                    :id user-id
                                    :start start
                                    :end (now)
-                                   :result result} (first context)]))]
+                                   :result result} (first context)])))]
     (go
       (function user-id context callback)
       (let [[result c] (alts! [response (async/timeout timeout)])]
@@ -101,6 +97,7 @@
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
 
 (defn run-simulation [scenarios users & [options]]
+ (java.security.Security/setProperty "networkaddress.cache.ttl" "-1")
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)
