@@ -8,7 +8,7 @@ For reporting clj-gatling uses Gatling under the hood.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.4.3"]
+[clj-gatling "0.4.4"]
 ```
 
 ## Usage
