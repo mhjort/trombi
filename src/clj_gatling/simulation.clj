@@ -60,28 +60,36 @@
           (>! result-channel (conj results result))
           (recur (rest r) new-ctx (conj results result)))))))
 
+(defn- response->result [scenario result]
+  {:name (:name scenario)
+   :id (:id (first result))
+   :start (:start (first result))
+   :end (:end (last result))
+   :requests result})
+
+(defn- run-requests-constantly [runner cs timeout scenario scenario-start concurrency]
+  (let [requests (:requests scenario)
+        results (async/chan)]
+    (go-loop [^long i 0]
+      (let [[result c] (alts! cs)]
+        (when (continue-run? runner scenario-start (+ i concurrency))
+          (run-requests requests timeout (+ i concurrency) c))
+        (>! results (response->result scenario result))
+        (when (continue-run? runner scenario-start i)
+          (recur (inc i)))))
+    results))
+
 (defn run-scenario [runner concurrency number-of-requests timeout scenario]
   (println (str "Running scenario " (:name scenario) " with " concurrency " concurrency and
             " (runner-info runner) "."))
   (let [cs       (repeatedly concurrency async/chan)
         ps       (map vector (iterate inc 0) cs)
-        results  (async/chan)
         requests (:requests scenario)
         scenario-start (local-time/local-now)]
     (doseq [[user-id c] ps]
       (run-requests requests timeout user-id c))
-    (go-loop [^long i 0]
-      (let [[result c] (alts! cs)]
-        (when (continue-run? runner scenario-start (+ i concurrency))
-          (run-requests requests timeout (+ i concurrency) c))
-        (>! results {:name (:name scenario)
-                     :id (:id (first result))
-                     :start (:start (first result))
-                     :end (:end (last result))
-                     :requests result})
-        (when (continue-run? runner scenario-start i)
-          (recur (inc i)))))
-    (repeatedly number-of-requests #(<!! results))))
+    (let [results (run-requests-constantly runner cs timeout scenario scenario-start concurrency)]
+      (repeatedly number-of-requests #(<!! results)))))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
