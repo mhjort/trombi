@@ -73,16 +73,16 @@
   RunnerProtocol
   (run-requests-constantly [_ cs timeout scenario scenario-start concurrency]
     (let [results (async/chan)]
-      (go-loop [^long i 0]
+      (go-loop [^long requests-left number-of-requests
+                ^long user-id concurrency]
         (let [[result c] (alts! cs)]
-          (when (< (+ i concurrency) number-of-requests)
-            (run-requests (:requests scenario) timeout (+ i concurrency) c))
+          (when (< user-id number-of-requests)
+            (run-requests (:requests scenario) timeout user-id c))
           (>! results (response->result scenario result))
-          (when (< i number-of-requests)
-            (recur (inc i)))))
+          (when (> requests-left 0)
+            (recur (dec requests-left) (inc user-id)))))
       results))
   (runner-info [_] (str "requests " number-of-requests)))
-
 
 (defn- request-result [id request-name success start]
   {:id id :name request-name :result success :start start :end (now)})
