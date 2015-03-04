@@ -105,7 +105,6 @@
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
 
 (defn run-simulation [scenarios users & [options]]
- (java.security.Security/setProperty "networkaddress.cache.ttl" "-1")
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)
