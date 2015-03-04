@@ -4,29 +4,12 @@
             [clj-time.local :as local-time]
             [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
 
-(defprotocol RunnerProtocol
-  (continue-run? [runner current-time i])
-  (runner-info [runner]))
-
-(deftype DurationRunner [duration]
-  RunnerProtocol
-  (continue-run? [_ start _] (time/before? (local-time/local-now) (time/plus start duration)))
-  (runner-info [_] (str "duration " duration)))
-
-(deftype FixedRequestNumberRunner [requests]
-  RunnerProtocol
-  (continue-run? [_ _ i] (< i requests))
-  (runner-info [_] (str "requests " requests)))
-
 (defn- now [] (System/currentTimeMillis))
 
 (defn- request-fn [request]
   (if-let [url (:http request)]
     (partial http/async-http-request url)
     (:fn request)))
-
-(defn- request-result [id request-name success start]
-  {:id id :name request-name :result success :start start :end (now)})
 
 (defn async-function-with-timeout [request timeout user-id context result-channel]
   (let [start    (now)
@@ -67,17 +50,42 @@
    :end (:end (last result))
    :requests result})
 
-(defn- run-requests-constantly [runner cs timeout scenario scenario-start concurrency]
-  (let [requests (:requests scenario)
-        results (async/chan)]
-    (go-loop [^long i 0]
-      (let [[result c] (alts! cs)]
-        (when (continue-run? runner scenario-start (+ i concurrency))
-          (run-requests requests timeout (+ i concurrency) c))
-        (>! results (response->result scenario result))
-        (when (continue-run? runner scenario-start i)
-          (recur (inc i)))))
-    results))
+(defprotocol RunnerProtocol
+  (run-requests-constantly [runner cs timeout scenario scenario-start concurrency])
+  (runner-info [runner]))
+
+(deftype DurationRunner [duration]
+  RunnerProtocol
+  (run-requests-constantly [_ cs timeout scenario scenario-start concurrency]
+    (let [results (async/chan)
+          continue-run? #(time/before? (local-time/local-now) (time/plus scenario-start duration))]
+      (go-loop [^long i 0]
+        (let [[result c] (alts! cs)]
+          (when (continue-run?)
+            (run-requests (:requests scenario) timeout (+ i concurrency) c))
+          (>! results (response->result scenario result))
+          (when (continue-run?)
+            (recur (inc i)))))
+      results))
+  (runner-info [_] (str "duration " duration)))
+
+(deftype FixedRequestNumberRunner [^long number-of-requests]
+  RunnerProtocol
+  (run-requests-constantly [_ cs timeout scenario scenario-start concurrency]
+    (let [results (async/chan)]
+      (go-loop [^long i 0]
+        (let [[result c] (alts! cs)]
+          (when (< (+ i concurrency) number-of-requests)
+            (run-requests (:requests scenario) timeout (+ i concurrency) c))
+          (>! results (response->result scenario result))
+          (when (< i number-of-requests)
+            (recur (inc i)))))
+      results))
+  (runner-info [_] (str "requests " number-of-requests)))
+
+
+(defn- request-result [id request-name success start]
+  {:id id :name request-name :result success :start start :end (now)})
 
 (defn run-scenario [runner concurrency number-of-requests timeout scenario]
   (println (str "Running scenario " (:name scenario) " with " concurrency " concurrency and
