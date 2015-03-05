@@ -83,6 +83,27 @@ in a following way:
 
 ```
 
+### Multiple scenarios
+
+If you want to run multiple scenarios in same simulation you
+can specify how requests are divided between scenarios by giving
+specifying :weight. If you run example below with concurrency
+10 it will run "Order Book" with concurrency 8 and other scenario
+with concurrency 2. If you do not specify weight it is always 1
+which balances concurrency evenly between scenarios.
+
+```clojure
+
+[{:name "Order book"
+  :weight 4
+  :requests [{:name "Open frontpage" :fn open-frontpage}
+             {:name "Select book"    :fn select-book
+              :name "Pay order"      :fn pay-order}]}
+ {:name "Add new book"
+  :weight 1 [{:name "Add book"       :fn add-book}]}]
+
+```
+
 ### Options
 
 #### Request timeout
