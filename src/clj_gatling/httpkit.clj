@@ -18,7 +18,7 @@
                                      factory (PrefixThreadFactory. "httpkit-callback-worker-")]
                                      (ThreadPoolExecutor. pool-size pool-size 60 TimeUnit/SECONDS queue factory)))
 
-(defn async-http-request [url user-id context callback]
+(defn async-http-request [url ^long user-id context callback]
   (let [check-status (fn [{:keys [status]}]
                         (callback (= 200 status)))]
     (http/get url {:worker-pool httpkit-callback-pool :client (get-httpkit-client user-id)} check-status)))
