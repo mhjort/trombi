@@ -79,7 +79,7 @@
           (when (< user-id number-of-requests)
             (run-requests (:requests scenario) timeout user-id c))
           (>! results (response->result scenario result))
-          (when (> requests-left 0)
+          (when (pos? requests-left)
             (recur (dec requests-left) (inc user-id)))))
       results))
   (runner-info [_] (str "requests " number-of-requests)))
