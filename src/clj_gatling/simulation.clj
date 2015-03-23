@@ -51,14 +51,15 @@
    :requests result})
 
 (defprotocol RunnerProtocol
-  (run-requests-constantly [runner cs timeout scenario scenario-start])
+  (run-requests-constantly [runner cs timeout scenario-start])
   (runner-info [runner]))
 
-(deftype DurationRunner [duration]
+(deftype DurationRunner [scenario]
   RunnerProtocol
-  (run-requests-constantly [_ cs timeout scenario scenario-start]
+  (run-requests-constantly [_ cs timeout scenario-start]
     (let [results (async/chan)
-          continue-run? #(time/before? (local-time/local-now) (time/plus scenario-start duration))]
+          continue-run? #(time/before? (local-time/local-now)
+                                       (time/plus scenario-start (:duration scenario)))]
       (go-loop [^long i 0]
         (let [[result c] (alts! cs)]
           (when (continue-run?)
@@ -67,39 +68,40 @@
           (when (continue-run?)
             (recur (inc i)))))
       results))
-  (runner-info [_] (str "duration " duration)))
+  (runner-info [_] (str "duration " (:duration scenario))))
 
-(deftype FixedRequestNumberRunner [^long number-of-requests]
+(deftype FixedRequestNumberRunner [scenario]
   RunnerProtocol
-  (run-requests-constantly [_ cs timeout scenario scenario-start]
-    (let [results (async/chan)]
-      (go-loop [^long requests-left number-of-requests
+  (run-requests-constantly [_ cs timeout scenario-start]
+    (let [results (async/chan)
+          requests-in-scenario (count (:requests scenario))]
+      (go-loop [^long requests-left (:number-of-requests scenario)
                 ^long user-id (:concurrency scenario)]
         (let [[result c] (alts! cs)]
-          (when (< user-id number-of-requests)
+          (when (< user-id (:number-of-requests scenario))
             (run-requests (:requests scenario) timeout user-id c))
           (>! results (response->result scenario result))
           (when (pos? requests-left)
-            (recur (dec requests-left) (inc user-id)))))
+            (recur (- requests-left requests-in-scenario) (inc user-id)))))
       results))
-  (runner-info [_] (str "requests " number-of-requests)))
+  (runner-info [_] (str "requests " (:number-of-requests scenario))))
 
 (defn- request-result [id request-name success start]
   {:id id :name request-name :result success :start start :end (now)})
 
-(defn run-scenario [runner timeout scenario]
+(defn run-scenario [timeout scenario]
   (let [concurrency        (:concurrency scenario)
         number-of-requests (:number-of-requests scenario)]
     (println (str "Running scenario " (:name scenario) " with " concurrency " concurrency and
-              " (runner-info runner) "."))
+              " (runner-info (:runner scenario)) "."))
     (let [cs       (repeatedly concurrency async/chan)
           ps       (map vector (iterate inc 0) cs)
           requests (:requests scenario)
           scenario-start (local-time/local-now)]
       (doseq [[user-id c] ps]
         (run-requests requests timeout user-id c))
-      (let [results (run-requests-constantly runner cs timeout scenario scenario-start)]
-        (repeatedly number-of-requests #(<!! results))))))
+      (let [results (run-requests-constantly (:runner scenario) cs timeout scenario-start)]
+        (repeatedly (/ number-of-requests (count requests)) #(<!! results))))))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
@@ -108,19 +110,20 @@
   (let [sum-of-weights (reduce + weights)]
     (map #(Math/round (double (* value (/ % sum-of-weights)))) weights)))
 
-(defn run-scenarios [runner concurrency number-of-requests timeout scenarios]
-  (let [results            (async/chan)
-        weights            (map #(or (:weight %) 1) scenarios)
-        requests           (weighted weights (/ number-of-requests
-                                                (distinct-request-count scenarios)))
-        concurrencies      (weighted weights concurrency)
-        runnable-scenarios (map #(assoc %1 :concurrency %2 :number-of-requests %3)
-                                scenarios
-                                concurrencies
-                                requests)]
-    (go-loop [s runnable-scenarios]
+(defn- calculate-weighted-scenarios [concurrency number-of-requests scenarios]
+  (let [weights            (map #(or (:weight %) 1) scenarios)
+        requests           (weighted weights number-of-requests)
+        concurrencies      (weighted weights concurrency)]
+    (map #(assoc %1 :concurrency %2 :number-of-requests %3)
+          scenarios
+          concurrencies
+          requests)))
+
+(defn run-scenarios [timeout scenarios]
+  (let [results (async/chan)]
+    (go-loop [s scenarios]
       (>! results
-          (run-scenario runner timeout (first s)))
+          (run-scenario timeout (first s)))
       (when (seq (rest s))
         (recur (rest s))))
   (apply concat (repeatedly (count scenarios) #(<!! results)))))
@@ -129,7 +132,8 @@
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
         duration (:duration options)
         step-timeout (or (:timeout-in-ms options) 5000)
-        runner (if (nil? duration)
-                 (FixedRequestNumberRunner. requests)
-                 (DurationRunner. duration))]
-    (run-scenarios runner users requests step-timeout scenarios)))
+        runner (fn [scenario] (if (nil? duration)
+                                (FixedRequestNumberRunner. scenario)
+                                (DurationRunner. scenario)))
+        runnable-scenarios (calculate-weighted-scenarios users requests scenarios)]
+    (run-scenarios step-timeout (map #(assoc % :runner (runner %) :duration duration) runnable-scenarios))))

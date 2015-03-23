@@ -121,16 +121,15 @@
   (let [result (first (simulation/run-simulation [timeout-scenario] 1 {:timeout-in-ms 100}))]
     (is (= false (get-result (:requests result) "Request1")))))
 
-  (let [requests [{:name "Request" :fn successful-request}]
-    main-scenario {:name "Main" :weight 3 :requests requests}
-    second-scenario {:name "Second" :weight 1 :requests requests}
-    result (group-by :name (simulation/run-simulation [main-scenario second-scenario] 12))]
-    (map :requests (get result "Second")))
-
 (deftest scenario-weight
-  (let [requests [{:name "Request" :fn successful-request}]
-    main-scenario {:name "Main" :weight 3 :requests requests}
-    second-scenario {:name "Second" :weight 1 :requests requests}
-    result (group-by :name (simulation/run-simulation [main-scenario second-scenario] 12))]
-    (is (= 9 (count (get result "Main"))))
-    (is (= 3 (count (get result "Second"))))))
+  (let [request1 {:name "Request1" :fn successful-request}
+        request2 {:name "Request2" :fn successful-request}
+        main-scenario {:name "Main" :weight 2 :requests [request1 request2]}
+        second-scenario {:name "Second" :weight 1 :requests [request1]}
+        result (group-by :name (simulation/run-simulation
+                                 [main-scenario second-scenario]
+                                 10
+                                 {:requests 100}))
+        count-requests (fn [name] (reduce + (map #(count (:requests %)) (get result name))))]
+    (is (= 68 (count-requests "Main")))
+    (is (= 33 (count-requests "Second")))))
