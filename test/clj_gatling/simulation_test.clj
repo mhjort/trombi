@@ -61,20 +61,20 @@
 
 (deftest simulation-returns-result-when-run-with-one-user
   (let [result (simulation/run-simulation [scenario] 1)]
-    (contains-exactly? result [{:name "Test scenario"
-                                :id 0
-                                :start anything
-                                :end anything
-                                :requests [{:name "Request1"
-                                            :id 0
-                                            :start anything
-                                            :end anything
-                                            :result true}
-                                           {:name "Request2"
-                                            :id 0
-                                            :start anything
-                                            :end anything
-                                            :result false}]}])))
+    (is (contains-exactly? result [{:name "Test scenario"
+                                    :id 0
+                                    :start anything
+                                    :end anything
+                                    :requests [{:name "Request1"
+                                                :id 0
+                                                :start anything
+                                                :end anything
+                                                :result true}
+                                               {:name "Request2"
+                                                :id 0
+                                                :start anything
+                                                :end anything
+                                                :result false}]}]))))
 
 (deftest simulation-passes-context-through-requests-in-scenario
   (let [result (first (simulation/run-simulation [context-testing-scenario] 1))]
@@ -89,16 +89,16 @@
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
   (let [result (simulation/run-simulation [scenario scenario2] 1)]
-    (contains-exactly? result [{:name "Test scenario"
-                                :id 0
-                                :start anything
-                                :end anything
-                                :requests anything}
-                               {:name "Test scenario2"
-                                :id 0
-                                :start anything
-                                :end anything
-                                :requests anything}])))
+    (is (contains-exactly? result [{:name "Test scenario"
+                                    :id 0
+                                    :start anything
+                                    :end anything
+                                    :requests anything}
+                                   {:name "Test scenario2"
+                                    :id 0
+                                    :start anything
+                                    :end anything
+                                    :requests anything}]))))
 
 (deftest with-given-number-of-requests
   (let [result (simulation/run-simulation [scenario] 1 {:requests 4})]
