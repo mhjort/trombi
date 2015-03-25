@@ -2,7 +2,7 @@
   (:require [clj-gatling.httpkit :as http]
             [clj-time.core :as time]
             [clj-time.local :as local-time]
-            [clojure.core.async :as async :refer [go go-loop put! <!! alts! <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop put! thread <!! alts! <! >!]]))
 
 (defn- now [] (System/currentTimeMillis))
 
@@ -120,13 +120,9 @@
           requests)))
 
 (defn run-scenarios [timeout scenarios]
-  (let [results (async/chan)]
-    (go-loop [s scenarios]
-      (>! results
-          (run-scenario timeout (first s)))
-      (when (seq (rest s))
-        (recur (rest s))))
-  (apply concat (repeatedly (count scenarios) #(<!! results)))))
+  (let [results (map (fn [scenario] (thread (run-scenario timeout scenario)))
+                     scenarios)]
+    (apply concat (map #(<!! %) results))))
 
 (defn run-simulation [scenarios users & [options]]
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
