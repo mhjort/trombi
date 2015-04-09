@@ -11,7 +11,7 @@
     (partial http/async-http-request url)
     (:fn request)))
 
-(defn async-function-with-timeout [request timeout user-id context result-channel]
+(defn async-function-with-timeout [request timeout user-id context]
   (let [start    (now)
         response (async/chan)
         function (memoize (request-fn request))
@@ -25,23 +25,21 @@
       (function user-id context callback)
       (let [[result c] (alts! [response (async/timeout timeout)])]
         (if (= c response)
-          (>! result-channel result)
-          (>! result-channel [{:name (:name request)
-                               :id user-id
-                               :start start
-                               :end (now)
-                               :result false} (first context)]))))))
+          result
+          [{:name (:name request)
+            :id user-id
+            :start start
+            :end (now)
+            :result false} (first context)])))))
 
 (defn- run-requests [requests timeout user-id result-channel]
-  (let [c (async/chan)]
-    (go-loop [r requests
-              context {}
-              results []]
-      (async-function-with-timeout (first r) timeout user-id context c)
-      (let [[result new-ctx] (<! c)]
-        (if (empty? (rest r))
-          (>! result-channel (conj results result))
-          (recur (rest r) new-ctx (conj results result)))))))
+  (go-loop [r requests
+            context {}
+            results []]
+    (let [[result new-ctx] (<! (async-function-with-timeout (first r) timeout user-id context))]
+      (if (empty? (rest r))
+        (>! result-channel (conj results result))
+        (recur (rest r) new-ctx (conj results result))))))
 
 (defn- response->result [scenario result]
   {:name (:name scenario)
