@@ -1,4 +1,7 @@
-# clj-gatling [![Build Status](https://travis-ci.org/mhjort/clj-gatling.png?branch=master)](https://travis-ci.org/mhjort/clj-gatling)
+# clj-gatling
+
+[![Build Status](https://travis-ci.org/mhjort/clj-gatling.png?branch=master)](https://travis-ci.org/mhjort/clj-gatling)
+[![Dependencies Status](http://jarkeeper.com/mhjort/clj-gatling/status.png)](http://jarkeeper.com/mhjort/clj-gatling)
 
 Create and run performance tests using Clojure (and get fancy reports).
 For reporting clj-gatling uses Gatling under the hood.
