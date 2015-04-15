@@ -137,6 +137,10 @@ to generate constant load by specifying option :duration.
 
 ```
 
+### Examples
+
+See example project a here: [clj-gatling-example](https://github.com/mhjort/clj-gatling-example)
+
 ## Why
 
 AFAIK there are no other performance testing tool where you can specify
