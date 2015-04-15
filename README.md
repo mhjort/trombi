@@ -11,7 +11,7 @@ For reporting clj-gatling uses Gatling under the hood.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.5.3"]
+[clj-gatling "0.5.4"]
 ```
 
 ## Usage
