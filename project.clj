@@ -6,8 +6,8 @@
   :dependencies [[org.clojure/clojure "1.6.0"]
                  [org.clojure/core.async "0.1.346.0-17112a-alpha"]
                  [clojure-csv/clojure-csv "2.0.1"]
-                 [http-kit "2.1.18"]
-                 [clj-time "0.8.0"]
+                 [http-kit "2.1.19"]
+                 [clj-time "0.9.0"]
                  [io.gatling/gatling-charts "2.0.3"
                    :exclusions [com.typesafe.akka/akka-actor_2.10
                                 org.jodd/jodd-lagarto
