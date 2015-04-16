@@ -2,7 +2,7 @@
   (:use clojure.test)
   (:require [clj-gatling.simulation :as simulation]
             [clj-gatling.httpkit :as httpkit]
-            [clj-containment-matchers.core :refer [contains-exactly? anything]]
+            [clj-containment-matchers.clojure-test :refer [contains-exactly? anything]]
             [clj-time.core :as time]))
 
 (def request-count (atom 0))
@@ -61,7 +61,7 @@
 
 (deftest simulation-returns-result-when-run-with-one-user
   (let [result (simulation/run-simulation [scenario] 1)]
-    (is (contains-exactly? result [{:name "Test scenario"
+    (contains-exactly? result [{:name "Test scenario"
                                     :id 0
                                     :start anything
                                     :end anything
@@ -74,7 +74,7 @@
                                                 :id 0
                                                 :start anything
                                                 :end anything
-                                                :result false}]}]))))
+                                                :result false}]}])))
 
 (deftest simulation-passes-context-through-requests-in-scenario
   (let [result (first (simulation/run-simulation [context-testing-scenario] 1))]
@@ -89,7 +89,7 @@
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
   (let [result (simulation/run-simulation [scenario scenario2] 1)]
-    (is (contains-exactly? result [{:name "Test scenario"
+    (contains-exactly? result [{:name "Test scenario"
                                     :id 0
                                     :start anything
                                     :end anything
@@ -98,7 +98,7 @@
                                     :id 0
                                     :start anything
                                     :end anything
-                                    :requests anything}]))))
+                                    :requests anything}])))
 
 (deftest with-given-number-of-requests
   (let [result (simulation/run-simulation [scenario] 1 {:requests 4})]
