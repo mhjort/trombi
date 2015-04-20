@@ -2,7 +2,7 @@
   (:use [clojure.test]
         [clj-time.core :only [local-date-time]])
   (:require [clj-gatling.report :as report]
-            [clj-containment-matchers.clojure-test :refer [contains-exactly?]]))
+            [clj-containment-matchers.clojure-test :refer :all]))
 
 (def scenario-result
   [{:name "Test scenario" :id 1 :start 1391936496814 :end 1391936496814
@@ -29,13 +29,13 @@
    ["Test scenario2" "0" "USER" "END" "1391936496808" "1391936496808"]])
 
 (defn run-line-match [expected actual]
-  (contains-exactly? (first actual) (first expected)))
+  (is (equal? (first actual) (first expected))))
 
 (defn scenario-line-match [expected actual]
-  (contains-exactly? (second actual) (second expected)))
+  (is (equal? (second actual) (second expected))))
 
 (defn request-line-match [expected actual]
-  (contains-exactly? (nth actual 2) (nth expected 2)))
+  (is (equal? (nth actual 2) (nth expected 2))))
 
 (deftest maps-scenario-results-to-log-lines
   (let [start-time (local-date-time 2014 2 9 11 1 36)
@@ -43,4 +43,4 @@
     (run-line-match expected-lines result-lines)
     (scenario-line-match expected-lines result-lines)
     (request-line-match expected-lines result-lines)
-    (contains-exactly? result-lines expected-lines)))
+    (is (equal? result-lines expected-lines))))
