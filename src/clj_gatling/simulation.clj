@@ -6,29 +6,38 @@
 
 (defn- now [] (System/currentTimeMillis))
 
+(defn- bench [f]
+  (fn [start-promise end-promise callback context]
+    (deliver start-promise (now))
+    (f (fn [result & [context]]
+         (deliver end-promise (now))
+         (callback result context))
+       context)))
+
 (defn- request-fn [request]
-  (if-let [url (:http request)]
-    (partial http/async-http-request url)
-    (:fn request)))
+  (bench (if-let [url (:http request)]
+            (partial http/async-http-request url)
+            (:fn request))))
 
 (defn async-function-with-timeout [request timeout user-id context]
-  (let [start    (now)
+  (let [start-promise (promise)
+        end-promise (promise)
         response (async/chan)
         function (memoize (request-fn request))
-        callback (fn [result & context]
+        callback (fn [result context]
                    (put! response [{:name (:name request)
                                    :id user-id
-                                   :start start
-                                   :end (now)
-                                   :result result} (first context)]))]
+                                   :start @start-promise
+                                   :end @end-promise
+                                   :result result} context]))]
     (go
-      (function callback (assoc context :user-id user-id))
+      (function start-promise end-promise callback (assoc context :user-id user-id))
       (let [[result c] (alts! [response (async/timeout timeout)])]
         (if (= c response)
           result
           [{:name (:name request)
             :id user-id
-            :start start
+            :start @start-promise
             :end (now)
             :result false} (first context)])))))
 
