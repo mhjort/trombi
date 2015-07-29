@@ -22,7 +22,7 @@
                                    :end (now)
                                    :result result} (first context)]))]
     (go
-      (function callback user-id context)
+      (function callback (assoc context :user-id user-id))
       (let [[result c] (alts! [response (async/timeout timeout)])]
         (if (= c response)
           result

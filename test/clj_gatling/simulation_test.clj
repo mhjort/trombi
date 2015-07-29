@@ -7,24 +7,24 @@
 
 (def request-count (atom 0))
 
-(defn counting-request [cb id context]
+(defn counting-request [cb context]
   (do
     (swap! request-count inc)
     (cb true)))
 
-(defn successful-request [cb id context]
+(defn successful-request [cb context]
   (cb true (assoc context :to-next-request true)))
 
-(defn read-return-value-from-context-request [cb id context]
+(defn read-return-value-from-context-request [cb context]
   (cb (:to-next-request context) context))
 
-(defn slow-request [sleep-time cb id context]
+(defn slow-request [sleep-time cb context]
   (future (Thread/sleep sleep-time)
           (cb true)))
 
-(defn failing-request [cb id context] (cb false))
+(defn failing-request [cb context] (cb false))
 
-(defn- fake-async-http [url callback id context]
+(defn- fake-async-http [url callback context]
   (future (Thread/sleep 50)
           (callback (= "success" url))))
 
