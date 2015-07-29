@@ -6,12 +6,19 @@
 Create and run performance tests using Clojure (and get fancy reports).
 For reporting clj-gatling uses Gatling under the hood.
 
+## Notes for changes in 0.6.x
+
+* Upgraded to Clojure 1.7.
+* Changed format of request functions.
+  Callback is the first parameter and user-id is not separate parameter anymore.
+  You can get user-id from context via :user-id key.
+
 ## Installation
 
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.5.4"]
+[clj-gatling "0.6.0"]
 ```
 
 ## Usage
@@ -31,7 +38,7 @@ Single request is considered to be ok if it returns http status code 200.
 ```
 
 Simulation run shows some important statistics in console and also
-generates exactly the same kind of a html report that Gatling does. 
+generates exactly the same kind of a html report that Gatling does.
 (clj-gatling uses Gatling internally to do this)
 
 ### Defining test scenarios
@@ -58,7 +65,7 @@ Your own functions should look like this:
 
 ```clojure
 
-(defn open-frontpage [user-id context callback]
+(defn open-frontpage [callback context]
   (let [was-call-succesful? (do-your-call-here)
     (callback was-call-succesful? context)))
 
@@ -80,7 +87,7 @@ in a following way:
 (callback true (assoc context :book-id 1}))
 
 ;And then in next requst
-(defn pay-order [user-id context callback]
+(defn pay-order [callback context]
   (pay-order-call-with-book-id (:book-id context))
     ...)
 
