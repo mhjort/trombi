@@ -1,2 +1,5 @@
 results/
 target/
+pom.xml
+pom.xml.asc
+.lein*
