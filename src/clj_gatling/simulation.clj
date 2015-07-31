@@ -101,8 +101,7 @@
     (println "Running scenario" (:name scenario)
              "with concurrency" concurrency
              "and" (runner-info (:runner scenario)) ".")
-    (let [requests-in-scenario (count (:requests scenario))
-          scenario-start (local-time/local-now)
+    (let [scenario-start (local-time/local-now)
           response-chan (async/merge (map #(run-scenario-constantly scenario timeout %)
                                           (range concurrency)))]
       (loop [responses []]
