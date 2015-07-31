@@ -63,17 +63,17 @@
   (let [result (simulation/run-simulation [scenario] 1)]
     (is (equal? result [{:name "Test scenario"
                          :id 0
-                         :start anything
-                         :end anything
+                         :start number?
+                         :end number?
                          :requests [{:name "Request1"
                                      :id 0
-                                     :start anything
-                                     :end anything
+                                     :start number?
+                                     :end number?
                                      :result true}
                                     {:name "Request2"
                                      :id 0
-                                     :start anything
-                                     :end anything
+                                     :start number?
+                                     :end number?
                                      :result false}]}]))))
 
 (deftest simulation-passes-context-through-requests-in-scenario
@@ -91,13 +91,13 @@
   (let [result (simulation/run-simulation [scenario scenario2] 1)]
     (is (equal? result [{:name "Test scenario"
                          :id 0
-                         :start anything
-                         :end anything
+                         :start number?
+                         :end number?
                          :requests anything}
                         {:name "Test scenario2"
                          :id 0
-                         :start anything
-                         :end anything
+                         :start number?
+                         :end number?
                          :requests anything}]))))
 
 (deftest with-given-number-of-requests
