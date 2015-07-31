@@ -39,7 +39,7 @@
             :id user-id
             :start @start-promise
             :end (now)
-            :result false} (first context)])))))
+            :result false} context])))))
 
 (defn- run-requests [requests timeout user-id result-channel]
   (go-loop [r requests
