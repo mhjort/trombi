@@ -104,6 +104,20 @@
         (recur (conj responses (response->result scenario (<!! response-chan))))
         responses))))
 
+(defn- print-scenario-info [scenario]
+  (let [concurrency        (:concurrency scenario)
+        number-of-requests (:number-of-requests scenario)]
+    (println "Running scenario" (:name scenario)
+             "with concurrency" concurrency
+             "and" (runner-info (:runner scenario)) ".")))
+
+(defn run-scenarios [timeout scenarios]
+  (let [results (doall (map (fn [scenario]
+                              (print-scenario-info scenario)
+                              (thread (run-scenario timeout scenario)))
+                        scenarios))]
+    (mapcat #(<!! %) results)))
+
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
 
@@ -119,20 +133,6 @@
           scenarios
           concurrencies
           requests)))
-
-(defn- print-scenario-info [scenario]
-  (let [concurrency        (:concurrency scenario)
-        number-of-requests (:number-of-requests scenario)]
-    (println "Running scenario" (:name scenario)
-             "with concurrency" concurrency
-             "and" (runner-info (:runner scenario)) ".")))
-
-(defn run-scenarios [timeout scenarios]
-  (let [results (doall (map (fn [scenario]
-                              (print-scenario-info scenario)
-                              (thread (run-scenario timeout scenario)))
-                        scenarios))]
-    (mapcat #(<!! %) results)))
 
 (defn run-simulation [scenarios users & [options]]
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
