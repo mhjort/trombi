@@ -128,7 +128,7 @@
 (defn run-scenarios [timeout scenarios]
   (let [results (map (fn [scenario] (thread (run-scenario timeout scenario)))
                      scenarios)]
-    (apply concat (map #(<!! %) results))))
+    (mapcat #(<!! %) results)))
 
 (defn run-simulation [scenarios users & [options]]
   (let [requests (or (:requests options) (* users (distinct-request-count scenarios)))
