@@ -110,8 +110,8 @@
 (deftest with-multiple-number-of-requests
   (reset! request-count 0)
   (let [result (simulation/run-simulation [counting-scenario] 100 {:requests 2000})]
-    (is (= 2000 (->> result (map :requests) count))
-    (is (= 2000 @request-count)))))
+    (is (= 2000 (->> result (map :requests) count)))
+    (is (some #{(- @request-count 2000)} (range 150))))) ;Some tolerance
 
 (deftest duration-given
   (let [result (simulation/run-simulation [scenario] 1 {:duration (time/millis 50)})]

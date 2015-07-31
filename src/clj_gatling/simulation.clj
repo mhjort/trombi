@@ -50,6 +50,26 @@
         (>! result-channel (conj results result))
         (recur (rest r) new-ctx (conj results result))))))
 
+(defprotocol RunnerProtocol
+  (continue-run? [runner response-count scenario-start])
+  (runner-info [runner]))
+
+(deftype DurationRunner [scenario]
+  RunnerProtocol
+  (continue-run? [runner _ scenario-start]
+    (time/before? (local-time/local-now)
+                  (time/plus scenario-start (:duration scenario))))
+  (runner-info [_] (str "duration " (:duration scenario))))
+
+(deftype FixedRequestNumberRunner [scenario]
+  RunnerProtocol
+  (continue-run? [runner response-count _]
+    (< (* (count (:requests scenario)) response-count) (:number-of-requests scenario)))
+  (runner-info [_] (str "requests " (:number-of-requests scenario))))
+
+(defn- request-result [id request-name success start]
+  {:id id :name request-name :result success :start start :end (now)})
+
 (defn- response->result [scenario result]
   {:name (:name scenario)
    :id (:id (first result))
@@ -57,58 +77,38 @@
    :end (:end (last result))
    :requests result})
 
-(defprotocol RunnerProtocol
-  (run-requests-constantly [runner cs timeout scenario-start])
-  (runner-info [runner]))
+(defn- run-scenario-once [scenario timeout user-id]
+  (let [result-channel (async/chan)]
+    (go-loop [r (:requests scenario)
+              context {}
+              results []]
+             (let [[result new-ctx] (<! (async-function-with-timeout (first r) timeout user-id context))]
+               (if (empty? (rest r))
+                 (>! result-channel (conj results result))
+                 (recur (rest r) new-ctx (conj results result)))))
+    result-channel))
 
-(deftype DurationRunner [scenario]
-  RunnerProtocol
-  (run-requests-constantly [_ cs timeout scenario-start]
-    (let [results (async/chan)
-          continue-run? #(time/before? (local-time/local-now)
-                                       (time/plus scenario-start (:duration scenario)))]
-      (go-loop [^long i 0]
-        (let [[result c] (alts! cs)]
-          (when (continue-run?)
-            (run-requests (:requests scenario) timeout (+ i (:concurrency scenario)) c))
-          (>! results (response->result scenario result))
-          (when (continue-run?)
-            (recur (inc i)))))
-      results))
-  (runner-info [_] (str "duration " (:duration scenario))))
-
-(deftype FixedRequestNumberRunner [scenario]
-  RunnerProtocol
-  (run-requests-constantly [_ cs timeout scenario-start]
-    (let [results (async/chan)
-          requests-in-scenario (count (:requests scenario))]
-      (go-loop [^long requests-left (:number-of-requests scenario)
-                ^long user-id (:concurrency scenario)]
-        (let [[result c] (alts! cs)]
-          (when (< user-id (:number-of-requests scenario))
-            (run-requests (:requests scenario) timeout user-id c))
-          (>! results (response->result scenario result))
-          (when (pos? requests-left)
-            (recur (- requests-left requests-in-scenario) (inc user-id)))))
-      results))
-  (runner-info [_] (str "requests " (:number-of-requests scenario))))
-
-(defn- request-result [id request-name success start]
-  {:id id :name request-name :result success :start start :end (now)})
+(defn- run-scenario-constantly [scenario timeout user-id]
+  (let [c (async/chan)]
+    (go-loop []
+        (>! c (<! (run-scenario-once scenario timeout user-id)))
+        (recur))
+    c))
 
 (defn run-scenario [timeout scenario]
   (let [concurrency        (:concurrency scenario)
         number-of-requests (:number-of-requests scenario)]
-    (println (str "Running scenario " (:name scenario) " with " concurrency " concurrency and
-              " (runner-info (:runner scenario)) "."))
-    (let [cs       (repeatedly concurrency async/chan)
-          ps       (map vector (iterate inc 0) cs)
-          requests (:requests scenario)
-          scenario-start (local-time/local-now)]
-      (doseq [[user-id c] ps]
-        (run-requests requests timeout user-id c))
-      (let [results (run-requests-constantly (:runner scenario) cs timeout scenario-start)]
-        (repeatedly (/ number-of-requests (count requests)) #(<!! results))))))
+    (println "Running scenario" (:name scenario)
+             "with concurrency" concurrency
+             "and" (runner-info (:runner scenario)) ".")
+    (let [requests-in-scenario (count (:requests scenario))
+          scenario-start (local-time/local-now)
+          response-chan (async/merge (map #(run-scenario-constantly scenario timeout %)
+                                          (range concurrency)))]
+      (loop [responses []]
+        (if (continue-run? (:runner scenario) (count responses) scenario-start)
+          (recur (conj responses (response->result scenario (<!! response-chan))))
+          responses)))))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
@@ -137,6 +137,6 @@
         step-timeout (or (:timeout-in-ms options) 5000)
         runner (fn [scenario] (if (nil? duration)
                                 (FixedRequestNumberRunner. scenario)
-                                (DurationRunner. scenario)))
+                                (DurationRunner. (assoc scenario :duration duration))))
         runnable-scenarios (calculate-weighted-scenarios users requests scenarios)]
-    (run-scenarios step-timeout (map #(assoc % :runner (runner %) :duration duration) runnable-scenarios))))
+    (run-scenarios step-timeout (map #(assoc % :runner (runner %)) runnable-scenarios))))
