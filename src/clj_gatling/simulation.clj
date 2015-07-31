@@ -96,18 +96,13 @@
     c))
 
 (defn run-scenario [timeout scenario]
-  (let [concurrency        (:concurrency scenario)
-        number-of-requests (:number-of-requests scenario)]
-    (println "Running scenario" (:name scenario)
-             "with concurrency" concurrency
-             "and" (runner-info (:runner scenario)) ".")
-    (let [scenario-start (local-time/local-now)
-          response-chan (async/merge (map #(run-scenario-constantly scenario timeout %)
-                                          (range concurrency)))]
-      (loop [responses []]
-        (if (continue-run? (:runner scenario) (count responses) scenario-start)
-          (recur (conj responses (response->result scenario (<!! response-chan))))
-          responses)))))
+  (let [scenario-start (local-time/local-now)
+        response-chan (async/merge (map #(run-scenario-constantly scenario timeout %)
+                                        (range (:concurrency scenario))))]
+    (loop [responses []]
+      (if (continue-run? (:runner scenario) (count responses) scenario-start)
+        (recur (conj responses (response->result scenario (<!! response-chan))))
+        responses))))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
@@ -125,8 +120,16 @@
           concurrencies
           requests)))
 
+(defn- print-scenario-info [scenario]
+  (let [concurrency        (:concurrency scenario)
+        number-of-requests (:number-of-requests scenario)]
+    (println "Running scenario" (:name scenario)
+             "with concurrency" concurrency
+             "and" (runner-info (:runner scenario)) ".")))
+
 (defn run-scenarios [timeout scenarios]
   (let [results (doall (map (fn [scenario]
+                              (print-scenario-info scenario)
                               (thread (run-scenario timeout scenario)))
                         scenarios))]
     (mapcat #(<!! %) results)))
