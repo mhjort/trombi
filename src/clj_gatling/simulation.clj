@@ -26,10 +26,10 @@
         function (memoize (request-fn request))
         callback (fn [result context]
                    (put! response [{:name (:name request)
-                                   :id user-id
-                                   :start @start-promise
-                                   :end @end-promise
-                                   :result result} context]))]
+                                    :id user-id
+                                    :start @start-promise
+                                    :end @end-promise
+                                    :result result} context]))]
     (go
       (function start-promise end-promise callback (assoc context :user-id user-id))
       (let [[result c] (alts! [response (async/timeout timeout)])]
