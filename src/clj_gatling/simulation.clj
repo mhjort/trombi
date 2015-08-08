@@ -41,15 +41,6 @@
             :end (now)
             :result false} context])))))
 
-(defn- run-requests [requests timeout user-id result-channel]
-  (go-loop [r requests
-            context {}
-            results []]
-    (let [[result new-ctx] (<! (async-function-with-timeout (first r) timeout user-id context))]
-      (if (empty? (rest r))
-        (>! result-channel (conj results result))
-        (recur (rest r) new-ctx (conj results result))))))
-
 (defprotocol RunnerProtocol
   (continue-run? [runner handled-requests scenario-start])
   (runner-info [runner]))
