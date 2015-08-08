@@ -80,6 +80,23 @@
   (let [result (first (simulation/run-simulation [context-testing-scenario] 1))]
     (is (= true (get-result (:requests result) "Request2")))))
 
+(deftest simulation-skips-second-request-if-first-fails
+  (let [fail-scenario {:name "Scenario"
+                       :requests [{:name "first" :fn failing-request}
+                                  {:name "second" :fn successful-request}]}
+        result (simulation/run-simulation [fail-scenario] 1)]
+    ;Note scenario is ran twice in this case to match number of handled requests which should be 2
+    (is (equal? result
+                (repeat 2 {:name "Scenario"
+                           :id 0
+                           :start number?
+                           :end number?
+                           :requests [{:name "first"
+                                       :id 0
+                                       :start number?
+                                       :end number?
+                                       :result false}]})))))
+
 (deftest simulation-returns-result-when-run-with-http-requests
   (with-redefs [httpkit/async-http-request fake-async-http]
     (let [result (first (simulation/run-simulation [http-scenario] 1))]

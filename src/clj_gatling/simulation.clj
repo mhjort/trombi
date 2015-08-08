@@ -69,12 +69,14 @@
    :requests result})
 
 (defn- run-scenario-once [scenario timeout user-id]
-  (let [result-channel (async/chan)]
+  (let [result-channel (async/chan)
+        request-failed? #(not (:result %))]
     (go-loop [r (:requests scenario)
               context {}
               results []]
              (let [[result new-ctx] (<! (async-function-with-timeout (first r) timeout user-id context))]
-               (if (empty? (rest r))
+               (if (or (empty? (rest r))
+                       (request-failed? result))
                  (>! result-channel (conj results result))
                  (recur (rest r) new-ctx (conj results result)))))
     result-channel))
