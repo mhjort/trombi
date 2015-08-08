@@ -125,7 +125,7 @@ by specifying option :skip-next-after-failure?
 ```clojure
 
 {:name "Scenario"
-  :skip-next-after-failure?
+  :skip-next-after-failure? false
   :requests [{:name "Failing request" :fn fail}
              {:name "Next request"    :fn success}]}
 ```
