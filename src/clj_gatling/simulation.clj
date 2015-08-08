@@ -51,7 +51,7 @@
         (recur (rest r) new-ctx (conj results result))))))
 
 (defprotocol RunnerProtocol
-  (continue-run? [runner response-count scenario-start])
+  (continue-run? [runner handled-requests scenario-start])
   (runner-info [runner]))
 
 (deftype DurationRunner [scenario]
@@ -63,8 +63,8 @@
 
 (deftype FixedRequestNumberRunner [scenario]
   RunnerProtocol
-  (continue-run? [runner response-count _]
-    (< (* (count (:requests scenario)) response-count) (:number-of-requests scenario)))
+  (continue-run? [runner handled-requests _]
+    (< handled-requests (:number-of-requests scenario)))
   (runner-info [_] (str "requests " (:number-of-requests scenario))))
 
 (defn- request-result [id request-name success start]
@@ -99,9 +99,11 @@
   (let [scenario-start (local-time/local-now)
         response-chan (async/merge (map #(run-scenario-constantly scenario timeout %)
                                         (range (:concurrency scenario))))]
-    (loop [responses []]
-      (if (continue-run? (:runner scenario) (count responses) scenario-start)
-        (recur (conj responses (response->result scenario (<!! response-chan))))
+    (loop [responses []
+           handled-requests 0]
+      (if (continue-run? (:runner scenario) handled-requests scenario-start)
+        (let [result (response->result scenario (<!! response-chan))]
+          (recur (conj responses result) (+ handled-requests (count (:requests result)))))
         responses))))
 
 (defn- print-scenario-info [scenario]
