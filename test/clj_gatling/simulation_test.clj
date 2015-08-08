@@ -56,6 +56,10 @@
    :requests [{:name "Request1" :http "success"}
               {:name "Request2" :http "fail"}]})
 
+(def first-fails-scenario {:name "Scenario"
+                           :requests [{:name "first" :fn failing-request}
+                                      {:name "second" :fn successful-request}]})
+
 (defn get-result [requests request-name]
   (:result (first (filter #(= request-name (:name %)) requests))))
 
@@ -81,10 +85,7 @@
     (is (= true (get-result (:requests result) "Request2")))))
 
 (deftest simulation-skips-second-request-if-first-fails
-  (let [fail-scenario {:name "Scenario"
-                       :requests [{:name "first" :fn failing-request}
-                                  {:name "second" :fn successful-request}]}
-        result (simulation/run-simulation [fail-scenario] 1)]
+  (let [result (simulation/run-simulation [first-fails-scenario] 1)]
     ;Note scenario is ran twice in this case to match number of handled requests which should be 2
     (is (equal? result
                 (repeat 2 {:name "Scenario"
@@ -96,6 +97,24 @@
                                        :start number?
                                        :end number?
                                        :result false}]})))))
+
+(deftest second-request-is-not-skipped-in-failure-if-skip-next-after-failure-is-unset
+  (let [result (simulation/run-simulation [(assoc first-fails-scenario :skip-next-after-failure? false)] 1)]
+    (is (equal? result
+                [{:name "Scenario"
+                           :id 0
+                           :start number?
+                           :end number?
+                           :requests [{:name "first"
+                                       :id 0
+                                       :start number?
+                                       :end number?
+                                       :result false}
+                                      {:name "second"
+                                       :id 0
+                                       :start number?
+                                       :end number?
+                                       :result true}]}]))))
 
 (deftest simulation-returns-result-when-run-with-http-requests
   (with-redefs [httpkit/async-http-request fake-async-http]

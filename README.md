@@ -114,7 +114,23 @@ which balances concurrency evenly between scenarios.
 
 ```
 
-### Options
+### Scenario options
+
+#### Skipping requests after failure
+
+By default clj-gatling will skip further requests in scenario if
+previous request fails. You can turn this feature of in scenario
+by specifying option :skip-next-after-failure?
+
+```clojure
+
+{:name "Scenario"
+  :skip-next-after-failure?
+  :requests [{:name "Failing request" :fn fail}
+             {:name "Next request"    :fn success}]}
+```
+
+### Global Options
 
 #### Request timeout
 
