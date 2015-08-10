@@ -1,4 +1,4 @@
-(defproject clj-gatling "0.6.2"
+(defproject clj-gatling "0.6.3"
   :description ""
   :url "http://github.com/mhjort/clj-gatling"
   :license {:name "Eclipse Public License"
