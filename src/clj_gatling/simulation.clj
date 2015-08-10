@@ -122,7 +122,7 @@
 
 (defn- weighted [weights value]
   (let [sum-of-weights (reduce + weights)]
-    (map #(Math/round (double (* value (/ % sum-of-weights)))) weights)))
+    (map #(max 1 (Math/round (double (* value (/ % sum-of-weights))))) weights)))
 
 (defn- calculate-weighted-scenarios [concurrency number-of-requests scenarios]
   (let [weights            (map #(or (:weight %) 1) scenarios)
