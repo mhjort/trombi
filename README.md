@@ -200,6 +200,10 @@ for that.
 
 This is a long term plan but no actual stuff implemented yet.
 
+## Contribute
+
+Use [GitHub issues](https://github.com/mhjort/clj-gatling/issues) and [Pull Requests](https://github.com/mhjort/clj-gatling/pulls).
+
 ## License
 
 Copyright (C) 2014 Markus Hjort
