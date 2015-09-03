@@ -33,7 +33,7 @@ Single request is considered to be ok if it returns http status code 200.
 (use 'clj-gatling.core)
 
 (run-simulation
-  [{:name "Localhost test cenario"
+  [{:name "Localhost test scenario"
    :requests [{:name "Root request" :http "http://localhost"}]}] 100)
 ```
 
