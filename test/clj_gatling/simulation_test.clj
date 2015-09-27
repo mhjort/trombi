@@ -24,6 +24,8 @@
 
 (defn failing-request [cb context] (cb false))
 
+(defn- error-throwing-request [cb context] (throw (Exception. "Simulated")))
+
 (defn- fake-async-http [url callback context]
   (future (Thread/sleep 50)
           (callback (= "success" url))))
@@ -75,6 +77,20 @@
                                      :end number?
                                      :result true}
                                     {:name "Request2"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :result false}]}]))))
+
+(deftest when-function-returns-exception-it-is-handled-as-ko
+  (let [s {:name "Exception scenario"
+           :requests [{:name "Throwing" :fn error-throwing-request}]}
+        result (simulation/run-simulation [s] 1)]
+    (is (equal? result [{:name "Exception scenario"
+                         :id 0
+                         :start number?
+                         :end number?
+                         :requests [{:name "Throwing"
                                      :id 0
                                      :start number?
                                      :end number?

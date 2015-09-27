@@ -23,6 +23,7 @@
   (let [start-promise (promise)
         end-promise (promise)
         response (async/chan)
+        exception-chan (async/chan)
         function (memoize (request-fn request))
         callback (fn [result context]
                    (put! response [{:name (:name request)
@@ -31,8 +32,11 @@
                                     :end @end-promise
                                     :result result} context]))]
     (go
-      (function start-promise end-promise callback (assoc context :user-id user-id))
-      (let [[result c] (alts! [response (async/timeout timeout)])]
+      (try
+        (function start-promise end-promise callback (assoc context :user-id user-id))
+      (catch Exception e
+        (put! exception-chan e)))
+      (let [[result c] (alts! [response (async/timeout timeout) exception-chan])]
         (if (= c response)
           result
           [{:name (:name request)
