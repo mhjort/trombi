@@ -108,7 +108,7 @@
         number-of-requests (:number-of-requests scenario)]
     (println "Running scenario" (:name scenario)
              "with concurrency" concurrency
-             "and" (runner-info (:runner scenario)) ".")))
+             "and" (runner-info (:runner scenario)))))
 
 (defn run-scenarios [timeout scenarios]
   (let [results (doall (map (fn [scenario]
