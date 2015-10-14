@@ -102,4 +102,4 @@
                               (print-scenario-info scenario)
                               (thread (run-scenario timeout scenario)))
                         scenarios))]
-    (mapcat #(<!! %) results)))
+    (mapcat <!! results)))

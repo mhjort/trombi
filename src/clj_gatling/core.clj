@@ -11,9 +11,7 @@
 
 (defn run-simulation [scenarios users & [options]]
  (let [start-time (LocalDateTime.)
-       results-dir (if (nil? (:root options))
-                      "target/results"
-                      (:root options))
+       results-dir (or (:root options) "target/results")
        step-timeout (or (:timeout-in-ms options) 5000)
        result (simulation/run-scenarios step-timeout
                                         (scenario-parser/scenarios->runnable-scenarios scenarios users options))
