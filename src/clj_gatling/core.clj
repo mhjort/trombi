@@ -3,17 +3,20 @@
   (:require [clojure-csv.core :as csv]
             [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
+            [clj-gatling.scenario-parser :as scenario-parser]
             [clj-gatling.simulation :as simulation]))
 
 (defn create-dir [dir]
   (.mkdirs (java.io.File. dir)))
 
-(defn run-simulation [scenario users & [options]]
+(defn run-simulation [scenarios users & [options]]
  (let [start-time (LocalDateTime.)
        results-dir (if (nil? (:root options))
                       "target/results"
                       (:root options))
-       result (simulation/run-simulation scenario users options)
+       step-timeout (or (:timeout-in-ms options) 5000)
+       result (simulation/run-scenarios step-timeout
+                                        (scenario-parser/scenarios->runnable-scenarios scenarios users options))
        csv (csv/write-csv (report/create-result-lines start-time result) :delimiter "\t" :end-of-line "\n")]
    (create-dir (str results-dir "/input"))
    (spit (str results-dir "/input/simulation.log") csv)

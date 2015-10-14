@@ -2,8 +2,13 @@
   (:use clojure.test)
   (:require [clj-gatling.simulation :as simulation]
             [clj-gatling.httpkit :as httpkit]
+            [clj-gatling.scenario-parser :refer [scenarios->runnable-scenarios]]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-time.core :as time]))
+
+(defn- run-simulation [scenarios users & [options]]
+  (let [step-timeout (or (:timeout-in-ms options) 5000)]
+    (simulation/run-scenarios step-timeout (scenarios->runnable-scenarios scenarios users options))))
 
 (def request-count (atom 0))
 
@@ -66,7 +71,7 @@
   (:result (first (filter #(= request-name (:name %)) requests))))
 
 (deftest simulation-returns-result-when-run-with-one-user
-  (let [result (simulation/run-simulation [scenario] 1)]
+  (let [result (run-simulation [scenario] 1)]
     (is (equal? result [{:name "Test scenario"
                          :id 0
                          :start number?
@@ -85,7 +90,7 @@
 (deftest when-function-returns-exception-it-is-handled-as-ko
   (let [s {:name "Exception scenario"
            :requests [{:name "Throwing" :fn error-throwing-request}]}
-        result (simulation/run-simulation [s] 1)]
+        result (run-simulation [s] 1)]
     (is (equal? result [{:name "Exception scenario"
                          :id 0
                          :start number?
@@ -97,11 +102,11 @@
                                      :result false}]}]))))
 
 (deftest simulation-passes-context-through-requests-in-scenario
-  (let [result (first (simulation/run-simulation [context-testing-scenario] 1))]
+  (let [result (first (run-simulation [context-testing-scenario] 1))]
     (is (= true (get-result (:requests result) "Request2")))))
 
 (deftest simulation-skips-second-request-if-first-fails
-  (let [result (simulation/run-simulation [first-fails-scenario] 1)]
+  (let [result (run-simulation [first-fails-scenario] 1)]
     ;Note scenario is ran twice in this case to match number of handled requests which should be 2
     (is (equal? result
                 (repeat 2 {:name "Scenario"
@@ -115,7 +120,7 @@
                                        :result false}]})))))
 
 (deftest second-request-is-not-skipped-in-failure-if-skip-next-after-failure-is-unset
-  (let [result (simulation/run-simulation [(assoc first-fails-scenario :skip-next-after-failure? false)] 1)]
+  (let [result (run-simulation [(assoc first-fails-scenario :skip-next-after-failure? false)] 1)]
     (is (equal? result
                 [{:name "Scenario"
                            :id 0
@@ -134,13 +139,13 @@
 
 (deftest simulation-returns-result-when-run-with-http-requests
   (with-redefs [httpkit/async-http-request fake-async-http]
-    (let [result (first (simulation/run-simulation [http-scenario] 1))]
+    (let [result (first (run-simulation [http-scenario] 1))]
       (is (= "Test http scenario" (:name result)))
       (is (= true (get-result (:requests result) "Request1")))
       (is (= false (get-result (:requests result) "Request2"))))))
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
-  (let [result (simulation/run-simulation [scenario scenario2] 1)]
+  (let [result (run-simulation [scenario scenario2] 1)]
     (is (equal? result [{:name "Test scenario"
                          :id 0
                          :start number?
@@ -153,7 +158,7 @@
                          :requests anything}]))))
 
 (deftest with-given-number-of-requests
-  (let [result (simulation/run-simulation [scenario] 1 {:requests 4})]
+  (let [result (run-simulation [scenario] 1 {:requests 4})]
     (is (= "Test scenario" (-> result first :name)))
     (is (= 2 (-> result first :requests count)))
     (is (= "Test scenario" (-> result second :name)))
@@ -161,16 +166,16 @@
 
 (deftest with-multiple-number-of-requests
   (reset! request-count 0)
-  (let [result (simulation/run-simulation [counting-scenario] 100 {:requests 2000})]
+  (let [result (run-simulation [counting-scenario] 100 {:requests 2000})]
     (is (= 2000 (->> result (map :requests) count)))
     (is (some #{(- @request-count 2000)} (range 150))))) ;Some tolerance
 
 (deftest duration-given
-  (let [result (simulation/run-simulation [scenario] 1 {:duration (time/millis 50)})]
+  (let [result (run-simulation [scenario] 1 {:duration (time/millis 50)})]
     (is (not (empty? result)))))
 
 (deftest fails-requests-when-they-take-longer-than-timeout
-  (let [result (first (simulation/run-simulation [timeout-scenario] 1 {:timeout-in-ms 100}))]
+  (let [result (first (run-simulation [timeout-scenario] 1 {:timeout-in-ms 100}))]
     (is (= false (get-result (:requests result) "Request1")))))
 
 (deftest scenario-weight
@@ -178,7 +183,7 @@
         request2 {:name "Request2" :fn successful-request}
         main-scenario {:name "Main" :weight 2 :requests [request1 request2]}
         second-scenario {:name "Second" :weight 1 :requests [request1]}
-        result (group-by :name (simulation/run-simulation
+        result (group-by :name (run-simulation
                                  [main-scenario second-scenario]
                                  10
                                  {:requests 100}))
