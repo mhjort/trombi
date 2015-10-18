@@ -45,9 +45,6 @@
             :end (now)
             :result false} context])))))
 
-(defn- request-result [id request-name success start]
-  {:id id :name request-name :result success :start start :end (now)})
-
 (defn- response->result [scenario result]
   {:name (:name scenario)
    :id (:id (first result))
