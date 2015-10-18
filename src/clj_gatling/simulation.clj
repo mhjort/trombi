@@ -2,7 +2,7 @@
   (:require [clj-gatling.httpkit :as http]
             [clj-gatling.scenario-runners :refer :all]
             [clj-time.local :as local-time]
-            [clojure.core.async :as async :refer [go go-loop put! thread <!! alts! <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
 
 (defn- now [] (System/currentTimeMillis))
 
@@ -76,17 +76,6 @@
         (recur))
     c))
 
-(defn run-scenario [timeout scenario]
-  (let [scenario-start (local-time/local-now)
-        response-chan (async/merge (map #(run-scenario-constantly scenario timeout %)
-                                        (range (:concurrency scenario))))]
-    (loop [responses []
-           handled-requests 0]
-      (if (continue-run? (:runner scenario) handled-requests scenario-start)
-        (let [result (response->result scenario (<!! response-chan))]
-          (recur (conj responses result) (+ handled-requests (count (:requests result)))))
-        responses))))
-
 (defn- print-scenario-info [scenario]
   (let [concurrency        (:concurrency scenario)
         number-of-requests (:number-of-requests scenario)]
@@ -94,9 +83,23 @@
              "with concurrency" concurrency
              "and" (runner-info (:runner scenario)))))
 
+(defn- run-scenario [timeout scenario]
+  (print-scenario-info scenario)
+  (let [scenario-start (local-time/local-now)
+        responses (async/merge (map #(run-scenario-constantly scenario timeout %)
+                                    (range (:concurrency scenario))))
+        results (async/chan)]
+    (go-loop [handled-requests 0]
+             (if (continue-run? (:runner scenario) handled-requests scenario-start)
+               (let [result (response->result scenario (<! responses))]
+                 (>! results result)
+                 (recur (+ handled-requests (count (:requests result)))))
+               (close! results)))
+    results))
+
 (defn run-scenarios [timeout scenarios]
-  (let [results (doall (map (fn [scenario]
-                              (print-scenario-info scenario)
-                              (thread (run-scenario timeout scenario)))
-                        scenarios))]
-    (mapcat <!! results)))
+  (let [c (async/merge (map (partial run-scenario timeout) scenarios))]
+    (loop [results []]
+      (if-let [result (<!! c)]
+        (recur (conj results result))
+        results))))
