@@ -28,11 +28,6 @@
 (defn- process [header idx results output-writer]
   (let [scenarios (mapcat #(vector (scenario->rows %)) results)]
     (output-writer idx (conj (flatten-one-level scenarios) header))))
-(defn- to-vector [channel]
-  (loop [results []]
-    (if-let [result (<!! channel)]
-      (recur (conj results result))
-      results)))
 
 (defn create-result-lines [start-time buffer-size results-channel output-writer]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
