@@ -22,7 +22,7 @@
         scenario-start [(:name scenario) id "USER" "START" start id]
         scenario-end [(:name scenario) id "USER" "END" end end]
         requests (mapcat #(vector (map-request (:name scenario) %)) (:requests scenario))]
-    (vec (concat [scenario-start] requests [scenario-end]))))
+    (concat [scenario-start] requests [scenario-end])))
 
 (defn create-result-lines [start-time result]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
