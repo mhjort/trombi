@@ -9,14 +9,19 @@
 (defn create-dir [dir]
   (.mkdirs (java.io.File. dir)))
 
+(defn- gatling-csv-writer [path idx result-lines]
+  (let [csv (csv/write-csv result-lines :delimiter "\t" :end-of-line "\n")]
+   (spit (str path "/simulation" idx ".log") csv)))
+
 (defn run-simulation [scenarios users & [options]]
  (let [start-time (LocalDateTime.)
        results-dir (or (:root options) "target/results")
        step-timeout (or (:timeout-in-ms options) 5000)
        result (simulation/run-scenarios step-timeout
-                                        (scenario-parser/scenarios->runnable-scenarios scenarios users options))
-       csv (csv/write-csv (report/create-result-lines start-time result) :delimiter "\t" :end-of-line "\n")]
+                                        (scenario-parser/scenarios->runnable-scenarios scenarios users options))]
    (create-dir (str results-dir "/input"))
-   (spit (str results-dir "/input/simulation.log") csv)
+   (report/create-result-lines start-time
+                               result
+                               (partial gatling-csv-writer (str results-dir "/input")))
    (chart/create-chart results-dir)
    (println (str "Open " results-dir "/index.html"))))

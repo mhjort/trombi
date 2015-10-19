@@ -36,6 +36,10 @@
     c))
 
 (deftest maps-scenario-results-to-log-lines
-  (let [start-time (local-date-time 2014 2 9 11 1 36)
-        result-lines (report/create-result-lines start-time (from scenario-results))]
-    (is (equal? result-lines expected-lines))))
+  (let [result-lines (promise)
+        output-writer (fn [_ result] (deliver result-lines result))
+        start-time (local-date-time 2014 2 9 11 1 36)
+        result-lines (report/create-result-lines start-time
+                                                 (from scenario-results)
+                                                 output-writer)]
+    (is (equal? @result-lines expected-lines))))
