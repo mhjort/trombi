@@ -6,6 +6,12 @@
 Create and run performance tests using Clojure (and get fancy reports).
 For reporting clj-gatling uses Gatling under the hood.
 
+## Notes for changes in 0.7.x
+
+* Buffer results to file system while simulation is running.
+  This makes it possible to run clj-gatling for long period of time without
+  running out of memory.
+
 ## Notes for changes in 0.6.x
 
 * Upgraded to Clojure 1.7.
@@ -18,7 +24,7 @@ For reporting clj-gatling uses Gatling under the hood.
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.6.4"]
+[clj-gatling "0.7.0"]
 ```
 
 ## Usage
