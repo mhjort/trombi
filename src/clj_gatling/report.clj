@@ -31,8 +31,11 @@
       (recur (conj results result))
       results)))
 
+(defn- process [header results output-writer]
+    (let [scenarios (mapcat #(vector (scenario->rows %)) results)]
+    (output-writer 0 (conj (flatten-one-level scenarios) header))))
+
 (defn create-result-lines [start-time results-channel output-writer]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
-        header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]
-        scenarios (mapcat #(vector (scenario->rows %)) (to-vector results-channel))]
-    (output-writer 0 (conj (flatten-one-level scenarios) header))))
+        header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]]
+    (process header (to-vector results-channel) output-writer)))
