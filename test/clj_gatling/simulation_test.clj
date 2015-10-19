@@ -4,11 +4,20 @@
             [clj-gatling.httpkit :as httpkit]
             [clj-gatling.scenario-parser :refer [scenarios->runnable-scenarios]]
             [clj-containment-matchers.clojure-test :refer :all]
+            [clojure.core.async :refer [<!!]]
             [clj-time.core :as time]))
+
+(defn- to-vector [channel]
+  (loop [results []]
+    (if-let [result (<!! channel)]
+      (recur (conj results result))
+      results)))
 
 (defn- run-simulation [scenarios users & [options]]
   (let [step-timeout (or (:timeout-in-ms options) 5000)]
-    (simulation/run-scenarios step-timeout (scenarios->runnable-scenarios scenarios users options))))
+    (-> (simulation/run-scenarios step-timeout
+                                  (scenarios->runnable-scenarios scenarios users options))
+        to-vector)))
 
 (def request-count (atom 0))
 

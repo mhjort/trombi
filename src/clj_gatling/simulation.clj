@@ -98,8 +98,4 @@
     results))
 
 (defn run-scenarios [timeout scenarios]
-  (let [c (async/merge (map (partial run-scenario timeout) scenarios))]
-    (loop [results []]
-      (if-let [result (<!! c)]
-        (recur (conj results result))
-        results))))
+  (async/merge (map (partial run-scenario timeout) scenarios)))

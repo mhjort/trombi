@@ -1,10 +1,12 @@
 (ns clj-gatling.report-test
-  (:use [clojure.test]
-        [clj-time.core :only [local-date-time]])
-  (:require [clj-gatling.report :as report]
+  (:require [clojure.test :refer :all]
+            [clj-time.core :refer [local-date-time]]
+            [clj-gatling.report :as report]
+            [clj-containment-matchers.clojure-test :refer :all]
+            [clojure.core.async :refer [onto-chan chan]]
             [clj-containment-matchers.clojure-test :refer :all]))
 
-(def scenario-result
+(def scenario-results
   [{:name "Test scenario" :id 1 :start 1391936496814 :end 1391936496814
     :requests [{:id 1 :name "Request1" :start 1391936496853 :end 1391936497299 :result true}
                {:id 1 :name "Request2" :start 1391936497299 :end 1391936497996 :result true}]}
@@ -28,19 +30,12 @@
    ["Test scenario2" "0" "REQUEST" "" "Request1" "1391936497998" "1391936497998" "1391936498426" "1391936498426" "OK" "\u0020"]
    ["Test scenario2" "0" "USER" "END" "1391936496808" "1391936496808"]])
 
-(defn run-line-match [expected actual]
-  (is (equal? (first actual) (first expected))))
-
-(defn scenario-line-match [expected actual]
-  (is (equal? (second actual) (second expected))))
-
-(defn request-line-match [expected actual]
-  (is (equal? (nth actual 2) (nth expected 2))))
+(defn- from [coll]
+  (let [c (chan)]
+    (onto-chan c coll)
+    c))
 
 (deftest maps-scenario-results-to-log-lines
   (let [start-time (local-date-time 2014 2 9 11 1 36)
-        result-lines (report/create-result-lines start-time scenario-result)]
-    (run-line-match expected-lines result-lines)
-    (scenario-line-match expected-lines result-lines)
-    (request-line-match expected-lines result-lines)
+        result-lines (report/create-result-lines start-time (from scenario-results))]
     (is (equal? result-lines expected-lines))))

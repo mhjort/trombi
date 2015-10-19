@@ -1,5 +1,6 @@
 (ns clj-gatling.report
-  (:use [clj-time.format :only [formatter unparse-local]]))
+  (:require [clj-time.format :refer [formatter unparse-local]]
+            [clojure.core.async :refer [<!!]]))
 
 (defn- flatten-one-level [coll]
   (mapcat #(if (sequential? %) % [%]) coll))
@@ -15,7 +16,7 @@
         result (if (:result request) "OK" "KO")]
     [scenario-name id "REQUEST" "" (:name request)  execution-start request-end response-start execution-end result "\u0020"]))
 
-(defn- map-scenario [scenario]
+(defn- scenario->rows [scenario]
   (let [start (str (:start scenario))
         end (str (:end scenario))
         id (str (:id scenario))
@@ -24,8 +25,14 @@
         requests (mapcat #(vector (map-request (:name scenario) %)) (:requests scenario))]
     (concat [scenario-start] requests [scenario-end])))
 
-(defn create-result-lines [start-time result]
+(defn- to-vector [channel]
+  (loop [results []]
+    (if-let [result (<!! channel)]
+      (recur (conj results result))
+      results)))
+
+(defn create-result-lines [start-time results-channel]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
         header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]
-        scenarios (mapcat #(vector (map-scenario %)) result)]
+        scenarios (mapcat #(vector (scenario->rows %)) (to-vector results-channel))]
     (conj (flatten-one-level scenarios) header)))
