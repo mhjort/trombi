@@ -3,7 +3,7 @@
             [clj-time.core :refer [local-date-time]]
             [clj-gatling.report :as report]
             [clj-containment-matchers.clojure-test :refer :all]
-            [clojure.core.async :refer [onto-chan chan]]
+            [clojure.core.async :as a :refer [onto-chan chan]]
             [clj-containment-matchers.clojure-test :refer :all]))
 
 (def scenario-results
@@ -16,7 +16,7 @@
    {:name "Test scenario2" :id 0 :start 1391936496808 :end 1391936496808
     :requests [{:id 0 :name "Request1" :start 1391936497998 :end 1391936498426 :result true}]}])
 
-(def expected-lines
+(def expected-lines-1
   [["clj-gatling" "simulation" "RUN" "20140209110136" "\u0020" "2.0"]
    ["Test scenario" "1" "USER" "START" "1391936496814" "1"]
    ["Test scenario" "1" "REQUEST" "" "Request1" "1391936496853" "1391936496853" "1391936497299" "1391936497299" "OK" "\u0020"]
@@ -25,7 +25,10 @@
    ["Test scenario" "0" "USER" "START" "1391936496808" "0"]
    ["Test scenario" "0" "REQUEST" "" "Request1" "1391936497998" "1391936497998" "1391936498426" "1391936498426" "OK" "\u0020"]
    ["Test scenario" "0" "REQUEST" "" "Request2" "1391936498430" "1391936498430" "1391936498450" "1391936498450" "KO" "\u0020"]
-   ["Test scenario" "0" "USER" "END" "1391936496808" "1391936496808"]
+   ["Test scenario" "0" "USER" "END" "1391936496808" "1391936496808"]])
+
+(def expected-lines-2
+  [["clj-gatling" "simulation" "RUN" "20140209110136" "\u0020" "2.0"]
    ["Test scenario2" "0" "USER" "START" "1391936496808" "0"]
    ["Test scenario2" "0" "REQUEST" "" "Request1" "1391936497998" "1391936497998" "1391936498426" "1391936498426" "OK" "\u0020"]
    ["Test scenario2" "0" "USER" "END" "1391936496808" "1391936496808"]])
@@ -36,10 +39,12 @@
     c))
 
 (deftest maps-scenario-results-to-log-lines
-  (let [result-lines (promise)
-        output-writer (fn [_ result] (deliver result-lines result))
-        start-time (local-date-time 2014 2 9 11 1 36)
-        result-lines (report/create-result-lines start-time
-                                                 (from scenario-results)
-                                                 output-writer)]
-    (is (equal? @result-lines expected-lines))))
+  (let [result-lines [(promise) (promise)]
+        output-writer (fn [idx result] (deliver (nth result-lines idx) result))
+        start-time (local-date-time 2014 2 9 11 1 36)]
+    (report/create-result-lines start-time
+                                2
+                                (from scenario-results)
+                                output-writer)
+    (is (equal? @(first result-lines) expected-lines-1))
+    (is (equal? @(second result-lines) expected-lines-2))))

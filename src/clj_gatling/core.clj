@@ -6,6 +6,8 @@
             [clj-gatling.scenario-parser :as scenario-parser]
             [clj-gatling.simulation :as simulation]))
 
+(def buffer-size 20000)
+
 (defn create-dir [dir]
   (.mkdirs (java.io.File. dir)))
 
@@ -21,6 +23,7 @@
                                         (scenario-parser/scenarios->runnable-scenarios scenarios users options))]
    (create-dir (str results-dir "/input"))
    (report/create-result-lines start-time
+                               buffer-size
                                result
                                (partial gatling-csv-writer (str results-dir "/input")))
    (chart/create-chart results-dir)

@@ -1,6 +1,6 @@
 (ns clj-gatling.report
   (:require [clj-time.format :refer [formatter unparse-local]]
-            [clojure.core.async :refer [<!!]]))
+            [clojure.core.async :as a :refer [thread <!!]]))
 
 (defn- flatten-one-level [coll]
   (mapcat #(if (sequential? %) % [%]) coll))
@@ -25,17 +25,22 @@
         requests (mapcat #(vector (map-request (:name scenario) %)) (:requests scenario))]
     (concat [scenario-start] requests [scenario-end])))
 
+(defn- process [header idx results output-writer]
+  (let [scenarios (mapcat #(vector (scenario->rows %)) results)]
+    (output-writer idx (conj (flatten-one-level scenarios) header))))
 (defn- to-vector [channel]
   (loop [results []]
     (if-let [result (<!! channel)]
       (recur (conj results result))
       results)))
 
-(defn- process [header results output-writer]
-    (let [scenarios (mapcat #(vector (scenario->rows %)) results)]
-    (output-writer 0 (conj (flatten-one-level scenarios) header))))
-
-(defn create-result-lines [start-time results-channel output-writer]
+(defn create-result-lines [start-time buffer-size results-channel output-writer]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
-        header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]]
-    (process header (to-vector results-channel) output-writer)))
+        header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]
+        ;Note! core.async/partition is deprecated function.
+        ;This should be changed to use transducers instead
+        results (a/partition buffer-size results-channel)]
+    (loop [idx 0]
+      (when-let [result (<!! results)]
+        (thread (process header idx result output-writer))
+        (recur (inc idx))))))
