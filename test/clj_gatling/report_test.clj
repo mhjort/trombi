@@ -48,3 +48,16 @@
                                 output-writer)
     (is (equal? @(first result-lines) expected-lines-1))
     (is (equal? @(second result-lines) expected-lines-2))))
+
+(deftest waits-results-to-be-written-before-returning
+  (let [result-lines [(atom nil) (atom nil)]
+        slow-writer (fn [idx result]
+                      (Thread/sleep 100)
+                      (reset! (nth result-lines idx) result))
+        start-time (local-date-time 2014 2 9 11 1 36)]
+    (report/create-result-lines start-time
+                                2
+                                (from scenario-results)
+                                slow-writer)
+    (is (equal? @(first result-lines) expected-lines-1))
+    (is (equal? @(second result-lines) expected-lines-2))))

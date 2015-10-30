@@ -34,8 +34,11 @@
         header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]
         ;Note! core.async/partition is deprecated function.
         ;This should be changed to use transducers instead
-        results (a/partition buffer-size results-channel)]
-    (loop [idx 0]
-      (when-let [result (<!! results)]
-        (thread (process header idx result output-writer))
-        (recur (inc idx))))))
+        results (a/partition buffer-size results-channel)
+        write-results (loop [idx 0
+                             threads []]
+                        (if-let [result (<!! results)]
+                          (let [t (thread (process header idx result output-writer))]
+                            (recur (inc idx) (conj threads t)))
+                          threads))]
+    (doseq [w write-results] (<!! w)))) ;Wait for all write threads to finish
