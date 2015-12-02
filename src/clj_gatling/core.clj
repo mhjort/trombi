@@ -19,7 +19,7 @@
  (let [start-time (LocalDateTime.)
        results-dir (or (:root options) "target/results")
        step-timeout (or (:timeout-in-ms options) 5000)
-       result (simulation/run-scenarios step-timeout
+       result (simulation/run-scenarios {:timeout step-timeout}
                                         (scenario-parser/scenarios->runnable-scenarios scenarios users options))]
    (create-dir (str results-dir "/input"))
    (report/create-result-lines start-time

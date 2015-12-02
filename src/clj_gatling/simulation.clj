@@ -52,8 +52,9 @@
    :end (:end (last result))
    :requests result})
 
-(defn- run-scenario-once [scenario timeout user-id]
-  (let [result-channel (async/chan)
+(defn- run-scenario-once [options scenario user-id]
+  (let [timeout (:timeout options)
+        result-channel (async/chan)
         skip-next-after-failure? (if (nil? (:skip-next-after-failure? scenario))
                                     true
                                     (:skip-next-after-failure? scenario))
@@ -69,33 +70,37 @@
                  (recur (rest r) new-ctx (conj results result)))))
     result-channel))
 
-(defn- run-scenario-constantly [scenario timeout user-id]
+(defn- run-scenario-constantly [options scenario user-id]
   (let [c (async/chan)]
     (go-loop []
-        (>! c (<! (run-scenario-once scenario timeout user-id)))
+        (>! c (<! (run-scenario-once options scenario user-id)))
         (recur))
     c))
 
 (defn- print-scenario-info [scenario]
-  (let [concurrency        (:concurrency scenario)
-        number-of-requests (:number-of-requests scenario)]
+  (let [concurrency        (:concurrency scenario)]
     (println "Running scenario" (:name scenario)
-             "with concurrency" concurrency
-             "and" (runner-info (:runner scenario)))))
+             "with concurrency" concurrency)))
 
-(defn- run-scenario [timeout scenario]
+(defn- run-scenario [options scenario]
   (print-scenario-info scenario)
-  (let [scenario-start (local-time/local-now)
-        responses (async/merge (map #(run-scenario-constantly scenario timeout %)
+  (let [responses (async/merge (map #(run-scenario-constantly options scenario %)
                                     (range (:concurrency scenario))))
         results (async/chan)]
+    (go-loop []
+             (>! results (response->result scenario (<! responses)))
+             (recur))
+    results))
+
+(defn run-scenarios [options scenarios]
+  (let [start (local-time/local-now)
+        runner (:runner (first scenarios))
+        responses (async/merge (map (partial run-scenario options) scenarios))
+        results (async/chan)]
     (go-loop [handled-requests 0]
-             (if (continue-run? (:runner scenario) handled-requests scenario-start)
-               (let [result (response->result scenario (<! responses))]
+             (if (continue-run? runner handled-requests start)
+               (let [result (<! responses)]
                  (>! results result)
                  (recur (+ handled-requests (count (:requests result)))))
                (close! results)))
     results))
-
-(defn run-scenarios [timeout scenarios]
-  (async/merge (map (partial run-scenario timeout) scenarios)))
