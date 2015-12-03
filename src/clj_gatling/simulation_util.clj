@@ -1,4 +1,4 @@
-(ns clj-gatling.scenario-parser
+(ns clj-gatling.simulation-util
   (:import [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn- distinct-request-count [scenarios]

@@ -2,7 +2,7 @@
   (:use clojure.test)
   (:require [clj-gatling.simulation :as simulation]
             [clj-gatling.httpkit :as httpkit]
-            [clj-gatling.scenario-parser :refer [choose-runner
+            [clj-gatling.simulation-util :refer [choose-runner
                                                  weighted-scenarios]]
             [clj-containment-matchers.clojure-test :refer :all]
             [clojure.core.async :refer [<!!]]

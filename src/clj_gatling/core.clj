@@ -3,7 +3,7 @@
   (:require [clojure-csv.core :as csv]
             [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
-            [clj-gatling.scenario-parser :refer [weighted-scenarios choose-runner]]
+            [clj-gatling.simulation-util :refer [weighted-scenarios choose-runner]]
             [clj-gatling.simulation :as simulation]))
 
 (def buffer-size 20000)
