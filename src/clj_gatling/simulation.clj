@@ -94,7 +94,7 @@
 
 (defn run-scenarios [options scenarios]
   (let [start (local-time/local-now)
-        runner (:runner (first scenarios))
+        runner (:runner options)
         responses (async/merge (map (partial run-scenario options) scenarios))
         results (async/chan)]
     (go-loop [handled-requests 0]

@@ -3,15 +3,15 @@
             [clj-time.local :as local-time]))
 
 (defprotocol RunnerProtocol
-  (continue-run? [runner sent-requests scenario-start])
+  (continue-run? [runner sent-requests start])
   (runner-info [runner]))
 
-(deftype DurationRunner [scenario]
+(deftype DurationRunner [duration]
   RunnerProtocol
-  (continue-run? [runner _ scenario-start]
+  (continue-run? [runner _ start]
     (time/before? (local-time/local-now)
-                  (time/plus scenario-start (:duration scenario))))
-  (runner-info [_] (str " with duration " (:duration scenario))))
+                  (time/plus start duration)))
+  (runner-info [_] (str " with duration " duration)))
 
 (deftype FixedRequestNumberRunner [number-of-requests]
   RunnerProtocol
