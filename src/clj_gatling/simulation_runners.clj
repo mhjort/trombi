@@ -1,4 +1,4 @@
-(ns clj-gatling.scenario-runners
+(ns clj-gatling.simulation-runners
   (:require [clj-time.core :as time]
             [clj-time.local :as local-time]))
 

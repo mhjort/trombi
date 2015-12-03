@@ -1,6 +1,6 @@
 (ns clj-gatling.simulation
   (:require [clj-gatling.httpkit :as http]
-            [clj-gatling.scenario-runners :refer :all]
+            [clj-gatling.simulation-runners :refer :all]
             [clj-time.local :as local-time]
             [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
 

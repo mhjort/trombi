@@ -17,4 +17,4 @@
                    :exclusions [io.gatling/gatling-app io.gatling/gatling-recorder]]]
   :repositories { "excilys" "http://repository.excilys.com/content/groups/public" }
   :profiles {:dev {:dependencies [[clj-containment-matchers "1.0.1"]] }}
-  :aot [clj-gatling.scenario-runners])
+  :aot [clj-gatling.simulation-runners])

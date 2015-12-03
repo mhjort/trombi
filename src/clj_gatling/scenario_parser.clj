@@ -1,5 +1,5 @@
 (ns clj-gatling.scenario-parser
-  (:import [clj_gatling.scenario_runners FixedRequestNumberRunner DurationRunner]))
+  (:import [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
