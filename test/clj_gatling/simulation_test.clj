@@ -160,16 +160,19 @@
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
   (let [result (run-simulation [scenario scenario2] 1)]
-    (is (equal? result [{:name "Test scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests anything}
-                        {:name "Test scenario2"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests anything}]))))
+    ;Stop condition is not synced between parallel scenarios
+    ;so once in a while there might be one extra scenario
+    ;This is ok tolerance for max requests
+    (is (equal? (take 2 result) [{:name "Test scenario"
+                                  :id 0
+                                  :start number?
+                                  :end number?
+                                  :requests anything}
+                                 {:name "Test scenario2"
+                                  :id 0
+                                  :start number?
+                                  :end number?
+                                  :requests anything}]))))
 
 (deftest with-given-number-of-requests
   (let [result (run-simulation [scenario] 1 {:requests 4})]
@@ -180,9 +183,10 @@
 
 (deftest with-multiple-number-of-requests
   (reset! request-count 0)
-  (let [result (run-simulation [counting-scenario] 100 {:requests 2000})]
-    (is (= 2000 (->> result (map :requests) count)))
-    (is (some #{(- @request-count 2000)} (range 150))))) ;Some tolerance
+  (let [result (run-simulation [counting-scenario] 100 {:requests 2000})
+        handled-requests (->> result (map :requests) count)]
+    (is (some #{(- handled-requests 2000)} (range 5))) ;Some tolerance
+    (is (= handled-requests @request-count))))
 
 (deftest duration-given
   (let [result (run-simulation [scenario] 1 {:duration (time/millis 50)})]

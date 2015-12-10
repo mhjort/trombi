@@ -19,7 +19,7 @@
             (partial http/async-http-request url)
             (:fn request))))
 
-(defn async-function-with-timeout [request timeout user-id context]
+(defn async-function-with-timeout [request timeout sent-requests user-id context]
   (let [start-promise (promise)
         end-promise (promise)
         response (async/chan)
@@ -33,6 +33,7 @@
                                     :result result} context]))]
     (go
       (try
+        (swap! sent-requests inc)
         (function start-promise end-promise callback (assoc context :user-id user-id))
       (catch Exception e
         (put! exception-chan e)))
@@ -54,6 +55,7 @@
 
 (defn- run-scenario-once [options scenario user-id]
   (let [timeout (:timeout options)
+        sent-requests (:sent-requests options)
         result-channel (async/chan)
         skip-next-after-failure? (if (nil? (:skip-next-after-failure? scenario))
                                     true
@@ -62,7 +64,11 @@
     (go-loop [r (:requests scenario)
               context {}
               results []]
-             (let [[result new-ctx] (<! (async-function-with-timeout (first r) timeout user-id context))]
+             (let [[result new-ctx] (<! (async-function-with-timeout (first r)
+                                                                     timeout
+                                                                     sent-requests
+                                                                     user-id
+                                                                     context))]
                (if (or (empty? (rest r))
                        (and skip-next-after-failure?
                            (request-failed? result)))
@@ -71,10 +77,16 @@
     result-channel))
 
 (defn- run-scenario-constantly [options scenario user-id]
-  (let [c (async/chan)]
+  (let [c (async/chan)
+        runner (:runner options)
+        simulation-start (:simulation-start options)
+        sent-requests (:sent-requests options)]
     (go-loop []
-        (>! c (<! (run-scenario-once options scenario user-id)))
-        (recur))
+             (let [result (<! (run-scenario-once options scenario user-id))]
+               (>! c result)
+               (if (continue-run? runner @sent-requests simulation-start)
+                 (recur)
+                 (close! c))))
     c))
 
 (defn- print-scenario-info [scenario]
@@ -88,19 +100,25 @@
                                     (range (:concurrency scenario))))
         results (async/chan)]
     (go-loop []
-             (>! results (response->result scenario (<! responses)))
-             (recur))
+             (if-let [result (<! responses)]
+               (do
+                 (>! results (response->result scenario result))
+                 (recur))
+               (close! results)))
     results))
 
 (defn run-scenarios [options scenarios]
-  (let [start (local-time/local-now)
-        runner (:runner options)
-        responses (async/merge (map (partial run-scenario options) scenarios))
+  (let [simulation-start (local-time/local-now)
+        sent-requests (atom 0)
+        run-scenario-with-opts (partial run-scenario
+                                        (assoc options :simulation-start simulation-start
+                                                       :sent-requests sent-requests))
+        responses (async/merge (map run-scenario-with-opts scenarios))
         results (async/chan)]
-    (go-loop [handled-requests 0]
-             (if (continue-run? runner handled-requests start)
-               (let [result (<! responses)]
+    (go-loop []
+             (if-let [result (<! responses)]
+               (do
                  (>! results result)
-                 (recur (+ handled-requests (count (:requests result)))))
+                 (recur))
                (close! results)))
     results))
