@@ -5,6 +5,7 @@
             [clj-gatling.simulation-util :refer [choose-runner
                                                  weighted-scenarios]]
             [clj-containment-matchers.clojure-test :refer :all]
+            [clj-async-test.core :refer :all]
             [clojure.core.async :refer [<!!]]
             [clj-time.core :as time]))
 
@@ -185,7 +186,7 @@
   (reset! request-count 0)
   (let [result (run-simulation [counting-scenario] 100 {:requests 2000})
         handled-requests (->> result (map :requests) count)]
-    (is (some #{(- handled-requests 2000)} (range 5))) ;Some tolerance
+    (is (approximately== handled-requests 2000))
     (is (= handled-requests @request-count))))
 
 (deftest duration-given
