@@ -108,6 +108,7 @@
     results))
 
 (defn run-scenarios [options scenarios]
+  (println "Running simulation with" (runner-info (:runner options)))
   (let [simulation-start (local-time/local-now)
         sent-requests (atom 0)
         run-scenario-with-opts (partial run-scenario
