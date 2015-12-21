@@ -175,7 +175,7 @@ See example project a here: [clj-gatling-example](https://github.com/mhjort/clj-
 ## Why
 
 AFAIK there are no other performance testing tool where you can specify
-your tests in Clojure. In my opiniton Clojure syntax is very good for
+your tests in Clojure. In my opinion Clojure syntax is very good for
 this purpose.
 
 
