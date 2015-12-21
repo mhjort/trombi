@@ -148,7 +148,9 @@ You can override that behaviour by setting option :timeout-in-ms
 You can run same scenario multiple times to generate constant load
 within a longer time period by specifying option :requests.
 Default number of requests is same as number of users (which means
-run only once)
+run only once). Note! The given number is minimum number of requests
+clj-gatling will make. Due to design choice number of requests actually
+made can go bit over that (e.g. 1001 instead of 1000).
 
 
 ```clojure
