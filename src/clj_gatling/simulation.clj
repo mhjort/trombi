@@ -96,8 +96,9 @@
 
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
+
   (let [responses (async/merge (map #(run-scenario-constantly options scenario %)
-                                    (range (:concurrency scenario))))
+                                    (:users scenario)))
         results (async/chan)]
     (go-loop []
              (if-let [result (<! responses)]
