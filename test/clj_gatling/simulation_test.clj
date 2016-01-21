@@ -159,21 +159,24 @@
       (is (= true (get-result (:requests result) "Request1")))
       (is (= false (get-result (:requests result) "Request2"))))))
 
-(deftest simulation-returns-result-when-run-with-multiple-scenarios-and-one-user
-  (let [result (run-simulation [scenario scenario2] 1)]
+(deftest simulation-returns-result-when-run-with-multiple-scenarios-with-one-user
+  (let [result (run-simulation [scenario scenario2] 2)]
     ;Stop condition is not synced between parallel scenarios
     ;so once in a while there might be one extra scenario
     ;This is ok tolerance for max requests
-    (is (equal? (take 2 result) [{:name "Test scenario"
-                                  :id 0
-                                  :start number?
-                                  :end number?
-                                  :requests anything}
-                                 {:name "Test scenario2"
-                                  :id 0
-                                  :start number?
-                                  :end number?
-                                  :requests anything}]))))
+    (is (equal? (sort-by :id (take 2 result)) [{:name "Test scenario"
+                                                :id 0
+                                                :start number?
+                                                :end number?
+                                                :requests anything}
+                                               {:name "Test scenario2"
+                                                :id 1
+                                                :start number?
+                                                :end number?
+                                                :requests anything}]))))
+
+(deftest throws-exception-when-concurrency-is-smaller-than-number-of-parallel-scenarios
+  (is (thrown? AssertionError (run-simulation [scenario scenario2] 1))))
 
 (deftest with-given-number-of-requests
   (let [result (run-simulation [scenario] 1 {:requests 4})]

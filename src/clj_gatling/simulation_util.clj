@@ -9,6 +9,7 @@
     (map #(max 1 (Math/round (double (* value (/ % sum-of-weights))))) weights)))
 
 (defn weighted-scenarios [concurrency scenarios]
+  {:pre [(>= concurrency (count scenarios))]}
   (let [weights            (map #(or (:weight %) 1) scenarios)
         concurrencies      (weighted weights concurrency)]
     (map #(assoc %1 :concurrency %2)
