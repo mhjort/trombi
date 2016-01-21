@@ -15,13 +15,13 @@
   (let [csv (csv/write-csv result-lines :delimiter "\t" :end-of-line "\n")]
    (spit (str path "/simulation" idx ".log") csv)))
 
-(defn run-simulation [scenarios users & [options]]
+(defn run-simulation [scenarios concurrency & [options]]
  (let [start-time (LocalDateTime.)
        results-dir (or (:root options) "target/results")
        step-timeout (or (:timeout-in-ms options) 5000)
-       result (simulation/run-scenarios {:runner (choose-runner scenarios users options)
+       result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                          :timeout step-timeout}
-                                        (weighted-scenarios users scenarios))]
+                                        (weighted-scenarios (range concurrency) scenarios))]
    (create-dir (str results-dir "/input"))
    (report/create-result-lines start-time
                                buffer-size

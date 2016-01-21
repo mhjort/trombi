@@ -35,21 +35,21 @@
   (let [sum-of-weights (reduce + weights)]
     (map #(max 1 (Math/round (double (* value (/ % sum-of-weights))))) weights)))
 
-(defn weighted-scenarios [concurrency scenarios]
-  {:pre [(>= concurrency (count scenarios))]}
+(defn weighted-scenarios [users scenarios]
+  {:pre [(>= (count users) (count scenarios))]}
   (let [weights            (map #(or (:weight %) 1) scenarios)
-        concurrencies      (weighted weights concurrency)
+        concurrencies      (weighted weights (count users))
         with-concurrencies (map #(assoc %1 :concurrency %2)
                                 scenarios
                                 concurrencies)]
     (map #(assoc %1 :users %2)
          with-concurrencies
-         (split-to-buckets-with-sizes (range concurrency)
+         (split-to-buckets-with-sizes users
                                       (map :concurrency with-concurrencies)))))
 
-(defn choose-runner [scenarios users options]
+(defn choose-runner [scenarios concurrency options]
   (let [duration (:duration options)
-        requests (or (:requests options) (* users (distinct-request-count scenarios)))]
+        requests (or (:requests options) (* concurrency (distinct-request-count scenarios)))]
     (if (nil? duration)
       (FixedRequestNumberRunner. requests)
       (DurationRunner. duration))))

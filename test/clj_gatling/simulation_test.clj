@@ -15,11 +15,11 @@
       (recur (conj results result))
       results)))
 
-(defn- run-simulation [scenarios users & [options]]
+(defn- run-simulation [scenarios concurrency & [options]]
   (let [step-timeout (or (:timeout-in-ms options) 5000)]
-    (-> (simulation/run-scenarios {:runner (choose-runner scenarios users options)
+    (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                    :timeout step-timeout}
-                                  (weighted-scenarios users scenarios))
+                                  (weighted-scenarios (range concurrency) scenarios))
         to-vector)))
 
 (def request-count (atom 0))
