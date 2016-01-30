@@ -18,7 +18,8 @@
 (defn- run-simulation [scenarios concurrency & [options]]
   (let [step-timeout (or (:timeout-in-ms options) 5000)]
     (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                   :timeout step-timeout}
+                                   :timeout step-timeout
+                                   :context (:context options)}
                                   (weighted-scenarios (range concurrency) scenarios))
         to-vector)))
 
@@ -119,6 +120,16 @@
 (deftest simulation-passes-context-through-requests-in-scenario
   (let [result (first (run-simulation [context-testing-scenario] 1))]
     (is (= true (get-result (:requests result) "Request2")))))
+
+(deftest simulation-passes-original-context-to-first-request
+  (let [scenario {:name "scenario"
+                  :requests [{:name "Request1"
+                              :fn (fn [cb {:keys [test-val]}]
+                                    (cb (= 5 test-val)))}]}
+        result (first (run-simulation [scenario]
+                                      1
+                                      {:context {:test-val 5}}))]
+    (is (= true (get-result (:requests result) "Request1")))))
 
 (deftest simulation-skips-second-request-if-first-fails
   (let [result (run-simulation [first-fails-scenario] 1)]

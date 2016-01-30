@@ -62,7 +62,7 @@
                                     (:skip-next-after-failure? scenario))
         request-failed? #(not (:result %))]
     (go-loop [r (:requests scenario)
-              context {}
+              context (or (:context options) {})
               results []]
              (let [[result new-ctx] (<! (async-function-with-timeout (first r)
                                                                      timeout
@@ -113,8 +113,10 @@
   (let [simulation-start (local-time/local-now)
         sent-requests (atom 0)
         run-scenario-with-opts (partial run-scenario
-                                        (assoc options :simulation-start simulation-start
-                                                       :sent-requests sent-requests))
+                                        (assoc options
+                                               :context (:context options)
+                                               :simulation-start simulation-start
+                                               :sent-requests sent-requests))
         responses (async/merge (map run-scenario-with-opts scenarios))
         results (async/chan)]
     (go-loop []
