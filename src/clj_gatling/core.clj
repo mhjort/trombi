@@ -20,7 +20,8 @@
        results-dir (or (:root options) "target/results")
        step-timeout (or (:timeout-in-ms options) 5000)
        result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                         :timeout step-timeout}
+                                         :timeout step-timeout
+                                         :context (:context options)}
                                         (weighted-scenarios (range concurrency) scenarios))]
    (create-dir (str results-dir "/input"))
    (report/create-result-lines start-time
