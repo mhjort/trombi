@@ -33,7 +33,15 @@
 
 (defn- weighted [weights value]
   (let [sum-of-weights (reduce + weights)]
-    (map #(max 1 (Math/round (double (* value (/ % sum-of-weights))))) weights)))
+    ;We might get rounding errors and therefore we have to loop and
+    ;reduce weights until sum of weights is equal to given value
+    (loop [xs (mapv #(max 1
+                         (Math/round (double (* value (/ % sum-of-weights)))))
+                   weights)]
+      (let [max-elem-idx (.indexOf xs (apply max xs))]
+        (if (> (reduce + xs) value)
+          (recur (update xs max-elem-idx dec))
+          xs)))))
 
 (defn weighted-scenarios [users scenarios]
   {:pre [(>= (count users) (count scenarios))]}
