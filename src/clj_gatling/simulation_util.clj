@@ -1,4 +1,6 @@
 (ns clj-gatling.simulation-util
+  (:require [clj-time.core :as t]
+            [clj-time.format :as f])
   (:import [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn- distinct-request-count [scenarios]
@@ -61,3 +63,7 @@
     (if (nil? duration)
       (FixedRequestNumberRunner. requests)
       (DurationRunner. duration))))
+
+(defn timestamp-str []
+  (let [custom-formatter (f/formatter "yyyyMMddHHmmssSSS")]
+    (f/unparse custom-formatter (t/now))))

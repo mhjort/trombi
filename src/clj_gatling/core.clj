@@ -3,7 +3,7 @@
   (:require [clojure-csv.core :as csv]
             [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
-            [clj-gatling.simulation-util :refer [weighted-scenarios choose-runner]]
+            [clj-gatling.simulation-util :refer [weighted-scenarios choose-runner timestamp-str]]
             [clj-gatling.simulation :as simulation]))
 
 (def buffer-size 20000)
@@ -17,7 +17,9 @@
 
 (defn run-simulation [scenarios concurrency & [options]]
  (let [start-time (LocalDateTime.)
-       results-dir (or (:root options) "target/results")
+       results-dir (str (or (:root options) "target/results")
+                        "/"
+                        (timestamp-str))
        step-timeout (or (:timeout-in-ms options) 5000)
        result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                          :timeout step-timeout
