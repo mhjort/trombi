@@ -206,7 +206,8 @@ for that.
 
 ### Distributed load testing
 
-This is a long term plan but no actual stuff implemented yet.
+(Clojider)[http://clojider.io] is a tool that uses clj-gatling scenarios 
+and AWS Lambda technology for running distributed load tests in the cloud.
 
 ## Contribute
 
