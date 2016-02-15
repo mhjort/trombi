@@ -41,11 +41,12 @@
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
         output-writer (fn [idx result] (deliver (nth result-lines idx) result))
-        start-time (local-date-time 2014 2 9 11 1 36)]
-    (report/create-result-lines start-time
-                                2
-                                (from scenario-results)
-                                output-writer)
+        start-time (local-date-time 2014 2 9 11 1 36)
+        summary (report/create-result-lines start-time
+                                            2
+                                            (from scenario-results)
+                                            output-writer)]
+    (is (equal? summary {:ok 4 :ko 1}))
     (is (equal? @(first result-lines) expected-lines-1))
     (is (equal? @(second result-lines) expected-lines-2))))
 

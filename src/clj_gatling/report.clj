@@ -27,7 +27,8 @@
 
 (defn- process [header idx results output-writer]
   (let [scenarios (mapcat #(vector (scenario->rows %)) results)]
-    (output-writer idx (conj (flatten-one-level scenarios) header))))
+    (output-writer idx (conj (flatten-one-level scenarios) header))
+    (frequencies (mapcat #(map :result (:requests %)) results))))
 
 (defn create-result-lines [start-time buffer-size results-channel output-writer]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
@@ -41,4 +42,9 @@
                           (let [t (thread (process header idx result output-writer))]
                             (recur (inc idx) (conj threads t)))
                           threads))]
-    (doseq [w write-results] (<!! w)))) ;Wait for all write threads to finish
+    (reduce (fn [m [k v]]
+              (if k
+                (update m :ok + v)
+                (update m :ko + v)))
+            {:ok 0 :ko 0}
+            (mapcat #(<!! %) write-results))))
