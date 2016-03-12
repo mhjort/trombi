@@ -135,6 +135,18 @@ by specifying option :skip-next-after-failure?
   :requests [{:name "Failing request" :fn fail}
              {:name "Next request"    :fn success}]}
 ```
+### Results
+
+After the load test run clj-gatling prints out summary of the results
+to console output and generates detailed graphical results using
+[gatling-highcharts](https://github.com/gatling/gatling-highcharts) library.
+
+Calling `clj-gatling-core/run-simulation` also returns summary as following Clojure
+map.
+
+```clojure
+{:ok <number-of-successful-requests> :ko <number-of-failed-requests>}
+```
 
 ### Global Options
 

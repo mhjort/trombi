@@ -16,19 +16,20 @@
    (spit (str path "/simulation" idx ".log") csv)))
 
 (defn run-simulation [scenarios concurrency & [options]]
- (let [start-time (LocalDateTime.)
-       results-dir (str (or (:root options) "target/results")
-                        "/"
-                        (timestamp-str))
-       step-timeout (or (:timeout-in-ms options) 5000)
-       result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                         :timeout step-timeout
-                                         :context (:context options)}
-                                        (weighted-scenarios (range concurrency) scenarios))]
-   (create-dir (str results-dir "/input"))
-   (report/create-result-lines start-time
-                               buffer-size
-                               result
-                               (partial gatling-csv-writer (str results-dir "/input")))
-   (chart/create-chart results-dir)
-   (println (str "Open " results-dir "/index.html"))))
+  (let [start-time (LocalDateTime.)
+        results-dir (str (or (:root options) "target/results")
+                         "/"
+                         (timestamp-str))
+        step-timeout (or (:timeout-in-ms options) 5000)
+        result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
+                                          :timeout step-timeout
+                                          :context (:context options)}
+                                         (weighted-scenarios (range concurrency) scenarios))]
+    (create-dir (str results-dir "/input"))
+    (let [summary (report/create-result-lines start-time
+                                              buffer-size
+                                              result
+                                              (partial gatling-csv-writer (str results-dir "/input")))]
+      (chart/create-chart results-dir)
+      (println (str "Open " results-dir "/index.html"))
+      summary)))
