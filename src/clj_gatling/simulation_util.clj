@@ -2,7 +2,11 @@
   (:require [clj-time.core :as t]
             [clj-time.format :as f])
   (:import [java.util List]
+           [java.io File]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
+
+(defn create-dir [^String dir]
+  (.mkdirs (File. dir)))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
