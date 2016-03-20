@@ -3,7 +3,7 @@
   (:require [clojure.java.io :as io]
             [clj-gatling.chart :as chart]))
  
-(defn create-dir [dir]
+(defn create-dir [^String dir]
   (.mkdirs (java.io.File. dir)))
 
 (defn copy-file [source-path dest-path]

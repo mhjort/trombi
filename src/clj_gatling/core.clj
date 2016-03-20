@@ -1,5 +1,6 @@
 (ns clj-gatling.core
-  (:import (org.joda.time LocalDateTime))
+  (:import [org.joda.time LocalDateTime]
+           [java.io File])
   (:require [clojure-csv.core :as csv]
             [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
@@ -8,8 +9,8 @@
 
 (def buffer-size 20000)
 
-(defn create-dir [dir]
-  (.mkdirs (java.io.File. dir)))
+(defn create-dir [^String dir]
+  (.mkdirs (File. dir)))
 
 (defn- gatling-csv-writer [path idx result-lines]
   (let [csv (csv/write-csv result-lines :delimiter "\t" :end-of-line "\n")]

@@ -16,6 +16,7 @@
                  [io.gatling.highcharts/gatling-charts-highcharts "2.0.3"
                    :exclusions [io.gatling/gatling-app io.gatling/gatling-recorder]]]
   :repositories { "excilys" "http://repository.excilys.com/content/groups/public" }
-  :profiles {:dev {:dependencies [[clj-async-test "0.0.3"]
+  :profiles {:dev {:global-vars {*warn-on-reflection* true}
+                   :dependencies [[clj-async-test "0.0.3"]
                                   [clj-containment-matchers "1.0.1"]] }}
   :aot [clj-gatling.simulation-runners])

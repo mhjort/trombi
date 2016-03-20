@@ -1,7 +1,8 @@
 (ns clj-gatling.simulation-util
   (:require [clj-time.core :as t]
             [clj-time.format :as f])
-  (:import [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
+  (:import [java.util List]
+           [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn- distinct-request-count [scenarios]
   (reduce + (map #(count (:requests %)) scenarios)))
@@ -14,12 +15,13 @@
         (first vector-of-vectors)
         (rest vector-of-vectors)))
 
-(defn- idx-of-smallest-vector [vector-of-vectors]
+(defn- idx-of-smallest-vector [^List vector-of-vectors]
   (.indexOf vector-of-vectors (smallest-vector vector-of-vectors)))
 
-(defn- idx-of-first-vector-with-nil [vector-of-vectors]
+(defn- idx-of-first-vector-with-nil [^List vector-of-vectors]
   (.indexOf vector-of-vectors
-            (first (filter #(.contains % nil) vector-of-vectors))))
+            (first (filter (fn [^List xs]
+                             (.contains xs nil)) vector-of-vectors))))
 
 (defn split-to-number-of-buckets [xs bucket-count]
   (reduce (fn [m v]
@@ -37,7 +39,7 @@
   (let [sum-of-weights (reduce + weights)]
     ;We might get rounding errors and therefore we have to loop and
     ;reduce weights until sum of weights is equal to given value
-    (loop [xs (mapv #(max 1
+    (loop [^List xs (mapv #(max 1
                          (Math/round (double (* value (/ % sum-of-weights)))))
                    weights)]
       (let [max-elem-idx (.indexOf xs (apply max xs))]
