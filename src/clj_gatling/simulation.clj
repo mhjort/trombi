@@ -6,6 +6,17 @@
 
 (defn- now [] (System/currentTimeMillis))
 
+(defn asynchronize [f ctx]
+  (go
+    (try
+      (let [result (f ctx)]
+        (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
+          (let [[success? new-ctx] (<! result)]
+            [success? (now) new-ctx])
+          [(first result) (now) (second result)]))
+      (catch Exception _
+        [false (now) ctx]))))
+
 (defn- bench [f]
   (fn [start-promise end-promise callback context]
     (deliver start-promise (now))
@@ -20,6 +31,24 @@
             (:fn request))))
 
 (defn async-function-with-timeout [request timeout sent-requests user-id context]
+  (swap! sent-requests inc)
+  (let [start (now)
+        response (asynchronize (:action request) (assoc context :user-id user-id))]
+    (go
+      (let [[[result end new-ctx] c] (alts! [response (async/timeout timeout)])]
+        (if (= c response)
+          [{:name (:name request)
+            :id user-id
+            :start start
+            :end end
+            :result result} new-ctx]
+          [{:name (:name request)
+            :id user-id
+            :start start
+            :end (now)
+            :result false} context])))))
+
+(defn async-function-with-timeout-old [request timeout sent-requests user-id context]
   (let [start-promise (promise)
         end-promise (promise)
         response (async/chan)
@@ -94,9 +123,29 @@
     (println "Running scenario" (:name scenario)
              "with concurrency" concurrency)))
 
+(defn legacy-request-fn->action [request]
+  (let [f (if-let [url (:http request)]
+            (partial http/async-http-request url)
+            (:fn request))
+        c (async/chan)]
+    (fn [ctx]
+      (f (fn [result & [new-ctx]]
+           (if new-ctx
+             (put! c [result new-ctx])
+             (put! c [result ctx])))
+         ctx)
+      c)))
+
+(defn convert-from-legacy [scenarios]
+  (map (fn [scenario]
+         (update scenario
+                 :requests
+                 (fn [requests]
+                   (map #(assoc % :action (legacy-request-fn->action %)) requests))))
+       scenarios))
+
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
-
   (let [responses (async/merge (map #(run-scenario-constantly options scenario %)
                                     (:users scenario)))
         results (async/chan)]
@@ -117,7 +166,7 @@
                                                :context (:context options)
                                                :simulation-start simulation-start
                                                :sent-requests sent-requests))
-        responses (async/merge (map run-scenario-with-opts scenarios))
+        responses (async/merge (map run-scenario-with-opts (convert-from-legacy scenarios)))
         results (async/chan)]
     (go-loop []
              (if-let [result (<! responses)]
