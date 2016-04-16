@@ -9,6 +9,8 @@
             [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
 
+(set! *warn-on-reflection* true)
+
 (defn- now [] (System/currentTimeMillis))
 
 (defn asynchronize [f ctx]
@@ -22,19 +24,6 @@
           [(first result) (now) (second result)]))
       (catch Exception _
         [false (now) ctx]))))
-
-(defn- bench [f]
-  (fn [start-promise end-promise callback context]
-    (deliver start-promise (now))
-    (f (fn [result & [context]]
-         (deliver end-promise (now))
-         (callback result context))
-       context)))
-
-(defn- request-fn [request]
-  (bench (if-let [url (:http request)]
-            (partial http/async-http-request url)
-            (:fn request))))
 
 (defn async-function-with-timeout [request timeout sent-requests user-id context]
   (swap! sent-requests inc)
@@ -51,33 +40,6 @@
           [{:name (:name request)
             :id user-id
             :start start
-            :end (now)
-            :result false} context])))))
-
-(defn async-function-with-timeout-old [request timeout sent-requests user-id context]
-  (let [start-promise (promise)
-        end-promise (promise)
-        response (async/chan)
-        exception-chan (async/chan)
-        function (memoize (request-fn request))
-        callback (fn [result context]
-                   (put! response [{:name (:name request)
-                                    :id user-id
-                                    :start @start-promise
-                                    :end @end-promise
-                                    :result result} context]))]
-    (go
-      (try
-        (swap! sent-requests inc)
-        (function start-promise end-promise callback (assoc context :user-id user-id))
-      (catch Exception e
-        (put! exception-chan e)))
-      (let [[result c] (alts! [response (async/timeout timeout) exception-chan])]
-        (if (= c response)
-          result
-          [{:name (:name request)
-            :id user-id
-            :start @start-promise
             :end (now)
             :result false} context])))))
 
