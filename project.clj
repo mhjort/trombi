@@ -8,6 +8,7 @@
                  [clojure-csv/clojure-csv "2.0.1"]
                  [http-kit "2.1.19"]
                  [clj-time "0.11.0"]
+                 [prismatic/schema "1.1.0"]
                  [io.gatling/gatling-charts "2.0.3"
                    :exclusions [com.typesafe.akka/akka-actor_2.10
                                 org.jodd/jodd-lagarto

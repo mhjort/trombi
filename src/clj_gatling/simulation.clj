@@ -1,7 +1,10 @@
 (ns clj-gatling.simulation
   (:require [clj-gatling.httpkit :as http]
             [clj-gatling.simulation-runners :refer :all]
+            [clj-gatling.schema :as schema]
+            [schema.core :refer [validate]]
             [clj-time.local :as local-time]
+            [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
 
 (defn- now [] (System/currentTimeMillis))
@@ -90,7 +93,7 @@
                                     true
                                     (:skip-next-after-failure? scenario))
         request-failed? #(not (:result %))]
-    (go-loop [r (:requests scenario)
+    (go-loop [r (:steps scenario)
               context (or (:context options) {})
               results []]
              (let [[result new-ctx] (<! (async-function-with-timeout (first r)
@@ -119,9 +122,8 @@
     c))
 
 (defn- print-scenario-info [scenario]
-  (let [concurrency        (:concurrency scenario)]
-    (println "Running scenario" (:name scenario)
-             "with concurrency" concurrency)))
+  (println "Running scenario" (:name scenario)
+           "with concurrency" (count (:users scenario))))
 
 (defn legacy-request-fn->action [request]
   (let [f (if-let [url (:http request)]
@@ -136,13 +138,18 @@
          ctx)
       c)))
 
-(defn convert-from-legacy [scenarios]
-  (map (fn [scenario]
-         (update scenario
-                 :requests
-                 (fn [requests]
-                   (map #(assoc % :action (legacy-request-fn->action %)) requests))))
-       scenarios))
+(defn- convert-from-legacy [scenarios]
+  (let [request->step (fn [request]
+                        (-> request
+                            (assoc :action (legacy-request-fn->action request))
+                            (dissoc :fn :http)))]
+    (validate [schema/RunnableScenario]
+              (map (fn [scenario]
+                     (-> scenario
+                         (update :requests #(map request->step %))
+                         (rename-keys {:requests :steps})
+                         (dissoc :concurrency :weight)))
+                   scenarios))))
 
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
