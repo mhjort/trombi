@@ -2,7 +2,9 @@
   (:require [clj-gatling.httpkit :as http]
             [clj-gatling.simulation-runners :refer :all]
             [clj-gatling.schema :as schema]
-            [schema.core :refer [validate]]
+            [clj-gatling.simulation-util :refer [weighted-scenarios
+                                                 choose-runner]]
+            [schema.core :refer [check validate]]
             [clj-time.local :as local-time]
             [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
@@ -16,6 +18,7 @@
         (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
           (let [[success? new-ctx] (<! result)]
             [success? (now) new-ctx])
+          ;TODO Warning if result is not a vector with size 2
           [(first result) (now) (second result)]))
       (catch Exception _
         [false (now) ctx]))))
@@ -139,17 +142,20 @@
       c)))
 
 (defn- convert-from-legacy [scenarios]
-  (let [request->step (fn [request]
-                        (-> request
-                            (assoc :action (legacy-request-fn->action request))
-                            (dissoc :fn :http)))]
-    (validate [schema/RunnableScenario]
-              (map (fn [scenario]
-                     (-> scenario
-                         (update :requests #(map request->step %))
-                         (rename-keys {:requests :steps})
-                         (dissoc :concurrency :weight)))
-                   scenarios))))
+  ;Skip conversion if it matches new schema already
+  (if-not (check [schema/RunnableScenario] scenarios)
+    scenarios
+    (let [request->step (fn [request]
+                          (-> request
+                              (assoc :action (legacy-request-fn->action request))
+                              (dissoc :fn :http)))]
+      (validate [schema/RunnableScenario]
+                (map (fn [scenario]
+                       (-> scenario
+                           (update :requests #(map request->step %))
+                           (rename-keys {:requests :steps})
+                           (dissoc :concurrency :weight)))
+                     scenarios)))))
 
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
@@ -182,3 +188,13 @@
                  (recur))
                (close! results)))
     results))
+
+(defn run [{:keys [scenarios] :as simulation}
+           {:keys [concurrency] :as options}]
+  (validate schema/Simulation simulation)
+  (run-scenarios (assoc options :runner (choose-runner scenarios
+                                                       concurrency
+                                                       options))
+                 (weighted-scenarios (range concurrency) scenarios)))
+
+
