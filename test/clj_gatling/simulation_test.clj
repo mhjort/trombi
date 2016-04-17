@@ -20,7 +20,8 @@
     (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                    :timeout-in-ms step-timeout
                                    :context (:context options)}
-                                  (weighted-scenarios (range concurrency) scenarios))
+                                  (weighted-scenarios (range concurrency) scenarios)
+                                  true)
         to-vector)))
 
 (defn- run-single-scenario [scenario concurrency]
@@ -29,6 +30,11 @@
                              {:concurrency concurrency
                               :timeout-in-ms 5000})))
 
+(defn- run-two-scenarios [scenario1 scenario2 concurrency]
+  (to-vector (simulation/run {:name "Simulation"
+                              :scenarios [scenario1 scenario2]}
+                             {:concurrency concurrency
+                              :timeout-in-ms 5000})))
 (def request-count (atom 0))
 
 (defn counting-request [cb context]
@@ -92,6 +98,10 @@
 (defn get-result [requests request-name]
   (:result (first (filter #(= request-name (:name %)) requests))))
 
+(defn- step [step-name return]
+  {:name step-name
+   :request (fn [ctx] [return ctx])})
+
 (deftest simulation-returns-result-when-run-with-one-user-with-legacy-format
   (let [result (run-legacy-simulation [scenario] 1)]
     (is (equal? result [{:name "Test scenario"
@@ -111,10 +121,8 @@
 
 (deftest simulation-returns-result-when-run-with-one-user
   (let [result (run-single-scenario {:name "Test scenario"
-                                     :steps [{:name "Step1"
-                                              :request (fn [ctx] [true ctx])}
-                                             {:name "Step2"
-                                              :request (fn [ctx] [false ctx])}]}
+                                     :steps [(step "Step1" true)
+                                             (step "Step2" false)]}
                                     1)]
     (is (equal? result [{:name "Test scenario"
                          :id 0
@@ -199,20 +207,24 @@
       (is (= false (get-result (:requests result) "Request2"))))))
 
 (deftest simulation-returns-result-when-run-with-multiple-scenarios-with-one-user
-  (let [result (run-legacy-simulation [scenario scenario2] 2)]
+  (let [result (run-two-scenarios {:name "Test scenario"
+                                   :steps [(step "Step" true)]}
+                                  {:name "Test scenario2"
+                                   :steps [(step "Step" true)]}
+                                  2)]
     ;Stop condition is not synced between parallel scenarios
     ;so once in a while there might be one extra scenario
     ;This is ok tolerance for max requests
-    (is (equal? (sort-by :id (take 2 result)) [{:name "Test scenario"
-                                                :id 0
-                                                :start number?
-                                                :end number?
-                                                :requests anything}
-                                               {:name "Test scenario2"
-                                                :id 1
-                                                :start number?
-                                                :end number?
-                                                :requests anything}]))))
+    (is (equal? (first (filter #(= 0 (:id %)) result)) {:name "Test scenario"
+                                                       :id 0
+                                                       :start number?
+                                                       :end number?
+                                                       :requests anything}))
+    (is (equal? (first (filter #(= 1 (:id %)) result)) {:name "Test scenario2"
+                                                       :id 1
+                                                       :start number?
+                                                       :end number?
+                                                       :requests anything}))))
 
 (deftest throws-exception-when-concurrency-is-smaller-than-number-of-parallel-scenarios
   (is (thrown? AssertionError (run-legacy-simulation [scenario scenario2] 1))))
