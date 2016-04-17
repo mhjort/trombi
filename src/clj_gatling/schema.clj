@@ -3,7 +3,7 @@
 
 (def Step
   {:name s/Str
-   :action (s/make-fn-schema s/Any [[{:user-id s/Int}]])})
+   :request (s/make-fn-schema s/Any [[{:user-id s/Int}]])})
 
 (def RunnableScenario
   {:name s/Str

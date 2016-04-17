@@ -25,19 +25,19 @@
       (catch Exception _
         [false (now) ctx]))))
 
-(defn async-function-with-timeout [request timeout sent-requests user-id context]
+(defn async-function-with-timeout [step timeout sent-requests user-id context]
   (swap! sent-requests inc)
   (let [start (now)
-        response (asynchronize (:action request) (assoc context :user-id user-id))]
+        response (asynchronize (:request step) (assoc context :user-id user-id))]
     (go
       (let [[[result end new-ctx] c] (alts! [response (async/timeout timeout)])]
         (if (= c response)
-          [{:name (:name request)
+          [{:name (:name step)
             :id user-id
             :start start
             :end end
             :result result} new-ctx]
-          [{:name (:name request)
+          [{:name (:name step)
             :id user-id
             :start start
             :end (now)
@@ -58,19 +58,19 @@
                                     true
                                     (:skip-next-after-failure? scenario))
         request-failed? #(not (:result %))]
-    (go-loop [r (:steps scenario)
+    (go-loop [steps (:steps scenario)
               context (or (:context options) {})
               results []]
-             (let [[result new-ctx] (<! (async-function-with-timeout (first r)
+             (let [[result new-ctx] (<! (async-function-with-timeout (first steps)
                                                                      timeout
                                                                      sent-requests
                                                                      user-id
                                                                      context))]
-               (if (or (empty? (rest r))
+               (if (or (empty? (rest steps))
                        (and skip-next-after-failure?
                            (request-failed? result)))
                  (>! result-channel (conj results result))
-                 (recur (rest r) new-ctx (conj results result)))))
+                 (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
 
 (defn- run-scenario-constantly [options scenario user-id]
@@ -90,7 +90,7 @@
   (println "Running scenario" (:name scenario)
            "with concurrency" (count (:users scenario))))
 
-(defn legacy-request-fn->action [request]
+(defn- convert-legacy-fn [request]
   (let [f (if-let [url (:http request)]
             (partial http/async-http-request url)
             (:fn request))
@@ -109,7 +109,7 @@
     scenarios
     (let [request->step (fn [request]
                           (-> request
-                              (assoc :action (legacy-request-fn->action request))
+                              (assoc :request (convert-legacy-fn request))
                               (dissoc :fn :http)))]
       (validate [schema/RunnableScenario]
                 (map (fn [scenario]
@@ -138,7 +138,6 @@
         sent-requests (atom 0)
         run-scenario-with-opts (partial run-scenario
                                         (assoc options
-                                               :context (:context options)
                                                :simulation-start simulation-start
                                                :sent-requests sent-requests))
         responses (async/merge (map run-scenario-with-opts (convert-from-legacy scenarios)))

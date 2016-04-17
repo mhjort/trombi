@@ -112,9 +112,9 @@
 (deftest simulation-returns-result-when-run-with-one-user
   (let [result (run-single-scenario {:name "Test scenario"
                                      :steps [{:name "Step1"
-                                              :action (fn [ctx] [true ctx])}
+                                              :request (fn [ctx] [true ctx])}
                                              {:name "Step2"
-                                              :action (fn [ctx] [false ctx])}]}
+                                              :request (fn [ctx] [false ctx])}]}
                                     1)]
     (is (equal? result [{:name "Test scenario"
                          :id 0
