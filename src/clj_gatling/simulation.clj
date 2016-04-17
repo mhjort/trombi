@@ -53,7 +53,7 @@
    :requests result})
 
 (defn- run-scenario-once [options scenario user-id]
-  (let [timeout (:timeout options)
+  (let [timeout (:timeout-in-ms options)
         sent-requests (:sent-requests options)
         result-channel (async/chan)
         skip-next-after-failure? (if (nil? (:skip-next-after-failure? scenario))

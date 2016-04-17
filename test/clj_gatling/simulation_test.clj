@@ -18,7 +18,7 @@
 (defn- run-legacy-simulation [scenarios concurrency & [options]]
   (let [step-timeout (or (:timeout-in-ms options) 5000)]
     (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                   :timeout step-timeout
+                                   :timeout-in-ms step-timeout
                                    :context (:context options)}
                                   (weighted-scenarios (range concurrency) scenarios))
         to-vector)))
@@ -27,7 +27,7 @@
   (to-vector (simulation/run {:name "Simulation"
                               :scenarios [scenario]}
                              {:concurrency concurrency
-                              :timeout 5000})))
+                              :timeout-in-ms 5000})))
 
 (def request-count (atom 0))
 
