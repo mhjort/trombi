@@ -14,7 +14,7 @@
         response-start end
         execution-end end
         result (if (:result request) "OK" "KO")]
-    [scenario-name id "REQUEST" "" (:name request)  execution-start request-end response-start execution-end result "\u0020"]))
+    [scenario-name id "REQUEST" "" (:name request) execution-start request-end response-start execution-end result "\u0020"]))
 
 (defn- scenario->rows [scenario]
   (let [start (str (:start scenario))
