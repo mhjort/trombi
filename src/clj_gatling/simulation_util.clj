@@ -61,7 +61,7 @@
         with-concurrencies (map #(assoc %1 :concurrency %2)
                                 scenarios
                                 concurrencies)]
-    (map #(assoc %1 :users %2)
+    (map #(assoc (dissoc %1 :weight) :users %2)
          scenarios
          (split-to-buckets-with-sizes users
                                       (map :concurrency with-concurrencies)))))
