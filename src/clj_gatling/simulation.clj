@@ -14,16 +14,18 @@
 (defn- now [] (System/currentTimeMillis))
 
 (defn asynchronize [f ctx]
-  (go
-    (try
-      (let [result (f ctx)]
-        (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
-          (let [[success? new-ctx] (<! result)]
-            [success? (now) new-ctx])
-          ;TODO Warning if result is not a vector with size 2
-          [(first result) (now) (second result)]))
-      (catch Exception _
-        [false (now) ctx]))))
+  (let [parse-response (fn [result]
+                         (when-not (= 2 (count result)) ;TODO Accept also single boolean
+                           (println "WARN: result is not tuple" result))
+                         [(first result) (now) (second result)])]
+    (go
+      (try
+        (let [result (f ctx)]
+          (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
+            (parse-response (<! result))
+            (parse-response result)))
+        (catch Exception _
+          [false (now) ctx])))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id context]
   (swap! sent-requests inc)
