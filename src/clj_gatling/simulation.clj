@@ -15,9 +15,9 @@
 
 (defn asynchronize [f ctx]
   (let [parse-response (fn [result]
-                         (when-not (= 2 (count result)) ;TODO Accept also single boolean
-                           (println "WARN: result is not tuple" result))
-                         [(first result) (now) (second result)])]
+                         (if (vector? result)
+                           [(first result) (now) (second result)]
+                           [result (now) ctx]))]
     (go
       (try
         (let [result (f ctx)]
