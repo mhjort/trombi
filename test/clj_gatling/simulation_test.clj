@@ -123,6 +123,21 @@
                                      :end number?
                                      :result true}]}]))))
 
+(deftest simulation-with-request-returning-channel-with-boolean
+  (let [result (run-single-scenario {:name "Test scenario"
+                                     :steps [{:name "step"
+                                              :request (fn [_] (go true))}]}
+                                    :concurrency 1)]
+    (is (equal? result [{:name "Test scenario"
+                         :id 0
+                         :start number?
+                         :end number?
+                         :requests [{:name "step"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :result true}]}]))))
+
 (deftest when-function-returns-exception-it-is-handled-as-ko
   (let [s {:name "Exception scenario"
            :steps [{:name "Throwing" :request #(throw (Exception. "Simulated"))}]}
