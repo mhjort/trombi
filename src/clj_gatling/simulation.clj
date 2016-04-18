@@ -152,10 +152,11 @@
     results))
 
 (defn run [{:keys [scenarios] :as simulation}
-           {:keys [concurrency] :as options}]
-  (validate schema/Simulation simulation)
-  (run-scenarios (assoc options :runner (choose-runner scenarios
-                                                       concurrency
-                                                       options))
-                 (weighted-scenarios (range concurrency) scenarios)
-                 false))
+           {:keys [concurrency users] :as options}]
+  (let [user-ids (or users (range concurrency))]
+    (validate schema/Simulation simulation)
+    (run-scenarios (assoc options :runner (choose-runner scenarios
+                                                         (count user-ids)
+                                                         options))
+                   (weighted-scenarios user-ids scenarios)
+                   false)))

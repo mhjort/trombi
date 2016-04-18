@@ -24,7 +24,7 @@
                                   true)
         to-vector)))
 
-(defn- run-single-scenario [scenario & {:keys [concurrency context timeout-in-ms requests duration]
+(defn- run-single-scenario [scenario & {:keys [concurrency context timeout-in-ms requests duration users]
                                         :or {timeout-in-ms 5000}}]
   (to-vector (simulation/run {:name "Simulation"
                               :scenarios [scenario]}
@@ -32,6 +32,7 @@
                               :timeout-in-ms timeout-in-ms
                               :requests requests
                               :duration duration
+                              :users users
                               :context context})))
 
 (defn- run-two-scenarios [scenario1 scenario2 & {:keys [concurrency requests]}]
@@ -107,6 +108,29 @@
                                      :start number?
                                      :end number?
                                      :result false}]}]))))
+
+(deftest simulation-uses-given-user-ids
+  (let [result (run-single-scenario {:name "Test scenario"
+                                     :steps [(step "Step" true)]}
+                                    :users [1 3])]
+    (is (equal? (sort-by :id result) [{:name "Test scenario"
+                                       :id 1
+                                       :start number?
+                                       :end number?
+                                       :requests [{:name "Step"
+                                                   :id 1
+                                                   :start number?
+                                                   :end number?
+                                                   :result true}]}
+                                      {:name "Test scenario"
+                                       :id 3
+                                       :start number?
+                                       :end number?
+                                       :requests [{:name "Step"
+                                                   :id 3
+                                                   :start number?
+                                                   :end number?
+                                                   :result true}]}]))))
 
 (deftest simulation-with-request-returning-single-boolean-instead-of-tuple
   (let [result (run-single-scenario {:name "Test scenario"
