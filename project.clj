@@ -18,6 +18,6 @@
                    :exclusions [io.gatling/gatling-app io.gatling/gatling-recorder]]]
   :repositories { "excilys" "http://repository.excilys.com/content/groups/public" }
   :profiles {:dev {:global-vars {*warn-on-reflection* true}
-                   :dependencies [[clj-async-test "0.0.3"]
+                   :dependencies [[clj-async-test "0.0.5"]
                                   [clj-containment-matchers "1.0.1"]] }}
   :aot [clj-gatling.simulation-runners])
