@@ -373,4 +373,4 @@
         count-requests (fn [name] (reduce + (map #(count (:requests %)) (get result name))))]
     (is (approximately== (count-requests "Main") 66 :accuracy 20))
     (is (approximately== (count-requests "Second") 33 :accuracy 20))
-    (is (approximately== 100 (+ (count-requests "Main") (count-requests "Second")) :accuracy 2))))
+    (is (approximately== 100 (+ (count-requests "Main") (count-requests "Second")) :accuracy 5))))
