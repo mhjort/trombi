@@ -3,21 +3,8 @@
 [![Build Status](https://travis-ci.org/mhjort/clj-gatling.png?branch=master)](https://travis-ci.org/mhjort/clj-gatling)
 [![Dependencies Status](http://jarkeeper.com/mhjort/clj-gatling/status.png)](http://jarkeeper.com/mhjort/clj-gatling)
 
-Create and run performance tests using Clojure (and get fancy reports).
+Create and run load tests using Clojure (and get fancy reports).
 For reporting clj-gatling uses Gatling under the hood.
-
-## Notes for changes in 0.7.x
-
-* Buffer results to file system while simulation is running.
-  This makes it possible to run clj-gatling for long period of time without
-  running out of memory.
-
-## Notes for changes in 0.6.x
-
-* Upgraded to Clojure 1.7.
-* Changed format of request functions.
-  Callback is the first parameter and user-id is not separate parameter anymore.
-  You can get user-id from context via :user-id key.
 
 ## Installation
 
