@@ -215,6 +215,30 @@
                                      :end number?
                                      :result true}]}]))))
 
+(deftest waits-for-given-delay-before-starting-request
+  (let [request-started (promise)
+        scenario {:name "scenario"
+                  :steps [{:name "step"
+                           :delay (fn [ctx] 500)
+                           :request (fn [ctx]
+                                      (deliver request-started true)
+                                      true)}]}
+        result (future (run-single-scenario scenario :concurrency 1))]
+    (Thread/sleep 200)
+    (is (not (realized? request-started)))
+    (Thread/sleep 400)
+    (is (realized? request-started))
+    (is @request-started)
+    (is (equal? @result [{:name "scenario"
+                          :id 0
+                          :start number?
+                          :end number?
+                          :requests [{:name "step"
+                                      :id 0
+                                      :start number?
+                                      :end number?
+                                      :result true}]}]))))
+
 (def first-fails-scenario
   {:name "Scenario"
    :steps [(step "first" false)

@@ -29,21 +29,23 @@
 
 (defn async-function-with-timeout [step timeout sent-requests user-id context]
   (swap! sent-requests inc)
-  (let [start (now)
-        response (asynchronize (:request step) (assoc context :user-id user-id))]
-    (go
-      (let [[[result end new-ctx] c] (alts! [response (async/timeout timeout)])]
-        (if (= c response)
-          [{:name (:name step)
-            :id user-id
-            :start start
-            :end end
-            :result result} new-ctx]
-          [{:name (:name step)
-            :id user-id
-            :start start
-            :end (now)
-            :result false} context])))))
+  (go
+    (when-let [delay-fn (:delay step)]
+      (<! (async/timeout (delay-fn context))))
+    (let [start (now)
+          response (asynchronize (:request step) (assoc context :user-id user-id))
+          [[result end new-ctx] c] (alts! [response (async/timeout timeout)])]
+      (if (= c response)
+        [{:name (:name step)
+          :id user-id
+          :start start
+          :end end
+          :result result} new-ctx]
+        [{:name (:name step)
+          :id user-id
+          :start start
+          :end (now)
+          :result false} context]))))
 
 (defn- response->result [scenario result]
   {:name (:name scenario)
