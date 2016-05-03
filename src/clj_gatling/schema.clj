@@ -3,7 +3,7 @@
 
 (def Step
   {:name s/Str
-   (s/optional-key :delay) (s/make-fn-schema s/Int [[{}]])
+   (s/optional-key :sleep-before) (s/make-fn-schema s/Int [[{}]])
    :request (s/make-fn-schema s/Any [[{:user-id s/Int}]])})
 
 (def RunnableScenario

@@ -30,8 +30,8 @@
 (defn async-function-with-timeout [step timeout sent-requests user-id context]
   (swap! sent-requests inc)
   (go
-    (when-let [delay-fn (:delay step)]
-      (<! (async/timeout (delay-fn context))))
+    (when-let [sleep-before (:sleep-before step)]
+      (<! (async/timeout (sleep-before context))))
     (let [start (now)
           response (asynchronize (:request step) (assoc context :user-id user-id))
           [[result end new-ctx] c] (alts! [response (async/timeout timeout)])]

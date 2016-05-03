@@ -215,11 +215,11 @@
                                      :end number?
                                      :result true}]}]))))
 
-(deftest waits-for-given-delay-before-starting-request
+(deftest sleeps-for-given-time-before-starting-request
   (let [request-started (promise)
         scenario {:name "scenario"
                   :steps [{:name "step"
-                           :delay (fn [ctx] 500)
+                           :sleep-before (fn [ctx] 500)
                            :request (fn [ctx]
                                       (deliver request-started true)
                                       true)}]}
