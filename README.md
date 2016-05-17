@@ -3,181 +3,173 @@
 [![Build Status](https://travis-ci.org/mhjort/clj-gatling.png?branch=master)](https://travis-ci.org/mhjort/clj-gatling)
 [![Dependencies Status](http://jarkeeper.com/mhjort/clj-gatling/status.png)](http://jarkeeper.com/mhjort/clj-gatling)
 
-Create and run performance tests using Clojure (and get fancy reports).
-For reporting clj-gatling uses Gatling under the hood.
+Create and run load tests using Clojure (and get fancy reports).
 
-## Notes for changes in 0.7.x
-
-* Buffer results to file system while simulation is running.
-  This makes it possible to run clj-gatling for long period of time without
-  running out of memory.
-
-## Notes for changes in 0.6.x
-
-* Upgraded to Clojure 1.7.
-* Changed format of request functions.
-  Callback is the first parameter and user-id is not separate parameter anymore.
-  You can get user-id from context via :user-id key.
+Note! Version 0.8.0 includes few changes on how simulations are defined.
+See more details in [change history](CHANGES.md). All changes are backwards
+compatible. The old way of defining the simulation is still supported but
+maybe deprecated in future. You can see documentation for old versions [here](README-old.md).
 
 ## Installation
 
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.7.10"]
+[clj-gatling "0.8.0"]
 ```
 
 ## Usage
 
-### Simple example
+### Basic example
 
-This will make 100 simultaneous http get requests to localhost.
-Single request is considered to be ok if it returns http status code 200.
+This will make 100 simultaneous http get requests (using http-kit library)
+to localhost server. Single request is considered to be ok if the response
+http status code is 200.
 
 ```clojure
+(require '[clj-gatling.core :as clj-gatling])
+(require '[org.httpkit.client :as http])
 
-(use 'clj-gatling.core)
+(defn localhost-request [_]
+  (let [{:keys [status]} @(http/get "http://localhost")]
+    (= status 200)))
 
-(run-simulation
-  [{:name "Localhost test scenario"
-   :requests [{:name "Root request" :http "http://localhost"}]}] 100)
+(clj-gatling/run
+  {:name "Simulation"
+   :scenarios [{:name "Localhost test scenario"
+                :steps [{:name "Root"
+                         :request localhost-request}]}]}
+  {:concurrency 100})
 ```
 
-Simulation run shows some important statistics in console and also
-generates exactly the same kind of a html report that Gatling does.
-(clj-gatling uses Gatling internally to do this)
+Running the simulation shows statistics in console and
+generates a detailed html report.
+(clj-gatling uses gatling-highcharts for reporting)
 
-### Defining test scenarios
+### Concepts
 
-clj-gatling runs scenarios concurrently. Scenario consists of one or
-more steps called requests. Scenario is defined as a Clojure map.
+clj-gatling runs simulations to simulate load. Simulation consists of one or multiple
+scenarios that will be run in parallel. One scenario contain one or multiple steps
+that are run sequentially. One simulation is configured to run with a given number
+of virtual users. As a result the tool returns response times (min, max, average, percentiles)
+and requests per second.
+
+Simulation is specified as a Clojure map like this:
 
 ```clojure
-
-{:name "Order book scenario"
- :requests [{:name "Open frontpage" :fn open-frontpage}
-            {:name "Select book"    :fn select-book
-             :name "Pay order"      :fn pay-order}]}
+{:name "Simulation"
+ :scenarios [{:name "Scenario1"
+              :weight 2
+              :skip-next-after-failure? false
+              :steps [{:name "Step 1"
+                       :request step1-fn}
+                      {:name "Step 2"
+                       :sleep-before (constantly 500)
+                       :request step2-fn}]}
+             {:name "Scenario2"
+              :weight 1
+              :steps [{:name "Another step"
+                       :request another-step-fn}]}]}
 ```
 
-Scenario above consists of three requests. Requests are defined as
-a Clojure maps. In request you can specify actual action either
-by giving keyword :http which will do http get request or by
-giving :fn keyword which lets you to specify your own function.
-The latter option is a preferred way in clj-gatling.
+#### Scenarios
 
-Your own functions should look like this:
+You can define one or multiple scenarios. Scenarios are always run in parallel.
+Concurrent users are divided between the scenarios based on their weights.
+For example:
 
+* Simulation concurrency: 100
+* Scenario1 with weight 5 => concurrency 80
+* Scenario2 with weight 1 => concurrency 20
+
+Scenario weight is optional key with default value 1. In that case the users
+are split evenly between the scenarios
+
+#### Scenario steps
+
+Each scenario consists of one or multiple steps. Steps are run always in sequence.
+Step has a name and user specified function (request) which is supposed to call
+the system under test (SUT). Function takes in a scenario context as a map and
+has to return either directly as a boolean or then with core.async channel with
+a message of type boolean.
 
 ```clojure
-
-(defn open-frontpage [callback context]
-  (let [was-call-succesful? (do-your-call-here)
-    (callback was-call-succesful? context)))
-
+;Returning boolean directly
+(defn request-returning-boolean [context]
+  ;Call the system under test here
+  true) ;Return true/false based on the result of the call
 ```
 
-Ideally your calls should be asynchronous and non-blocking.
-That's why in function signature clj-gatling uses callback instead
-of function return value. When calling callback function the first
-parameter is boolean which tells clj-gatling whether call was
-succesful.
-
-The second parameter to callback is context that is passed through
-requests within same scenario and virtual user. You can utilize it
-in a following way:
-
 ```clojure
-
-;In "Select book" request
-(callback true (assoc context :book-id 1}))
-
-;And then in next requst
-(defn pay-order [callback context]
-  (pay-order-call-with-book-id (:book-id context))
-    ...)
-
+;Returning core.async channel
+(defn request-returning-channel [context]
+  (go
+     ;Call the system under test here using non-blocking call
+     true)) ;Return true/false based on the result of the non-blocking call
 ```
 
-### Multiple scenarios
+The latter is the recommended approach. When you use that it makes clj-gatling able
+to utilize (=share) threads and makes it possible to generate more load with one machine.
+However, the former is probably easier to use at the beginning and is therefore a good
+starting point when writing your first clj-gatling tests.
 
-If you want to run multiple scenarios in same simulation you
-can specify how requests are divided between scenarios by giving
-specifying :weight. If you run example below with concurrency
-10 it will run "Order Book" with concurrency 8 and other scenario
-with concurrency 2. If you do not specify weight it is always 1
-which balances concurrency evenly between scenarios.
+If the function returns a false clj-gatling counts the step as a failed. If a function
+throws an exception it will be considered as a failure too. clj-gatling also provides a
+global timeout (see Options) for a step. If a request function takes more time it will be
+cancelled and step is again considered as a failure.
+
+Note! clj-gatling reports only step failures and successes. At the moment there is no support for
+different kinds of errors in reporting level. If you have a lot of errors in your test runs
+the recommended practice is to have a exception catching logic inside of your request function
+and log it there.
+
+Context map contains all values that you specified as a simulation context when calling
+`run` method (See options) and clj-gatling provided `user-id` value. The purpose of user-id
+is to have a way to specify different functionality for different users. For example:
 
 ```clojure
-
-[{:name "Order book"
-  :weight 4
-  :requests [{:name "Open frontpage" :fn open-frontpage}
-             {:name "Select book"    :fn select-book
-              :name "Pay order"      :fn pay-order}]}
- {:name "Add new book"
-  :weight 1 [{:name "Add book"       :fn add-book}]}]
-
+(defn request-fn [{:keys [user-id]}]
+  (go
+    (if (odd? user-id)
+      (open-document-a)
+      (open-document-b-))))
 ```
 
-### Scenario options
-
-#### Skipping requests after failure
-
-By default clj-gatling will skip further requests in scenario if
-previous request fails. You can turn this feature of in scenario
-by specifying option :skip-next-after-failure?
+If your scenario contains multiple steps you can also pass values from a step to next a step
+inside an scenario instance (same user) by returning a tuple instead of a boolean.
 
 ```clojure
+;step 1
+(defn login [context]
+  (go
+    (let [user-name (login-to-system)]
+      [true (assoc :user-name context)])))
 
-{:name "Scenario"
-  :skip-next-after-failure? false
-  :requests [{:name "Failing request" :fn fail}
-             {:name "Next request"    :fn success}]}
-```
-### Results
-
-After the load test run clj-gatling prints out summary of the results
-to console output and generates detailed graphical results using
-[gatling-highcharts](https://github.com/gatling/gatling-highcharts) library.
-
-Calling `clj-gatling-core/run-simulation` also returns summary as following Clojure
-map.
-
-```clojure
-{:ok <number-of-successful-requests> :ko <number-of-failed-requests>}
+;step 2
+(defn open-frontpage [context]
+  (go
+    (open-page-with-name (:user-name context))))
 ```
 
-### Global Options
 
-#### Request timeout
+If you want a step to not launch immediately after previous step you can specify a step key `sleep-before`.
+The value for that key is a user defined function that takes in the scenario context and has to return
+number of milliseconds to wait before starting request function for that step.
 
-By default clj-gatling uses timeout for 5000 ms for all functions.
-You can override that behaviour by setting option :timeout-in-ms
+By default clj-gatling won't call the next step in scenario if a previous step fails (returns false).
+You can override this behaviour by setting `skip-next-after-failure?` to false at scenario level.
 
-#### Constant load
+### Options
 
-You can run same scenario multiple times to generate constant load
-within a longer time period by specifying option :requests.
-Default number of requests is same as number of users (which means
-run only once). Note! The given number is minimum number of requests
-clj-gatling will make. Due to design choice number of requests actually
-made can go bit over that (e.g. 1001 instead of 1000).
-
+Second parameter to `clj-gatling.core/run` function is options map. Options map contains following keys:
 
 ```clojure
-(run-simulation [test-scenario] 10 {:requests 500})
-
-```
-
-You can run same scenario multiple times within given time period
-to generate constant load by specifying option :duration.
-
-```clojure
-(require '[clj-time.core :as t])
-
-(run-simulation [test-scenario] 10 {:duration (t/minutes 2)})
-
+{:context {:environment "test"} ;Context that is passed to user defined functions. Defaults to empty map
+ :timeout-in-ms 3000 ;Timeout for a request function. Defaults to 5000.
+ :root "/tmp" ;Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
+ :concurrency 100 ;Number of concurrent users clj-gatling tries to use. Default to 1.
+ :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
+ :duration (clj-time.core/minutes 5)} ;The time to run the simulation. Note! If duration is given, requests value will be ignored
 ```
 
 ### Examples
@@ -210,16 +202,10 @@ I am not a fan of complex DSLs. clj-gatling tries to avoid DSL approach.
 Idea is that you should write just ordinary Clojure code to specify the
 actions and the actual scenario definition is an map.
 
-Note! This also means clj-gatling does not have full API for simulating
-http requests. There is :http keyword for executing simple http get.
-But anything more complex than that (http post, checking special
-response codes etc.) you should do yourself. I recommend using http-kit
-for that.
-
 ### Distributed load testing
 
-[Clojider](http://clojider.io) is a tool that uses clj-gatling scenarios 
-and AWS Lambda technology for running distributed load tests in the cloud.
+[Clojider](http://clojider.io) is a tool that can run clj-gatling in a distributed manner.
+It uses AWS Lambda technology for running distributed load tests in the cloud.
 
 ## Contribute
 
@@ -227,6 +213,6 @@ Use [GitHub issues](https://github.com/mhjort/clj-gatling/issues) and [Pull Requ
 
 ## License
 
-Copyright (C) 2014 Markus Hjort
+Copyright (C) 2014-2016 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.

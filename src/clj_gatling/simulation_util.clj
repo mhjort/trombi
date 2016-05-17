@@ -9,7 +9,10 @@
   (.mkdirs (File. dir)))
 
 (defn- distinct-request-count [scenarios]
-  (reduce + (map #(count (:requests %)) scenarios)))
+  (reduce +
+          (map #(max (count (:steps %))
+                     (count (:requests %))) ;For legacy support
+                       scenarios)))
 
 (defn- smallest-vector [vector-of-vectors]
   (reduce (fn [m k]
@@ -58,8 +61,8 @@
         with-concurrencies (map #(assoc %1 :concurrency %2)
                                 scenarios
                                 concurrencies)]
-    (map #(assoc %1 :users %2)
-         with-concurrencies
+    (map #(assoc (dissoc %1 :weight) :users %2)
+         scenarios
          (split-to-buckets-with-sizes users
                                       (map :concurrency with-concurrencies)))))
 

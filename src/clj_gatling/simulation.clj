@@ -1,50 +1,51 @@
 (ns clj-gatling.simulation
   (:require [clj-gatling.httpkit :as http]
             [clj-gatling.simulation-runners :refer :all]
+            [clj-gatling.schema :as schema]
+            [clj-gatling.simulation-util :refer [weighted-scenarios
+                                                 choose-runner]]
+            [schema.core :refer [check validate]]
             [clj-time.local :as local-time]
+            [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
+
+(set! *warn-on-reflection* true)
 
 (defn- now [] (System/currentTimeMillis))
 
-(defn- bench [f]
-  (fn [start-promise end-promise callback context]
-    (deliver start-promise (now))
-    (f (fn [result & [context]]
-         (deliver end-promise (now))
-         (callback result context))
-       context)))
-
-(defn- request-fn [request]
-  (bench (if-let [url (:http request)]
-            (partial http/async-http-request url)
-            (:fn request))))
-
-(defn async-function-with-timeout [request timeout sent-requests user-id context]
-  (let [start-promise (promise)
-        end-promise (promise)
-        response (async/chan)
-        exception-chan (async/chan)
-        function (memoize (request-fn request))
-        callback (fn [result context]
-                   (put! response [{:name (:name request)
-                                    :id user-id
-                                    :start @start-promise
-                                    :end @end-promise
-                                    :result result} context]))]
+(defn asynchronize [f ctx]
+  (let [parse-response (fn [result]
+                         (if (vector? result)
+                           [(first result) (now) (second result)]
+                           [result (now) ctx]))]
     (go
       (try
-        (swap! sent-requests inc)
-        (function start-promise end-promise callback (assoc context :user-id user-id))
-      (catch Exception e
-        (put! exception-chan e)))
-      (let [[result c] (alts! [response (async/timeout timeout) exception-chan])]
-        (if (= c response)
-          result
-          [{:name (:name request)
-            :id user-id
-            :start @start-promise
-            :end (now)
-            :result false} context])))))
+        (let [result (f ctx)]
+          (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
+            (parse-response (<! result))
+            (parse-response result)))
+        (catch Exception _
+          [false (now) ctx])))))
+
+(defn async-function-with-timeout [step timeout sent-requests user-id context]
+  (swap! sent-requests inc)
+  (go
+    (when-let [sleep-before (:sleep-before step)]
+      (<! (async/timeout (sleep-before context))))
+    (let [start (now)
+          response (asynchronize (:request step) (assoc context :user-id user-id))
+          [[result end new-ctx] c] (alts! [response (async/timeout timeout)])]
+      (if (= c response)
+        [{:name (:name step)
+          :id user-id
+          :start start
+          :end end
+          :result result} new-ctx]
+        [{:name (:name step)
+          :id user-id
+          :start start
+          :end (now)
+          :result false} context]))))
 
 (defn- response->result [scenario result]
   {:name (:name scenario)
@@ -54,26 +55,26 @@
    :requests result})
 
 (defn- run-scenario-once [options scenario user-id]
-  (let [timeout (:timeout options)
+  (let [timeout (:timeout-in-ms options)
         sent-requests (:sent-requests options)
         result-channel (async/chan)
         skip-next-after-failure? (if (nil? (:skip-next-after-failure? scenario))
                                     true
                                     (:skip-next-after-failure? scenario))
         request-failed? #(not (:result %))]
-    (go-loop [r (:requests scenario)
+    (go-loop [steps (:steps scenario)
               context (or (:context options) {})
               results []]
-             (let [[result new-ctx] (<! (async-function-with-timeout (first r)
+             (let [[result new-ctx] (<! (async-function-with-timeout (first steps)
                                                                      timeout
                                                                      sent-requests
                                                                      user-id
                                                                      context))]
-               (if (or (empty? (rest r))
+               (if (or (empty? (rest steps))
                        (and skip-next-after-failure?
                            (request-failed? result)))
                  (>! result-channel (conj results result))
-                 (recur (rest r) new-ctx (conj results result)))))
+                 (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
 
 (defn- run-scenario-constantly [options scenario user-id]
@@ -90,13 +91,36 @@
     c))
 
 (defn- print-scenario-info [scenario]
-  (let [concurrency        (:concurrency scenario)]
-    (println "Running scenario" (:name scenario)
-             "with concurrency" concurrency)))
+  (println "Running scenario" (:name scenario)
+           "with concurrency" (count (:users scenario))))
+
+(defn- convert-legacy-fn [request]
+  (let [f (if-let [url (:http request)]
+            (partial http/async-http-request url)
+            (:fn request))
+        c (async/chan)]
+    (fn [ctx]
+      (f (fn [result & [new-ctx]]
+           (if new-ctx
+             (put! c [result new-ctx])
+             (put! c [result ctx])))
+         ctx)
+      c)))
+
+(defn- convert-from-legacy [scenarios]
+  (let [request->step (fn [request]
+                        (-> request
+                            (assoc :request (convert-legacy-fn request))
+                            (dissoc :fn :http)))]
+    (map (fn [scenario]
+           (-> scenario
+               (update :requests #(map request->step %))
+               (rename-keys {:requests :steps})
+               (dissoc :concurrency :weight)))
+         scenarios)))
 
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
-
   (let [responses (async/merge (map #(run-scenario-constantly options scenario %)
                                     (:users scenario)))
         results (async/chan)]
@@ -108,16 +132,18 @@
                (close! results)))
     results))
 
-(defn run-scenarios [options scenarios]
+(defn run-scenarios [options scenarios convert-from-legacy?]
   (println "Running simulation with" (runner-info (:runner options)))
   (let [simulation-start (local-time/local-now)
         sent-requests (atom 0)
+        runnable-scenarios (validate [schema/RunnableScenario] (if convert-from-legacy?
+                                                                 (convert-from-legacy scenarios)
+                                                                 scenarios))
         run-scenario-with-opts (partial run-scenario
                                         (assoc options
-                                               :context (:context options)
                                                :simulation-start simulation-start
                                                :sent-requests sent-requests))
-        responses (async/merge (map run-scenario-with-opts scenarios))
+        responses (async/merge (map run-scenario-with-opts runnable-scenarios))
         results (async/chan)]
     (go-loop []
              (if-let [result (<! responses)]
@@ -126,3 +152,13 @@
                  (recur))
                (close! results)))
     results))
+
+(defn run [{:keys [scenarios] :as simulation}
+           {:keys [concurrency users] :as options}]
+  (let [user-ids (or users (range concurrency))]
+    (validate schema/Simulation simulation)
+    (run-scenarios (assoc options :runner (choose-runner scenarios
+                                                         (count user-ids)
+                                                         options))
+                   (weighted-scenarios user-ids scenarios)
+                   false)))
