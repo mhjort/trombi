@@ -3,9 +3,9 @@
 ## 0.8.0
 
 * Upgraded to Clojure 1.8.
-* New format for specifying the simulation + schema validation.
+* New format for specifying the simulation and options (with schema validation).
   Note! Backwards compatibility is kept for now.
-* Support for delay before starting request
+* Support for sleeping before starting a request
 
 ## 0.7.x
 
