@@ -215,6 +215,28 @@
                                      :end number?
                                      :result true}]}]))))
 
+(deftest stops-simulation-even-in-middle-of-scenario-when-duration-has-ended
+  (let [scenario {:name "scenario"
+                  :steps [{:name "step 1"
+                           :request (fn [_]
+                                      (Thread/sleep 500)
+                                      true)}
+                          {:name "step 2"
+                           :request (fn [ctx]
+                                      (Thread/sleep 2000)
+                                      true)}]}
+        result (run-single-scenario scenario :concurrency 1
+                                    :duration (time/millis 100))]
+    (is (equal? result [{:name "scenario"
+                         :id 0
+                         :start number?
+                         :end number?
+                         :requests [{:name "step 1"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :result true}]}]))))
+
 (deftest sleeps-for-given-time-before-starting-request
   (let [request-started (promise)
         scenario {:name "scenario"

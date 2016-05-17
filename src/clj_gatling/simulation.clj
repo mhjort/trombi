@@ -54,7 +54,7 @@
    :end (:end (last result))
    :requests result})
 
-(defn- run-scenario-once [options scenario user-id]
+(defn- run-scenario-once [{:keys [runner simulation-start] :as options} scenario user-id]
   (let [timeout (:timeout-in-ms options)
         sent-requests (:sent-requests options)
         result-channel (async/chan)
@@ -70,7 +70,8 @@
                                                                      sent-requests
                                                                      user-id
                                                                      context))]
-               (if (or (empty? (rest steps))
+               (if (or (not (continue-run? runner @sent-requests simulation-start))
+                       (empty? (rest steps))
                        (and skip-next-after-failure?
                            (request-failed? result)))
                  (>! result-channel (conj results result))
