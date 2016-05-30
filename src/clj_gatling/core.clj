@@ -1,7 +1,6 @@
 (ns clj-gatling.core
   (:import [org.joda.time LocalDateTime])
-  (:require [clojure-csv.core :as csv]
-            [clj-gatling.chart :as chart]
+  (:require [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
             [clj-gatling.simulation-util :refer [create-dir
                                                  weighted-scenarios
@@ -11,9 +10,12 @@
 
 (def buffer-size 20000)
 
-(defn- gatling-csv-writer [path idx result-lines]
-  (let [csv (csv/write-csv result-lines :delimiter "\t" :end-of-line "\n")]
-   (spit (str path "/simulation" idx ".log") csv)))
+(defn- gatling-highcharts-reporter [results-dir]
+  (let [start-time (LocalDateTime.)]
+    {:writer (partial report/gatling-csv-writer results-dir start-time)
+     :generator #(do
+                   (chart/create-chart results-dir)
+                   (println (str "Open file://" results-dir "/index.html")))}))
 
 (defn- create-results-dir [root]
   (let [results-dir (str root "/" (timestamp-str))]
@@ -32,27 +34,28 @@
     (let [summary (report/create-result-lines start-time
                                               buffer-size
                                               result
-                                              (partial gatling-csv-writer (str results-dir "/input")))]
+                                              (partial report/gatling-csv-writer
+                                                       (LocalDateTime.)
+                                                       (str results-dir "/input")))]
       (chart/create-chart results-dir)
       (println (str "Open " results-dir "/index.html"))
       summary)))
 
-(defn run [simulation {:keys [concurrency root timeout-in-ms context requests duration]
+(defn run [simulation {:keys [concurrency root timeout-in-ms context requests duration reporter]
                        :or {concurrency 1
                             root "target/results"
+                            reporter (gatling-highcharts-reporter root)
                             timeout-in-ms 5000
                             context {}}}]
-  (let [start-time (LocalDateTime.)
-        results-dir (create-results-dir root)
+  (let [results-dir (create-results-dir root)
         result (simulation/run simulation {:concurrency concurrency
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests
                                            :duration duration})
-        summary (report/create-result-lines start-time
-                                            buffer-size
+        summary (report/create-result-lines buffer-size
                                             result
-                                            (partial gatling-csv-writer (str results-dir "/input")))]
-    (chart/create-chart results-dir)
-    (println (str "Open file://" results-dir "/index.html"))
+                                            (:writer reporter))]
+    ((:generator reporter))
+    (println "Simulation" (:name simulation) "finished.")
     summary))

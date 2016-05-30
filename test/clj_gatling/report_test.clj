@@ -38,12 +38,15 @@
     (onto-chan c coll)
     c))
 
+;TODO Remove dependency to gatling-csv-writer and test it separately
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
-        output-writer (fn [idx result] (deliver (nth result-lines idx) result))
         start-time (local-date-time 2014 2 9 11 1 36)
-        summary (report/create-result-lines start-time
-                                            2
+        output-writer (fn [idx result]
+                        (deliver (nth result-lines idx) (report/gatling-csv-lines start-time
+                                                                                  idx
+                                                                                  result)))
+        summary (report/create-result-lines 2
                                             (from scenario-results)
                                             output-writer)]
     (is (equal? summary {:ok 4 :ko 1}))
@@ -52,12 +55,13 @@
 
 (deftest waits-results-to-be-written-before-returning
   (let [result-lines [(atom nil) (atom nil)]
+        start-time (local-date-time 2014 2 9 11 1 36)
         slow-writer (fn [idx result]
                       (Thread/sleep 100)
-                      (reset! (nth result-lines idx) result))
-        start-time (local-date-time 2014 2 9 11 1 36)]
-    (report/create-result-lines start-time
-                                2
+                      (reset! (nth result-lines idx) (report/gatling-csv-lines start-time
+                                                                               idx
+                                                                               result)))]
+    (report/create-result-lines 2
                                 (from scenario-results)
                                 slow-writer)
     (is (equal? @(first result-lines) expected-lines-1))
