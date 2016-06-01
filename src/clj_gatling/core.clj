@@ -10,17 +10,19 @@
 
 (def buffer-size 20000)
 
-(defn- gatling-highcharts-reporter [results-dir]
-  (let [start-time (LocalDateTime.)]
-    {:writer (partial report/gatling-csv-writer results-dir start-time)
-     :generator #(do
-                   (chart/create-chart results-dir)
-                   (println (str "Open file://" results-dir "/index.html")))}))
-
 (defn- create-results-dir [root]
   (let [results-dir (str root "/" (timestamp-str))]
     (create-dir (str results-dir "/input"))
     results-dir))
+
+(defn- gatling-highcharts-reporter [root]
+  (let [results-dir (create-results-dir root)
+        start-time (LocalDateTime.)]
+    {:writer (partial report/gatling-csv-writer (str results-dir  "/input") start-time)
+     :generator (fn [_]
+                  (println "Creating report from files in" results-dir)
+                  (chart/create-chart results-dir)
+                  (println (str "Open " results-dir "/index.html with your browser to see a detailed report." )))}))
 
 (defn run-simulation [scenarios concurrency & [options]]
   (let [start-time (LocalDateTime.)
@@ -35,8 +37,8 @@
                                               buffer-size
                                               result
                                               (partial report/gatling-csv-writer
-                                                       (LocalDateTime.)
-                                                       (str results-dir "/input")))]
+                                                       (str results-dir "/input")
+                                                       (LocalDateTime.)))]
       (chart/create-chart results-dir)
       (println (str "Open " results-dir "/index.html"))
       summary)))
@@ -47,15 +49,15 @@
                             reporter (gatling-highcharts-reporter root)
                             timeout-in-ms 5000
                             context {}}}]
-  (let [results-dir (create-results-dir root)
-        result (simulation/run simulation {:concurrency concurrency
+  (let [result (simulation/run simulation {:concurrency concurrency
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests
                                            :duration duration})
-        summary (report/create-result-lines buffer-size
+        summary (report/create-result-lines simulation
+                                            buffer-size
                                             result
                                             (:writer reporter))]
-    ((:generator reporter))
+    ((:generator reporter) simulation)
     (println "Simulation" (:name simulation) "finished.")
     summary))

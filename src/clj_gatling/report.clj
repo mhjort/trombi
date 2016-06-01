@@ -26,17 +26,17 @@
         requests (mapcat #(vector (map-request (:name scenario) %)) (:requests scenario))]
     (concat [scenario-start] requests [scenario-end])))
 
-(defn gatling-csv-lines [start-time idx results]
+(defn gatling-csv-lines [start-time simulation idx results]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
-        header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]]
+        header ["clj-gatling" (:name simulation) "RUN" timestamp "\u0020" "2.0"]]
     (conj (flatten-one-level (mapcat #(vector (scenario->rows %)) results)) header)))
 
-(defn gatling-csv-writer [path start-time idx results]
-  (let [result-lines (gatling-csv-lines start-time idx results)
+(defn gatling-csv-writer [path start-time simulation idx results]
+  (let [result-lines (gatling-csv-lines start-time simulation idx results)
         csv (write-csv result-lines :delimiter "\t" :end-of-line "\n")]
     (spit (str path "/simulation" idx ".log") csv)))
 
-(defn create-result-lines [buffer-size results-channel output-writer]
+(defn create-result-lines [simulation buffer-size results-channel output-writer]
   (let [summary (fn [result] (frequencies (mapcat #(map :result (:requests %)) result)))
         ;Note! core.async/partition is deprecated function.
         ;This should be changed to use transducers instead
@@ -45,7 +45,7 @@
                              threads []]
                         (if-let [result (<!! results)]
                           (let [t (thread
-                                    (output-writer idx result)
+                                    (output-writer simulation idx result)
                                     (summary result))]
                             (recur (inc idx) (conj threads t)))
                           threads))]

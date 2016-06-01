@@ -17,7 +17,7 @@
     :requests [{:id 0 :name "Request1" :start 1391936497998 :end 1391936498426 :result true}]}])
 
 (def expected-lines-1
-  [["clj-gatling" "simulation" "RUN" "20140209110136" "\u0020" "2.0"]
+  [["clj-gatling" "mySimulation" "RUN" "20140209110136" "\u0020" "2.0"]
    ["Test scenario" "1" "USER" "START" "1391936496814" "1"]
    ["Test scenario" "1" "REQUEST" "" "Request1" "1391936496853" "1391936496853" "1391936497299" "1391936497299" "OK" "\u0020"]
    ["Test scenario" "1" "REQUEST" "" "Request2" "1391936497299" "1391936497299" "1391936497996" "1391936497996" "OK" "\u0020"]
@@ -28,7 +28,7 @@
    ["Test scenario" "0" "USER" "END" "1391936496808" "1391936496808"]])
 
 (def expected-lines-2
-  [["clj-gatling" "simulation" "RUN" "20140209110136" "\u0020" "2.0"]
+  [["clj-gatling" "mySimulation" "RUN" "20140209110136" "\u0020" "2.0"]
    ["Test scenario2" "0" "USER" "START" "1391936496808" "0"]
    ["Test scenario2" "0" "REQUEST" "" "Request1" "1391936497998" "1391936497998" "1391936498426" "1391936498426" "OK" "\u0020"]
    ["Test scenario2" "0" "USER" "END" "1391936496808" "1391936496808"]])
@@ -42,11 +42,13 @@
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
         start-time (local-date-time 2014 2 9 11 1 36)
-        output-writer (fn [idx result]
+        output-writer (fn [simulation idx result]
                         (deliver (nth result-lines idx) (report/gatling-csv-lines start-time
+                                                                                  simulation
                                                                                   idx
                                                                                   result)))
-        summary (report/create-result-lines 2
+        summary (report/create-result-lines {:name "mySimulation"}
+                                            2
                                             (from scenario-results)
                                             output-writer)]
     (is (equal? summary {:ok 4 :ko 1}))
@@ -56,12 +58,14 @@
 (deftest waits-results-to-be-written-before-returning
   (let [result-lines [(atom nil) (atom nil)]
         start-time (local-date-time 2014 2 9 11 1 36)
-        slow-writer (fn [idx result]
+        slow-writer (fn [simulation idx result]
                       (Thread/sleep 100)
                       (reset! (nth result-lines idx) (report/gatling-csv-lines start-time
+                                                                               simulation
                                                                                idx
                                                                                result)))]
-    (report/create-result-lines 2
+    (report/create-result-lines {:name "mySimulation"}
+                                2
                                 (from scenario-results)
                                 slow-writer)
     (is (equal? @(first result-lines) expected-lines-1))
