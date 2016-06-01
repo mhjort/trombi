@@ -1,5 +1,6 @@
 (ns clj-gatling.report
-  (:require [clj-time.format :refer [formatter unparse-local]]
+  (:require [clojure-csv.core :refer [write-csv]]
+            [clj-time.format :refer [formatter unparse-local]]
             [clojure.core.async :as a :refer [thread <!!]]))
 
 (defn- flatten-one-level [coll]
@@ -25,21 +26,27 @@
         requests (mapcat #(vector (map-request (:name scenario) %)) (:requests scenario))]
     (concat [scenario-start] requests [scenario-end])))
 
-(defn- process [header idx results output-writer]
-  (let [scenarios (mapcat #(vector (scenario->rows %)) results)]
-    (output-writer idx (conj (flatten-one-level scenarios) header))
-    (frequencies (mapcat #(map :result (:requests %)) results))))
-
-(defn create-result-lines [start-time buffer-size results-channel output-writer]
+(defn gatling-csv-lines [start-time simulation idx results]
   (let [timestamp (unparse-local (formatter "yyyyMMddhhmmss") start-time)
-        header ["clj-gatling" "simulation" "RUN" timestamp "\u0020" "2.0"]
+        header ["clj-gatling" (:name simulation) "RUN" timestamp "\u0020" "2.0"]]
+    (conj (flatten-one-level (mapcat #(vector (scenario->rows %)) results)) header)))
+
+(defn gatling-csv-writer [path start-time simulation idx results]
+  (let [result-lines (gatling-csv-lines start-time simulation idx results)
+        csv (write-csv result-lines :delimiter "\t" :end-of-line "\n")]
+    (spit (str path "/simulation" idx ".log") csv)))
+
+(defn create-result-lines [simulation buffer-size results-channel output-writer]
+  (let [summary (fn [result] (frequencies (mapcat #(map :result (:requests %)) result)))
         ;Note! core.async/partition is deprecated function.
         ;This should be changed to use transducers instead
         results (a/partition buffer-size results-channel)
         write-results (loop [idx 0
                              threads []]
                         (if-let [result (<!! results)]
-                          (let [t (thread (process header idx result output-writer))]
+                          (let [t (thread
+                                    (output-writer simulation idx result)
+                                    (summary result))]
                             (recur (inc idx) (conj threads t)))
                           threads))]
     (reduce (fn [m [k v]]

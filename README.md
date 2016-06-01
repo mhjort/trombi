@@ -176,6 +176,24 @@ Second parameter to `clj-gatling.core/run` function is options map. Options map 
 
 See example project a here: [clj-gatling-example](https://github.com/mhjort/clj-gatling-example)
 
+## Customization
+
+If you don't want to use built-in reporting by gatling-highchars you can customize the reporting
+by implementing it yourself and using clj-gatling for load generation. You can do that by passing
+in `:reporter` map as an option. For example if you want to skip reporting totally pass this reporter:
+
+```clojure
+{:writer (fn [simulation idx results]
+            ;Do nothing
+          )
+ :generator (fn [simulation]
+              ;Do nothing
+            )}
+```
+
+clj-gatling calls the writer function periodically (currently after each 20000 requests) and then
+generator once when the simulation is over.
+
 ## Why
 
 AFAIK there are no other performance testing tool where you can specify
