@@ -1,8 +1,12 @@
 # Changes
 
+## 0.8.2
+
+* Add scenario option for allowing early termination.
+
 ## 0.8.1
- 
-* Add option for specifying your own custom reporter. 
+
+* Add option for specifying your own custom reporter.
 
 ## 0.8.0
 
