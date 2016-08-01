@@ -163,7 +163,7 @@ You can override this behaviour by setting `skip-next-after-failure?` to false a
 When clj-gatling terminates the simulation (either after the given duration or given requests) all running
 scenarios will still finish. If scenario has multiple steps and takes long to run the simulation may take
 some time to fully terminate. If you want to disable that feature in scenario level you can set
-`allow-early-termination` to true.
+`allow-early-termination?` to true.
 
 ### Options
 
