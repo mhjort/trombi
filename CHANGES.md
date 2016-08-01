@@ -1,5 +1,9 @@
 # Changes
 
+## 0.8.1
+ 
+* Add option for specifying your own custom reporter. 
+
 ## 0.8.0
 
 * Upgraded to Clojure 1.8.
