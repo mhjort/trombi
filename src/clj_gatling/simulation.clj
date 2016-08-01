@@ -59,8 +59,10 @@
         sent-requests (:sent-requests options)
         result-channel (async/chan)
         skip-next-after-failure? (if (nil? (:skip-next-after-failure? scenario))
-                                    true
-                                    (:skip-next-after-failure? scenario))
+                                   true
+                                   (:skip-next-after-failure? scenario))
+        should-terminate? #(and (:allow-early-termination? scenario)
+                                (not (continue-run? runner @sent-requests simulation-start)))
         request-failed? #(not (:result %))]
     (go-loop [steps (:steps scenario)
               context (or (:context options) {})
@@ -70,10 +72,10 @@
                                                                      sent-requests
                                                                      user-id
                                                                      context))]
-               (if (or (not (continue-run? runner @sent-requests simulation-start))
+               (if (or (should-terminate?)
                        (empty? (rest steps))
                        (and skip-next-after-failure?
-                           (request-failed? result)))
+                            (request-failed? result)))
                  (>! result-channel (conj results result))
                  (recur (rest steps) new-ctx (conj results result)))))
     result-channel))

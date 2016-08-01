@@ -10,12 +10,14 @@
   {:name s/Str
    :users [s/Int]
    (s/optional-key :skip-next-after-failure?) Boolean
+   (s/optional-key :allow-early-termination?) Boolean
    :steps [Step]})
 
 (def Scenario
   {:name s/Str
    (s/optional-key :weight) s/Int
    (s/optional-key :skip-next-after-failure?) Boolean
+   (s/optional-key :allow-early-termination?) Boolean
    :steps [Step]})
 
 (def Simulation

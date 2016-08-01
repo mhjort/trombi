@@ -59,12 +59,13 @@ Simulation is specified as a Clojure map like this:
 ```clojure
 {:name "Simulation"
  :scenarios [{:name "Scenario1"
-              :weight 2
-              :skip-next-after-failure? false
+              :weight 2 ;Optional (default 1)
+              :skip-next-after-failure? false ;Optional (default true)
+              :allow-early-termination? true ;Optional (default false)
               :steps [{:name "Step 1"
                        :request step1-fn}
                       {:name "Step 2"
-                       :sleep-before (constantly 500)
+                       :sleep-before (constantly 500) ;Optional
                        :request step2-fn}]}
              {:name "Scenario2"
               :weight 1
@@ -158,6 +159,11 @@ number of milliseconds to wait before starting request function for that step.
 
 By default clj-gatling won't call the next step in scenario if a previous step fails (returns false).
 You can override this behaviour by setting `skip-next-after-failure?` to false at scenario level.
+
+When clj-gatling terminates the simulation (either after the given duration or given requests) all running
+scenarios will still finish. If scenario has multiple steps and takes long to run the simulation may take
+some time to fully terminate. If you want to disable that feature in scenario level you can set
+`allow-early-termination` to true.
 
 ### Options
 
