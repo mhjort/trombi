@@ -34,7 +34,7 @@ http status code is 200.
   (let [{:keys [status]} @(http/get "http://localhost")]
     (= status 200)))
 
-(clj-gatling/run
+(clj-gatling/run-simulation
   {:name "Simulation"
    :scenarios [{:name "Localhost test scenario"
                 :steps [{:name "Root"
@@ -167,7 +167,7 @@ some time to fully terminate. If you want to disable that feature in scenario le
 
 ### Options
 
-Second parameter to `clj-gatling.core/run` function is options map. Options map contains following keys:
+Second parameter to `clj-gatling.core/run-simulation` function is options map. Options map contains following keys:
 
 ```clojure
 {:context {:environment "test"} ;Context that is passed to user defined functions. Defaults to empty map
