@@ -16,8 +16,8 @@
 (defn asynchronize [f ctx]
   (let [parse-response (fn [result]
                          (if (vector? result)
-                           [(first result) (now) (second result)]
-                           [result (now) ctx]))]
+                           {:result (first result) :end-time (now) :context (second result)}
+                           {:result result :end-time (now) :context ctx}))]
     (go
       (try
         (let [result (f ctx)]
@@ -25,27 +25,27 @@
             (parse-response (<! result))
             (parse-response result)))
         (catch Exception _
-          [false (now) ctx])))))
+          {:result false :end-time (now) :context ctx})))))
 
-(defn async-function-with-timeout [step timeout sent-requests user-id context]
+(defn async-function-with-timeout [step timeout sent-requests user-id original-context]
   (swap! sent-requests inc)
   (go
     (when-let [sleep-before (:sleep-before step)]
-      (<! (async/timeout (sleep-before context))))
+    (<! (async/timeout (sleep-before original-context))))
     (let [start (now)
-          response (asynchronize (:request step) (assoc context :user-id user-id))
-          [[result end new-ctx] c] (alts! [response (async/timeout timeout)])]
+          response (asynchronize (:request step) (assoc original-context :user-id user-id))
+          [{:keys [result end-time context]} c] (alts! [response (async/timeout timeout)])]
       (if (= c response)
         [{:name (:name step)
           :id user-id
           :start start
-          :end end
-          :result result} new-ctx]
+          :end end-time
+          :result result} context]
         [{:name (:name step)
           :id user-id
           :start start
           :end (now)
-          :result false} context]))))
+          :result false} original-context]))))
 
 (defn- response->result [scenario result]
   {:name (:name scenario)
