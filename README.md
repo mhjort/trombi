@@ -144,7 +144,7 @@ inside an scenario instance (same user) by returning a tuple instead of a boolea
 (defn login [context]
   (go
     (let [user-name (login-to-system)]
-      [true (assoc :user-name context)])))
+      [true (assoc context :user-name user-name)])))
 
 ;step 2
 (defn open-frontpage [context]
