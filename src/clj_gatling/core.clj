@@ -24,6 +24,7 @@
                   (chart/create-chart results-dir)
                   (println (str "Open " results-dir "/index.html with your browser to see a detailed report." )))}))
 
+;Legacy function for running tests with old format (pre 0.8)
 (defn run-simulation [scenarios concurrency & [options]]
   (let [start-time (LocalDateTime.)
         results-dir (create-results-dir (or (:root options) "target/results"))

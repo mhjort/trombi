@@ -184,7 +184,7 @@ See example project a here: [clj-gatling-example](https://github.com/mhjort/clj-
 
 ## Customization
 
-If you don't want to use built-in reporting by gatling-highchars you can customize the reporting
+If you don't want to use built-in reporting by gatling-highcharts you can customize the reporting
 by implementing it yourself and using clj-gatling for load generation. You can do that by passing
 in `:reporter` map as an option. For example if you want to skip reporting totally pass this reporter:
 
@@ -195,6 +195,22 @@ in `:reporter` map as an option. For example if you want to skip reporting total
  :generator (fn [simulation]
               ;Do nothing
             )}
+```
+
+Results look like this:
+
+```clojure
+[{:name "Scenario name"
+  :id 1
+  :start 1472898793468
+  :end 1472898793908
+  :requests [{:name "Request name"
+              :id 1
+              :start 1472898793468
+              :end 1472898793908
+              :context-after {:user-id 1}
+              :context-before {:user-id 1}
+              :result true}]}]
 ```
 
 clj-gatling calls the writer function periodically (currently after each 20000 requests) and then
