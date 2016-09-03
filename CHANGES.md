@@ -1,5 +1,9 @@
 # Changes
 
+## 0.8.3
+
+* Pass `:context-before` and `:context-after` to reporter.
+
 ## 0.8.2
 
 * Add scenario option for allowing early termination.
