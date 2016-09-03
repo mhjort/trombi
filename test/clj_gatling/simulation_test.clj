@@ -82,11 +82,15 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-after map?
+                                     :context-before map?
                                      :result true}
                                     {:name "Request2"
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result false}]}]))))
 
 (deftest simulation-returns-result-when-run-with-one-user
@@ -102,11 +106,15 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-after map?
+                                     :context-before map?
                                      :result true}
                                     {:name "Step2"
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result false}]}]))))
 
 (deftest simulation-uses-given-user-ids
@@ -121,6 +129,8 @@
                                                    :id 1
                                                    :start number?
                                                    :end number?
+                                                   :context-before map?
+                                                   :context-after map?
                                                    :result true}]}
                                       {:name "Test scenario"
                                        :id 3
@@ -130,6 +140,8 @@
                                                    :id 3
                                                    :start number?
                                                    :end number?
+                                                   :context-before map?
+                                                   :context-after map?
                                                    :result true}]}]))))
 
 (deftest simulation-with-request-returning-single-boolean-instead-of-tuple
@@ -145,6 +157,8 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result true}]}]))))
 
 (deftest simulation-with-request-returning-channel-with-boolean
@@ -160,6 +174,8 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result true}]}]))))
 
 (deftest when-function-returns-exception-it-is-handled-as-ko
@@ -174,6 +190,8 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result false}]}]))))
 
 (deftest simulation-passes-context-through-requests-in-scenario
@@ -191,11 +209,17 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after {:user-id 0
+                                                     :to-next-request true}
                                      :result true}
                                     {:name "step2"
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before {:user-id 0
+                                                     :to-next-request true}
+                                     :context-after map?
                                      :result true}]}]))))
 
 (deftest simulation-passes-original-context-to-first-request
@@ -213,6 +237,10 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before {:test-val 5
+                                                      :user-id 0}
+                                     :context-after {:test-val 5
+                                                     :user-id 0}
                                      :result true}]}]))))
 
 (deftest does-not-stop-simulation-in-middle-of-scenario-by-default
@@ -236,11 +264,15 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result true}
                                     {:name "step 2"
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result true}]}]))))
 
 (deftest stops-simulation-in-middle-of-scenario-when-enabled
@@ -266,6 +298,8 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result true}]}]))))
 
 (deftest sleeps-for-given-time-before-starting-request
@@ -290,6 +324,8 @@
                                       :id 0
                                       :start number?
                                       :end number?
+                                      :context-before map?
+                                      :context-after map?
                                       :result true}]}]))))
 
 (def first-fails-scenario
@@ -309,6 +345,8 @@
                                        :id 0
                                        :start number?
                                        :end number?
+                                       :context-before map?
+                                       :context-after map?
                                        :result false}]})))))
 
 (deftest second-request-is-not-skipped-in-failure-if-skip-next-after-failure-is-unset
@@ -322,11 +360,15 @@
                                        :id 0
                                        :start number?
                                        :end number?
+                                       :context-before map?
+                                       :context-after map?
                                        :result false}
                                       {:name "second"
                                        :id 0
                                        :start number?
                                        :end number?
+                                       :context-before map?
+                                       :context-after map?
                                        :result true}]}]))))
 
 (deftest simulation-returns-result-when-run-with-http-requests-using-legacy-format
@@ -372,6 +414,8 @@
                                               :id 0
                                               :start number?
                                               :end number?
+                                              :context-before map?
+                                              :context-after map?
                                               :result true}]})))))
 
 (deftest with-multiple-number-of-requests
@@ -411,6 +455,8 @@
                                      :id 0
                                      :start number?
                                      :end number?
+                                     :context-before map?
+                                     :context-after map?
                                      :result false}]}]))))
 
 (deftest scenario-weight

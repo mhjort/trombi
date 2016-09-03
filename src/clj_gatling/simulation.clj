@@ -32,20 +32,22 @@
   (go
     (when-let [sleep-before (:sleep-before step)]
     (<! (async/timeout (sleep-before original-context))))
-    (let [start (now)
-          response (asynchronize (:request step) (assoc original-context :user-id user-id))
+    (let [original-context-with-user (assoc original-context :user-id user-id)
+          start (now)
+          return {:name (:name step)
+                  :id user-id
+                  :start start
+                  :context-before original-context-with-user}
+          response (asynchronize (:request step) original-context-with-user)
           [{:keys [result end-time context]} c] (alts! [response (async/timeout timeout)])]
       (if (= c response)
-        [{:name (:name step)
-          :id user-id
-          :start start
-          :end end-time
-          :result result} context]
-        [{:name (:name step)
-          :id user-id
-          :start start
-          :end (now)
-          :result false} original-context]))))
+        [(assoc return :end end-time
+                       :result result
+                       :context-after context) context]
+        [(assoc return :end (now)
+                       :return false
+                       :context-after original-context-with-user)
+         original-context-with-user]))))
 
 (defn- response->result [scenario result]
   {:name (:name scenario)
