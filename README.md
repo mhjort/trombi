@@ -214,7 +214,8 @@ Results look like this:
 ```
 
 clj-gatling calls the writer function periodically (currently after each 20000 requests) and then
-generator once when the simulation is over.
+generator once when the simulation is over. There is an example on how to use custom reporter in
+examples folder.
 
 ## Why
 
