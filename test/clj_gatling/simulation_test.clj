@@ -56,6 +56,7 @@
 
 (def scenario
   {:name "Test scenario"
+   :context {}
    :requests [{:name "Request1" :fn successful-request}
               {:name "Request2" :fn failing-request}]})
 
@@ -229,6 +230,27 @@
                                       [(= 5 test-val) ctx])}]}
         result (run-single-scenario scenario :concurrency 1
                                     :context {:test-val 5})]
+    (is (equal? result [{:name "scenario"
+                         :id 0
+                         :start number?
+                         :end number?
+                         :requests [{:name "step1"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :context-before {:test-val 5
+                                                      :user-id 0}
+                                     :context-after {:test-val 5
+                                                     :user-id 0}
+                                     :result true}]}]))))
+
+(deftest simulation-passes-scenario-specific-context
+  (let [scenario {:name "scenario"
+                  :context {:test-val 5}
+                  :steps [{:name "step1"
+                           :request (fn [{:keys [test-val] :as ctx}]
+                                      [(= 5 test-val) ctx])}]}
+        result (run-single-scenario scenario :concurrency 1)]
     (is (equal? result [{:name "scenario"
                          :id 0
                          :start number?
