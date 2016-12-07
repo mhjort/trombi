@@ -30,6 +30,8 @@
             (first (filter (fn [^List xs]
                              (.contains xs nil)) vector-of-vectors))))
 
+(defn- generate-empty-buckets [bucket-sizes]
+  (mapv #(repeat % nil) bucket-sizes))
 (defn split-to-number-of-buckets [xs bucket-count]
   (reduce (fn [m v]
             (update m (idx-of-smallest-vector m) conj v))
@@ -39,7 +41,7 @@
 (defn split-to-buckets-with-sizes [xs bucket-sizes]
   (reduce (fn [m v]
             (update m (idx-of-first-vector-with-nil m) #(conj (butlast %) v)))
-          (mapv #(repeat % nil) bucket-sizes)
+          (generate-empty-buckets bucket-sizes)
           xs))
 
 (defn- weighted [weights value]
