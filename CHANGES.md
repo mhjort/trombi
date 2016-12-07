@@ -1,5 +1,9 @@
 # Changes
 
+## 0.8.4
+
+* Fix StackOverFlow error when running with large number of users (> 2500)
+
 ## 0.8.3
 
 * Pass `:context-before` and `:context-after` to reporter.
