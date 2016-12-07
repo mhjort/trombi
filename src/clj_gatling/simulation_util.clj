@@ -38,7 +38,7 @@
 
 (defn split-to-buckets-with-sizes [xs bucket-sizes]
   (reduce (fn [m v]
-            (update m (idx-of-first-vector-with-nil m) #(conj (drop-last %) v)))
+            (update m (idx-of-first-vector-with-nil m) #(conj (butlast %) v)))
           (mapv #(repeat % nil) bucket-sizes)
           xs))
 
