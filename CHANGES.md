@@ -1,5 +1,9 @@
 # Changes
 
+## 0.8.5
+
+* Add option for scenario specific context.
+
 ## 0.8.4
 
 * Fix StackOverFlow error when running with large number of users (> 2500)
