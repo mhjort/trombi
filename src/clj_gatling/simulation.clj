@@ -67,7 +67,7 @@
                                 (not (continue-run? runner @sent-requests simulation-start)))
         request-failed? #(not (:result %))]
     (go-loop [steps (:steps scenario)
-              context (or (:context options) {})
+              context (or (merge (:context options) (:context scenario)) {})
               results []]
              (let [[result new-ctx] (<! (async-function-with-timeout (first steps)
                                                                      timeout

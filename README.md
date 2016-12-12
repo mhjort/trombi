@@ -59,6 +59,7 @@ Simulation is specified as a Clojure map like this:
 ```clojure
 {:name "Simulation"
  :scenarios [{:name "Scenario1"
+              :context ;Optional (default {})
               :weight 2 ;Optional (default 1)
               :skip-next-after-failure? false ;Optional (default true)
               :allow-early-termination? true ;Optional (default false)
@@ -85,6 +86,9 @@ For example:
 
 Scenario weight is optional key with default value 1. In that case the users
 are split evenly between the scenarios
+
+Scenarios are also able to specific their own additional context via the
+optional `:context` key.
 
 #### Scenario steps
 
