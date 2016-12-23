@@ -7,7 +7,8 @@
             [schema.core :refer [check validate]]
             [clj-time.local :as local-time]
             [clojure.set :refer [rename-keys]]
-            [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]
+            [clojure.stacktrace :as stacktrace]))
 
 (set! *warn-on-reflection* true)
 
@@ -24,7 +25,8 @@
           (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
             (parse-response (<! result))
             (parse-response result)))
-        (catch Exception _
+        (catch Exception e
+          (stacktrace/print-cause-trace e)
           {:result false :end-time (now) :context ctx})))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id original-context]
