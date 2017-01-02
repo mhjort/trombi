@@ -17,7 +17,7 @@
     (.write w contents)))
 
 (defn path-join [& paths]
-  (.getCanonicalFile (apply clojure.java.io/file paths)))
+  (.getCanonicalPath (apply clojure.java.io/file paths)))
 
 ;; FIXME: Is this method in the right namespace?
 (defn exception->str
