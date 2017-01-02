@@ -19,7 +19,6 @@
 (defn path-join [& paths]
   (.getCanonicalPath (apply clojure.java.io/file paths)))
 
-;; FIXME: Is this method in the right namespace?
 (defn exception->str
   "Convert an exception object to a string representation."
   [^Exception e]
