@@ -27,14 +27,13 @@
             (parse-response (<! result))
             (parse-response result)))
         (catch Exception e
-          (log-exception "/tmp/test.log" e)
-          {:result false :end-time (now) :context ctx})))))
+          {:result false :end-time (now) :context ctx :exception e})))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id original-context]
   (swap! sent-requests inc)
   (go
     (when-let [sleep-before (:sleep-before step)]
-    (<! (async/timeout (sleep-before original-context))))
+      (<! (async/timeout (sleep-before original-context))))
     (let [original-context-with-user (assoc original-context :user-id user-id)
           start (now)
           return {:name (:name step)
