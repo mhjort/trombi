@@ -19,7 +19,7 @@
 ;; FIXME: Is this method in the right namespace?
 (defn exception->str
   "Convert an exception object to a string representation."
-  [e]
+  [^Exception e]
   (let [sw (StringWriter.)
         pw (PrintWriter. sw)]
     (.printStackTrace e pw)
@@ -34,7 +34,7 @@
   (reduce +
           (map #(max (count (:steps %))
                      (count (:requests %))) ;For legacy support
-                       scenarios)))
+               scenarios)))
 
 (defn- idx-of-first-vector-with-nil [^List vector-of-vectors]
   (.indexOf vector-of-vectors
