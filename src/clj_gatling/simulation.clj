@@ -43,9 +43,11 @@
           [{:keys [result end-time context exception]} c] (alts! [response (async/timeout timeout)])]
       (if (= c response)
         [(assoc return :end end-time
+                       :exception exception
                        :result result
                        :context-after context) context]
         [(assoc return :end (now)
+                       :exception exception
                        :return false
                        :context-after original-context-with-user)
          original-context-with-user]))))
@@ -75,11 +77,14 @@
                                                                      sent-requests
                                                                      user-id
                                                                      context))]
+               (when-let [e (:exception result)]
+                 (log-exception (:error-file options) e))
                (if (or (should-terminate?)
                        (empty? (rest steps))
                        (and skip-next-after-failure?
                             (request-failed? result)))
-                 (>! result-channel (conj results result))
+                 (>! result-channel (->> (dissoc result :exception)
+                                         (conj results)))
                  (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
 
