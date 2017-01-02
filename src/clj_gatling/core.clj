@@ -15,9 +15,8 @@
     (create-dir (str results-dir "/input"))
     results-dir))
 
-(defn- gatling-highcharts-reporter [root]
-  (let [results-dir (create-results-dir root)
-        start-time (LocalDateTime.)]
+(defn- gatling-highcharts-reporter [results-dir]
+  (let [start-time (LocalDateTime.)]
     {:writer (partial report/gatling-csv-writer (str results-dir  "/input") start-time)
      :generator (fn [_]
                   (println "Creating report from files in" results-dir)
@@ -47,10 +46,11 @@
 (defn run [simulation {:keys [concurrency root timeout-in-ms context requests duration reporter]
                        :or {concurrency 1
                             root "target/results"
-                            reporter (gatling-highcharts-reporter root)
                             timeout-in-ms 5000
                             context {}}}]
-  (let [result (simulation/run simulation {:concurrency concurrency
+  (let [results-dir (create-results-dir root)
+        reporter (or reporter (gatling-highcharts-reporter results-dir))
+        result (simulation/run simulation {:concurrency concurrency
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests
