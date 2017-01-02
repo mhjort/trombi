@@ -181,7 +181,7 @@
 
 (deftest when-function-returns-exception-it-is-handled-as-ko
   (let [s {:name "Exception scenario"
-           :steps [{:name "Throwing" :request #(throw (Exception. "Simulated"))}]}
+           :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
         result (run-single-scenario s :concurrency 1)]
     (is (equal? result [{:name "Exception scenario"
                          :id 0
