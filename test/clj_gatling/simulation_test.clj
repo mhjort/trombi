@@ -7,7 +7,8 @@
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-async-test.core :refer :all]
             [clojure.core.async :refer [go <! <!! timeout]]
-            [clj-time.core :as time]))
+            [clj-time.core :as time]
+            [clojure.java.io :as io]))
 
 (defn- to-vector [channel]
   (loop [results []]
@@ -201,11 +202,13 @@
                                      :result false}]}]))))
 
 (deftest when-function-throws-exception-it-is-logged
+  (io/delete-file error-file-path)
   (let [result (-> {:name "Exception logging scenario"
                     :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
                    ;; FIXME: output will probably be jumbled with concurrency > 1
                    (run-single-scenario :concurrency 1))]
-    ))
+    (is (-> (slurp error-file-path)
+            (clojure.string/includes? "Simulated")))))
 
 (deftest simulation-passes-context-through-requests-in-scenario
   (let [result (run-single-scenario {:name "scenario"
