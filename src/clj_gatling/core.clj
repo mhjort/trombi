@@ -18,7 +18,7 @@
 
 (defn- gatling-highcharts-reporter [results-dir]
   (let [start-time (LocalDateTime.)]
-    {:writer (partial report/gatling-csv-writer (str results-dir  "/input") start-time)
+    {:writer (partial report/gatling-csv-writer (path-join results-dir "input") start-time)
      :generator (fn [_]
                   (println "Creating report from files in" results-dir)
                   (chart/create-chart results-dir)
@@ -31,14 +31,15 @@
         step-timeout (or (:timeout-in-ms options) 5000)
         result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                           :timeout-in-ms step-timeout
-                                          :context (:context options)}
+                                          :context (:context options)
+                                          :error-file (path-join results-dir "error.log")}
                                          (weighted-scenarios (range concurrency) scenarios)
                                          true)]
     (let [summary (report/create-result-lines start-time
                                               buffer-size
                                               result
                                               (partial report/gatling-csv-writer
-                                                       (str results-dir "/input")
+                                                       (path-join results-dir "input")
                                                        (LocalDateTime.)))]
       (chart/create-chart results-dir)
       (println (str "Open " results-dir "/index.html"))
@@ -56,7 +57,7 @@
                                            :context context
                                            :requests requests
                                            ;; TODO: make configurable
-                                           :error-file (path-join "error.log")
+                                           :error-file (path-join results-dir "error.log")
                                            :duration duration})
         summary (report/create-result-lines simulation
                                             buffer-size
