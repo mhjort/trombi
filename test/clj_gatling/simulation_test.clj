@@ -195,6 +195,13 @@
                                      :context-after map?
                                      :result false}]}]))))
 
+(deftest when-function-throws-exception-it-is-logged
+  (let [result (-> {:name "Exception logging scenario"
+                    :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
+                   ;; FIXME: output will probably be jumbled with concurrency > 1
+                   (run-single-scenario :concurrency 1))]
+    ))
+
 (deftest simulation-passes-context-through-requests-in-scenario
   (let [result (run-single-scenario {:name "scenario"
                                      :steps [(step "step1" true)
