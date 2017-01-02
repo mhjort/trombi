@@ -16,6 +16,9 @@
   (with-open [w (clojure.java.io/writer path :append true)]
     (.write w contents)))
 
+(defn path-join [& paths]
+  (.getCanonicalFile (apply clojure.java.io/file paths)))
+
 ;; FIXME: Is this method in the right namespace?
 (defn exception->str
   "Convert an exception object to a string representation."

@@ -3,6 +3,7 @@
   (:require [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
             [clj-gatling.simulation-util :refer [create-dir
+                                                 path-join
                                                  weighted-scenarios
                                                  choose-runner
                                                  timestamp-str]]
@@ -11,8 +12,8 @@
 (def buffer-size 20000)
 
 (defn- create-results-dir [root]
-  (let [results-dir (str root "/" (timestamp-str))]
-    (create-dir (str results-dir "/input"))
+  (let [results-dir (path-join root (timestamp-str))]
+    (create-dir (path-join results-dir "input"))
     results-dir))
 
 (defn- gatling-highcharts-reporter [results-dir]
@@ -54,6 +55,8 @@
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests
+                                           ;; TODO: make configurable
+                                           :error-file (path-join "error.log")
                                            :duration duration})
         summary (report/create-result-lines simulation
                                             buffer-size
