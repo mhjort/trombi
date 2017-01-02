@@ -32,7 +32,8 @@
         result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                           :timeout-in-ms step-timeout
                                           :context (:context options)
-                                          :error-file (path-join results-dir "error.log")}
+                                          :error-file (or (:error-file options)
+                                                          (path-join results-dir "error.log"))}
                                          (weighted-scenarios (range concurrency) scenarios)
                                          true)]
     (let [summary (report/create-result-lines start-time
@@ -45,7 +46,8 @@
       (println (str "Open " results-dir "/index.html"))
       summary)))
 
-(defn run [simulation {:keys [concurrency root timeout-in-ms context requests duration reporter]
+(defn run [simulation {:keys [concurrency root timeout-in-ms context
+                              requests duration reporter error-file]
                        :or {concurrency 1
                             root "target/results"
                             timeout-in-ms 5000
@@ -56,8 +58,8 @@
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests
-                                           ;; TODO: make configurable
-                                           :error-file (path-join results-dir "error.log")
+                                           :error-file (or error-file
+                                                           (path-join results-dir "error.log"))
                                            :duration duration})
         summary (report/create-result-lines simulation
                                             buffer-size
