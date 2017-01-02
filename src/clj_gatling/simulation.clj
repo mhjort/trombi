@@ -8,8 +8,7 @@
             [schema.core :refer [check validate]]
             [clj-time.local :as local-time]
             [clojure.set :refer [rename-keys]]
-            [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]
-            [clojure.stacktrace :as stacktrace]))
+            [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
 
 (set! *warn-on-reflection* true)
 
@@ -41,7 +40,7 @@
                   :start start
                   :context-before original-context-with-user}
           response (asynchronize (:request step) original-context-with-user)
-          [{:keys [result end-time context]} c] (alts! [response (async/timeout timeout)])]
+          [{:keys [result end-time context exception]} c] (alts! [response (async/timeout timeout)])]
       (if (= c response)
         [(assoc return :end end-time
                        :result result
