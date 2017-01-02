@@ -3,7 +3,8 @@
             [clj-gatling.simulation-runners :refer :all]
             [clj-gatling.schema :as schema]
             [clj-gatling.simulation-util :refer [weighted-scenarios
-                                                 choose-runner]]
+                                                 choose-runner
+                                                 log-exception]]
             [schema.core :refer [check validate]]
             [clj-time.local :as local-time]
             [clojure.set :refer [rename-keys]]
@@ -26,7 +27,7 @@
             (parse-response (<! result))
             (parse-response result)))
         (catch Exception e
-          (stacktrace/print-cause-trace e)
+          (log-exception "/tmp/test.log" e)
           {:result false :end-time (now) :context ctx})))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id original-context]

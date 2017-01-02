@@ -3,10 +3,32 @@
             [clj-time.format :as f])
   (:import [java.util List]
            [java.io File]
+           [java.io StringWriter PrintWriter]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn create-dir [^String dir]
   (.mkdirs (File. dir)))
+
+(defn append-file
+  "Append `contents` to file at `path`. The file is created
+  if it doesn't already exist."
+  [^String path contents]
+  (with-open [w (clojure.java.io/writer path :append true)]
+    (.write w contents)))
+
+;; FIXME: Is this method in the right namespace?
+(defn exception->str
+  "Convert an exception object to a string representation."
+  [e]
+  (let [sw (StringWriter.)
+        pw (PrintWriter. sw)]
+    (.printStackTrace e pw)
+    (.toString sw)))
+
+(defn log-exception
+  "Log exception `e` to file at `path`."
+  [path e]
+  (append-file path (exception->str e)))
 
 (defn- distinct-request-count [scenarios]
   (reduce +
