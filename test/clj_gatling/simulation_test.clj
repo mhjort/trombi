@@ -8,6 +8,7 @@
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-async-test.core :refer :all]
             [clojure.core.async :refer [go <! <!! timeout]]
+            [clojure.java.io :as io]
             [clj-time.core :as time]))
 
 (defn- to-vector [channel]
@@ -18,14 +19,12 @@
 
 (def error-file-path "target/test-results/error.log")
 
-(defn- setup-error-file-path
-  [f]
-  (let [file (clojure.java.io/file error-file-path)]
+(defn- setup-error-file-path [f]
+  (let [file (io/file error-file-path)]
     (when (not (.exists file))
       (create-dir (.getParent file))))
   (f))
 
-;; Just setup the file path once
 (use-fixtures :once setup-error-file-path)
 
 (defn- run-legacy-simulation [scenarios concurrency & [options]]
@@ -213,10 +212,9 @@
 
 (deftest when-function-throws-exception-it-is-logged
   ;; delete previous log data
-  (clojure.java.io/delete-file error-file-path)
+  (io/delete-file error-file-path)
   (let [result (-> {:name "Exception logging scenario"
                     :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
-                   ;; FIXME: output will probably be jumbled with concurrency > 1
                    (run-single-scenario :concurrency 1))]
     (is (-> (slurp error-file-path)
             (clojure.string/includes? "Simulated")))))
