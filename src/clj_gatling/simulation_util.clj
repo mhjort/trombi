@@ -4,6 +4,7 @@
   (:import [java.util List]
            [java.io File]
            [java.io StringWriter PrintWriter]
+           [clojure.java.io :as io]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn create-dir [^String dir]
@@ -13,11 +14,11 @@
   "Append `contents` to file at `path`. The file is created
   if it doesn't already exist."
   [^String path contents]
-  (with-open [w (clojure.java.io/writer path :append true)]
+  (with-open [w (io/writer path :append true)]
     (.write w contents)))
 
 (defn path-join [& paths]
-  (.getCanonicalPath (apply clojure.java.io/file paths)))
+  (.getCanonicalPath (apply io/file paths)))
 
 (defn exception->str
   "Convert an exception object to a string representation."
