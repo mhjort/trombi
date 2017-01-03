@@ -1,10 +1,10 @@
 (ns clj-gatling.simulation-util
   (:require [clj-time.core :as t]
-            [clj-time.format :as f])
+            [clj-time.format :as f]
+            [clojure.java.io :as io])
   (:import [java.util List]
            [java.io File]
            [java.io StringWriter PrintWriter]
-           [clojure.java.io :as io]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn create-dir [^String dir]
