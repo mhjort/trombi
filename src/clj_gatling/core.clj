@@ -3,6 +3,7 @@
   (:require [clj-gatling.chart :as chart]
             [clj-gatling.report :as report]
             [clj-gatling.simulation-util :refer [create-dir
+                                                 path-join
                                                  weighted-scenarios
                                                  choose-runner
                                                  timestamp-str]]
@@ -11,14 +12,13 @@
 (def buffer-size 20000)
 
 (defn- create-results-dir [root]
-  (let [results-dir (str root "/" (timestamp-str))]
-    (create-dir (str results-dir "/input"))
+  (let [results-dir (path-join root (timestamp-str))]
+    (create-dir (path-join results-dir "input"))
     results-dir))
 
-(defn- gatling-highcharts-reporter [root]
-  (let [results-dir (create-results-dir root)
-        start-time (LocalDateTime.)]
-    {:writer (partial report/gatling-csv-writer (str results-dir  "/input") start-time)
+(defn- gatling-highcharts-reporter [results-dir]
+  (let [start-time (LocalDateTime.)]
+    {:writer (partial report/gatling-csv-writer (path-join results-dir "input") start-time)
      :generator (fn [_]
                   (println "Creating report from files in" results-dir)
                   (chart/create-chart results-dir)
@@ -31,29 +31,35 @@
         step-timeout (or (:timeout-in-ms options) 5000)
         result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                           :timeout-in-ms step-timeout
-                                          :context (:context options)}
+                                          :context (:context options)
+                                          :error-file (or (:error-file options)
+                                                          (path-join results-dir "error.log"))}
                                          (weighted-scenarios (range concurrency) scenarios)
                                          true)]
     (let [summary (report/create-result-lines start-time
                                               buffer-size
                                               result
                                               (partial report/gatling-csv-writer
-                                                       (str results-dir "/input")
+                                                       (path-join results-dir "input")
                                                        (LocalDateTime.)))]
       (chart/create-chart results-dir)
       (println (str "Open " results-dir "/index.html"))
       summary)))
 
-(defn run [simulation {:keys [concurrency root timeout-in-ms context requests duration reporter]
+(defn run [simulation {:keys [concurrency root timeout-in-ms context
+                              requests duration reporter error-file]
                        :or {concurrency 1
                             root "target/results"
-                            reporter (gatling-highcharts-reporter root)
                             timeout-in-ms 5000
                             context {}}}]
-  (let [result (simulation/run simulation {:concurrency concurrency
+  (let [results-dir (create-results-dir root)
+        reporter (or reporter (gatling-highcharts-reporter results-dir))
+        result (simulation/run simulation {:concurrency concurrency
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests
+                                           :error-file (or error-file
+                                                           (path-join results-dir "error.log"))
                                            :duration duration})
         summary (report/create-result-lines simulation
                                             buffer-size

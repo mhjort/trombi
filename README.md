@@ -124,9 +124,7 @@ global timeout (see Options) for a step. If a request function takes more time i
 cancelled and step is again considered as a failure.
 
 Note! clj-gatling reports only step failures and successes. At the moment there is no support for
-different kinds of errors in reporting level. If you have a lot of errors in your test runs
-the recommended practice is to have a exception catching logic inside of your request function
-and log it there.
+different kinds of errors in reporting level. All errors are logged to `target/results/<sim-name>/errors.log`.
 
 Context map contains all values that you specified as a simulation context when calling
 `run` method (See options) and clj-gatling provided `user-id` value. The purpose of user-id
@@ -179,7 +177,8 @@ Second parameter to `clj-gatling.core/run` function is options map. Options map 
  :root "/tmp" ;Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
  :concurrency 100 ;Number of concurrent users clj-gatling tries to use. Default to 1.
  :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
- :duration (clj-time.core/minutes 5)} ;The time to run the simulation. Note! If duration is given, requests value will be ignored
+ :duration (clj-time.core/minutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored
+ :error-file "/tmp/error.log"} ; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
 ```
 
 ### Examples

@@ -3,7 +3,8 @@
             [clj-gatling.simulation-runners :refer :all]
             [clj-gatling.schema :as schema]
             [clj-gatling.simulation-util :refer [weighted-scenarios
-                                                 choose-runner]]
+                                                 choose-runner
+                                                 log-exception]]
             [schema.core :refer [check validate]]
             [clj-time.local :as local-time]
             [clojure.set :refer [rename-keys]]
@@ -24,14 +25,14 @@
           (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
             (parse-response (<! result))
             (parse-response result)))
-        (catch Exception _
-          {:result false :end-time (now) :context ctx})))))
+        (catch Exception e
+          {:result false :end-time (now) :context ctx :exception e})))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id original-context]
   (swap! sent-requests inc)
   (go
     (when-let [sleep-before (:sleep-before step)]
-    (<! (async/timeout (sleep-before original-context))))
+      (<! (async/timeout (sleep-before original-context))))
     (let [original-context-with-user (assoc original-context :user-id user-id)
           start (now)
           return {:name (:name step)
@@ -39,12 +40,14 @@
                   :start start
                   :context-before original-context-with-user}
           response (asynchronize (:request step) original-context-with-user)
-          [{:keys [result end-time context]} c] (alts! [response (async/timeout timeout)])]
+          [{:keys [result end-time context exception]} c] (alts! [response (async/timeout timeout)])]
       (if (= c response)
         [(assoc return :end end-time
+                       :exception exception
                        :result result
                        :context-after context) context]
         [(assoc return :end (now)
+                       :exception exception
                        :return false
                        :context-after original-context-with-user)
          original-context-with-user]))))
@@ -74,11 +77,14 @@
                                                                      sent-requests
                                                                      user-id
                                                                      context))]
+               (when-let [e (:exception result)]
+                 (log-exception (:error-file options) e))
                (if (or (should-terminate?)
                        (empty? (rest steps))
                        (and skip-next-after-failure?
                             (request-failed? result)))
-                 (>! result-channel (conj results result))
+                 (>! result-channel (->> (dissoc result :exception)
+                                         (conj results)))
                  (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
 

@@ -1,18 +1,43 @@
 (ns clj-gatling.simulation-util
   (:require [clj-time.core :as t]
-            [clj-time.format :as f])
+            [clj-time.format :as f]
+            [clojure.java.io :as io])
   (:import [java.util List]
            [java.io File]
+           [java.io StringWriter PrintWriter]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn create-dir [^String dir]
   (.mkdirs (File. dir)))
 
+(defn append-file
+  "Append `contents` to file at `path`. The file is created
+  if it doesn't already exist."
+  [^String path contents]
+  (with-open [w (io/writer path :append true)]
+    (.write w contents)))
+
+(defn path-join [& paths]
+  (.getCanonicalPath (apply io/file paths)))
+
+(defn exception->str
+  "Convert an exception object to a string representation."
+  [^Exception e]
+  (let [sw (StringWriter.)
+        pw (PrintWriter. sw)]
+    (.printStackTrace e pw)
+    (.toString sw)))
+
+(defn log-exception
+  "Log exception `e` to file at `path`."
+  [path e]
+  (append-file path (exception->str e)))
+
 (defn- distinct-request-count [scenarios]
   (reduce +
           (map #(max (count (:steps %))
                      (count (:requests %))) ;For legacy support
-                       scenarios)))
+               scenarios)))
 
 (defn- idx-of-first-vector-with-nil [^List vector-of-vectors]
   (.indexOf vector-of-vectors
