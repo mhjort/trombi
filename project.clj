@@ -5,10 +5,10 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/core.async "0.2.374"]
-                 [clojure-csv/clojure-csv "2.0.1"]
-                 [http-kit "2.1.19"]
-                 [clj-time "0.11.0"]
-                 [prismatic/schema "1.1.0"]
+                 [clojure-csv/clojure-csv "2.0.2"]
+                 [http-kit "2.2.0"]
+                 [clj-time "0.13.0"]
+                 [prismatic/schema "1.1.3"]
                  [io.gatling/gatling-charts "2.0.3"
                    :exclusions [com.typesafe.akka/akka-actor_2.10
                                 org.jodd/jodd-lagarto
