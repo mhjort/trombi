@@ -15,7 +15,7 @@ maybe deprecated in future. You can see documentation for old versions [here](RE
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.8.5"]
+[clj-gatling "0.8.6"]
 ```
 
 ## Usage
