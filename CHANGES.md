@@ -1,5 +1,9 @@
 # Changes
 
+## 0.8.6
+
+* Add error (stacktrace) logging
+
 ## 0.8.5
 
 * Add option for scenario specific context.
