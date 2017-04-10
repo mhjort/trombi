@@ -164,12 +164,17 @@
                (close! results)))
     results))
 
-(defn run [{:keys [scenarios] :as simulation}
-           {:keys [concurrency users] :as options}]
-  (let [user-ids (or users (range concurrency))]
-    (validate schema/Simulation simulation)
-    (run-scenarios (assoc options :runner (choose-runner scenarios
-                                                         (count user-ids)
-                                                         options))
+(defn run [{:keys [scenarios pre-hook] :as simulation}
+           {:keys [concurrency users context] :as options}]
+  (validate schema/Simulation simulation)
+  (let [user-ids (or users (range concurrency))
+        pre-hook-ctx (if pre-hook
+                       (pre-hook context)
+                       context)]
+    (run-scenarios (assoc options
+                          :context (merge context pre-hook-ctx)
+                          :runner (choose-runner scenarios
+                                                 (count user-ids)
+                                                 options))
                    (weighted-scenarios user-ids scenarios)
                    false)))

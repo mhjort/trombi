@@ -420,6 +420,15 @@
                                     :duration (time/millis 50))]
     (is (not (empty? result)))))
 
+(deftest pre-hook
+  (let [pre-hook-called? (atom false)]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :concurrency 1
+                         :pre-hook (fn [ctx]
+                                     (reset! pre-hook-called? true)
+                                     ctx))
+    (is (= true @pre-hook-called?))))
 (deftest fails-requests-when-they-take-longer-than-timeout
   (let [result (run-single-scenario {:name "scenario"
                                      :steps [{:name "step"
