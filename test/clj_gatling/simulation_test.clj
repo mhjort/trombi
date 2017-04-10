@@ -1,73 +1,13 @@
 (ns clj-gatling.simulation-test
-  (:use clojure.test)
-  (:require [clj-gatling.simulation :as simulation]
+  (:require [clojure.test :refer :all]
+            [clj-gatling.test-helpers :refer :all]
             [clj-gatling.httpkit :as httpkit]
-            [clj-gatling.simulation-util :refer [choose-runner
-                                                 weighted-scenarios
-                                                 create-dir]]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-async-test.core :refer :all]
             [clojure.core.async :refer [go <! <!! timeout]]
-            [clojure.java.io :as io]
             [clj-time.core :as time]))
 
-(defn- to-vector [channel]
-  (loop [results []]
-    (if-let [result (<!! channel)]
-      (recur (conj results result))
-      results)))
-
-(def error-file-path "target/test-results/error.log")
-
-(defn- setup-error-file-path [f]
-  (let [file (io/file error-file-path)]
-    (when (not (.exists file))
-      (create-dir (.getParent file))))
-  (f))
-
 (use-fixtures :once setup-error-file-path)
-
-(defn- run-legacy-simulation [scenarios concurrency & [options]]
-  (let [step-timeout (or (:timeout-in-ms options) 5000)]
-    (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                   :timeout-in-ms step-timeout
-                                   :context (:context options)
-                                   :error-file error-file-path}
-                                  (weighted-scenarios (range concurrency) scenarios)
-                                  true)
-        to-vector)))
-
-(defn- run-single-scenario [scenario & {:keys [concurrency context timeout-in-ms requests duration users]
-                                        :or {timeout-in-ms 5000}}]
-  (to-vector (simulation/run {:name "Simulation"
-                              :scenarios [scenario]}
-                             {:concurrency concurrency
-                              :timeout-in-ms timeout-in-ms
-                              :requests requests
-                              :duration duration
-                              :users users
-                              :context context
-                              :error-file error-file-path})))
-
-(defn- run-two-scenarios [scenario1 scenario2 & {:keys [concurrency requests]}]
-  (to-vector (simulation/run {:name "Simulation"
-                              :scenarios [scenario1 scenario2]}
-                             {:concurrency concurrency
-                              :requests requests
-                              :timeout-in-ms 5000
-                              :error-file error-file-path})))
-
-(defn successful-request [cb context]
-  ;TODO Try to find a better way for this
-  ;This is required so that multiple scenarios start roughly at the same time
-  (Thread/sleep 50)
-  (cb true (assoc context :to-next-request true)))
-
-(defn failing-request [cb context] (cb false))
-
-(defn- fake-async-http [url callback context]
-  (future (Thread/sleep 50)
-          (callback (= "success" url))))
 
 (def scenario
   {:name "Test scenario"
@@ -79,9 +19,6 @@
   {:name "Test http scenario"
    :requests [{:name "Request1" :http "success"}
               {:name "Request2" :http "fail"}]})
-
-(defn get-result [requests request-name]
-  (:result (first (filter #(= request-name (:name %)) requests))))
 
 (defn- step [step-name return]
   {:name step-name
@@ -211,8 +148,7 @@
                                      :result false}]}]))))
 
 (deftest when-function-throws-exception-it-is-logged
-  ;; delete previous log data
-  (io/delete-file error-file-path)
+  (delete-error-logs)
   (let [result (-> {:name "Exception logging scenario"
                     :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
                    (run-single-scenario :concurrency 1))]
