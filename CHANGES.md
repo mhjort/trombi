@@ -1,5 +1,9 @@
 # Changes
 
+## 0.9.0
+
+* Add pre-hook and post-hook for simulation
+
 ## 0.8.6
 
 * Add error (stacktrace) logging
