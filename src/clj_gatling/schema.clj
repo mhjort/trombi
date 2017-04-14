@@ -25,4 +25,5 @@
 (def Simulation
   {:name s/Str
    (s/optional-key :pre-hook) s/Any
+   (s/optional-key :post-hook) s/Any
    :scenarios [Scenario]})

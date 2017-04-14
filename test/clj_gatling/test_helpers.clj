@@ -33,10 +33,18 @@
                                   true)
         to-vector)))
 
-(defn run-single-scenario [scenario & {:keys [concurrency context timeout-in-ms requests duration users pre-hook]
+(defn run-single-scenario [scenario & {:keys [concurrency
+                                              context
+                                              timeout-in-ms
+                                              requests
+                                              duration
+                                              users
+                                              pre-hook
+                                              post-hook]
                                         :or {timeout-in-ms 5000}}]
   (to-vector (simulation/run {:name "Simulation"
                               :pre-hook pre-hook
+                              :post-hook post-hook
                               :scenarios [scenario]}
                              {:concurrency concurrency
                               :timeout-in-ms timeout-in-ms
