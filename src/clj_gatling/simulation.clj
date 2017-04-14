@@ -143,8 +143,8 @@
                (close! results)))
     results))
 
-(defn run-scenarios [options scenarios convert-from-legacy?]
-  (println "Running simulation with" (runner-info (:runner options)))
+(defn run-scenarios [{:keys [post-hook context runner] :as options} scenarios convert-from-legacy?]
+  (println "Running simulation with" (runner-info runner))
   (let [simulation-start (local-time/local-now)
         sent-requests (atom 0)
         runnable-scenarios (validate [schema/RunnableScenario] (if convert-from-legacy?
@@ -161,15 +161,21 @@
                (do
                  (>! results result)
                  (recur))
-               (close! results)))
+               (do
+                (close! results)
+                (when post-hook (post-hook context)))))
     results))
 
-(defn run [{:keys [scenarios] :as simulation}
-           {:keys [concurrency users] :as options}]
-  (let [user-ids (or users (range concurrency))]
-    (validate schema/Simulation simulation)
-    (run-scenarios (assoc options :runner (choose-runner scenarios
-                                                         (count user-ids)
-                                                         options))
+(defn run [{:keys [scenarios pre-hook post-hook] :as simulation}
+           {:keys [concurrency users context] :as options}]
+  (validate schema/Simulation simulation)
+  (let [user-ids (or users (range concurrency))
+        final-ctx (merge context (when pre-hook (pre-hook context)))]
+    (run-scenarios (assoc options
+                          :context final-ctx
+                          :post-hook post-hook
+                          :runner (choose-runner scenarios
+                                                 (count user-ids)
+                                                 options))
                    (weighted-scenarios user-ids scenarios)
                    false)))

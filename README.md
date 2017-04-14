@@ -58,6 +58,8 @@ Simulation is specified as a Clojure map like this:
 
 ```clojure
 {:name "Simulation"
+ :pre-hook (fn [ctx] (do-some-setup) (assoc ctx :new-value value)) ;Optional
+ :post-hook (fn [ctx] (do-some-teardown)) ;Optional
  :scenarios [{:name "Scenario1"
               :context ;Optional (default {})
               :weight 2 ;Optional (default 1)
@@ -73,6 +75,13 @@ Simulation is specified as a Clojure map like this:
               :steps [{:name "Another step"
                        :request another-step-fn}]}]}
 ```
+
+#### Hooks
+
+You can define a `pre-hook` function that is executed before running the simulation.
+Function takes in the `context` map. You can change the context (e.g. by adding new keys)
+by returning new map. Also you can define a `post-hook` function which is called after
+running the simulation.
 
 #### Scenarios
 
