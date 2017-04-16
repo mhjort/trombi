@@ -1,6 +1,8 @@
 (ns clj-gatling.core
   (:import [org.joda.time LocalDateTime])
-  (:require [clj-gatling.chart :as chart]
+  (:require [clojider-gatling-highcharts-reporter.core :refer [csv-writer
+                                                               create-chart
+                                                               gatling-highcharts-reporter]]
             [clj-gatling.report :as report]
             [clj-gatling.simulation-util :refer [create-dir
                                                  path-join
@@ -15,14 +17,6 @@
   (let [results-dir (path-join root (timestamp-str))]
     (create-dir (path-join results-dir "input"))
     results-dir))
-
-(defn- gatling-highcharts-reporter [results-dir]
-  (let [start-time (LocalDateTime.)]
-    {:writer (partial report/gatling-csv-writer (path-join results-dir "input") start-time)
-     :generator (fn [_]
-                  (println "Creating report from files in" results-dir)
-                  (chart/create-chart results-dir)
-                  (println (str "Open " results-dir "/index.html with your browser to see a detailed report." )))}))
 
 ;Legacy function for running tests with old format (pre 0.8)
 (defn run-simulation [scenarios concurrency & [options]]
@@ -39,10 +33,10 @@
     (let [summary (report/create-result-lines start-time
                                               buffer-size
                                               result
-                                              (partial report/gatling-csv-writer
+                                              (partial csv-writer
                                                        (path-join results-dir "input")
                                                        (LocalDateTime.)))]
-      (chart/create-chart results-dir)
+      (create-chart results-dir)
       (println (str "Open " results-dir "/index.html"))
       summary)))
 
