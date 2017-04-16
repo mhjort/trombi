@@ -1,5 +1,9 @@
 # Changes
 
+## 0.9.1
+
+* Move gatling-highcharts-reporter to own repository
+
 ## 0.9.0
 
 * Add pre-hook and post-hook for simulation
