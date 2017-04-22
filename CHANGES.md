@@ -1,5 +1,9 @@
 # Changes
 
+## 0.9.3
+
+* Bump dependencies
+
 ## 0.9.2
 
 * Fix a NPE with running legacy simulation (pre 0.8)
