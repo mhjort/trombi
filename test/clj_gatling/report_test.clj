@@ -21,12 +21,16 @@
     (onto-chan c coll)
     c))
 
+(def simulation
+  {:name "mySimulation"
+   :scenarios []})
+
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
         start-time (local-date-time 2014 2 9 11 1 36)
         output-writer (fn [simulation idx result]
                         (deliver (nth result-lines idx) result))
-        summary (report/create-result-lines {:name "mySimulation"}
+        summary (report/create-result-lines simulation
                                             2
                                             (from scenario-results)
                                             output-writer)]
@@ -40,7 +44,7 @@
         slow-writer (fn [simulation idx result]
                       (Thread/sleep 100)
                       (reset! (nth result-lines idx) result))]
-    (report/create-result-lines {:name "mySimulation"}
+    (report/create-result-lines simulation
                                 2
                                 (from scenario-results)
                                 slow-writer)

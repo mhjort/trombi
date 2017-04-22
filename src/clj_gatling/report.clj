@@ -1,7 +1,10 @@
 (ns clj-gatling.report
-  (:require [clojure.core.async :as a :refer [thread <!!]]))
+  (:require [schema.core :refer [validate]]
+            [clj-gatling.schema :as schema]
+            [clojure.core.async :as a :refer [thread <!!]]))
 
 (defn create-result-lines [simulation buffer-size results-channel output-writer]
+  (validate schema/Simulation simulation)
   (let [summary (fn [result] (frequencies (mapcat #(map :result (:requests %)) result)))
         ;Note! core.async/partition is deprecated function.
         ;This should be changed to use transducers instead
