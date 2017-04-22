@@ -74,6 +74,11 @@
   (future (Thread/sleep 50)
           (callback (= "success" url))))
 
+(defn step [step-name return]
+  {:name step-name
+   :request (fn [ctx]
+              [return (assoc ctx :to-next-request return)])})
+
 (defn get-result [requests request-name]
   (:result (first (filter #(= request-name (:name %)) requests))))
 

@@ -20,11 +20,6 @@
    :requests [{:name "Request1" :http "success"}
               {:name "Request2" :http "fail"}]})
 
-(defn- step [step-name return]
-  {:name step-name
-   :request (fn [ctx]
-              [return (assoc ctx :to-next-request return)])})
-
 (deftest simulation-returns-result-when-run-with-one-user-with-legacy-format
   (let [result (run-legacy-simulation [scenario] 1)]
     (is (equal? result [{:name "Test scenario"
