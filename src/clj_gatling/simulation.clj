@@ -105,31 +105,6 @@
   (println "Running scenario" (:name scenario)
            "with concurrency" (count (:users scenario))))
 
-(defn- convert-legacy-fn [request]
-  (let [f (if-let [url (:http request)]
-            (partial http/async-http-request url)
-            (:fn request))
-        c (async/chan)]
-    (fn [ctx]
-      (f (fn [result & [new-ctx]]
-           (if new-ctx
-             (put! c [result new-ctx])
-             (put! c [result ctx])))
-         ctx)
-      c)))
-
-(defn- convert-from-legacy [scenarios]
-  (let [request->step (fn [request]
-                        (-> request
-                            (assoc :request (convert-legacy-fn request))
-                            (dissoc :fn :http)))]
-    (map (fn [scenario]
-           (-> scenario
-               (update :requests #(map request->step %))
-               (rename-keys {:requests :steps})
-               (dissoc :concurrency :weight)))
-         scenarios)))
-
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
   (let [responses (async/merge (map #(run-scenario-constantly options scenario %)
@@ -143,18 +118,16 @@
                (close! results)))
     results))
 
-(defn run-scenarios [{:keys [post-hook context runner] :as options} scenarios convert-from-legacy?]
+(defn run-scenarios [{:keys [post-hook context runner] :as options} scenarios]
   (println "Running simulation with" (runner-info runner))
+  (validate [schema/RunnableScenario] scenarios)
   (let [simulation-start (local-time/local-now)
         sent-requests (atom 0)
-        runnable-scenarios (validate [schema/RunnableScenario] (if convert-from-legacy?
-                                                                 (convert-from-legacy scenarios)
-                                                                 scenarios))
         run-scenario-with-opts (partial run-scenario
                                         (assoc options
                                                :simulation-start simulation-start
                                                :sent-requests sent-requests))
-        responses (async/merge (map run-scenario-with-opts runnable-scenarios))
+        responses (async/merge (map run-scenario-with-opts scenarios))
         results (async/chan)]
     (go-loop []
              (if-let [result (<! responses)]
@@ -177,5 +150,4 @@
                           :runner (choose-runner scenarios
                                                  (count user-ids)
                                                  options))
-                   (weighted-scenarios user-ids scenarios)
-                   false)))
+                   (weighted-scenarios user-ids scenarios))))

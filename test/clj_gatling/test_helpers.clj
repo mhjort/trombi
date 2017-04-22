@@ -1,6 +1,7 @@
 (ns clj-gatling.test-helpers
   (:require [clojure.core.async :refer [go <! <!! timeout]]
             [clj-gatling.simulation :as simulation]
+            [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios]]
             [clj-gatling.simulation-util :refer [choose-runner
                                                  weighted-scenarios
                                                  create-dir]]
@@ -23,14 +24,14 @@
 (defn delete-error-logs []
   (io/delete-file error-file-path))
 
-(defn run-legacy-simulation [scenarios concurrency & [options]]
-  (let [step-timeout (or (:timeout-in-ms options) 5000)]
+(defn run-legacy-simulation [legacy-scenarios concurrency & [options]]
+  (let [step-timeout (or (:timeout-in-ms options) 5000)
+        scenarios (legacy-scenarios->scenarios legacy-scenarios)]
     (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                    :timeout-in-ms step-timeout
                                    :context (:context options)
                                    :error-file error-file-path}
-                                  (weighted-scenarios (range concurrency) scenarios)
-                                  true)
+                                  (weighted-scenarios (range concurrency) scenarios))
         to-vector)))
 
 (defn run-single-scenario [scenario & {:keys [concurrency
