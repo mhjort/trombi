@@ -1,8 +1,8 @@
 (ns clj-gatling.core
   (:import [org.joda.time LocalDateTime])
-  (:require [clojider-gatling-highcharts-reporter.core :refer [csv-writer
-                                                               create-chart
-                                                               gatling-highcharts-reporter]]
+  (:require [clojider-gatling-highcharts-reporter.core :refer [gatling-highcharts-reporter]]
+            [clojider-gatling-highcharts-reporter.reporter :refer [csv-writer]]
+            [clojider-gatling-highcharts-reporter.generator :refer [create-chart]]
             [clj-gatling.report :as report]
             [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios]]
             [clj-gatling.simulation-util :refer [create-dir
