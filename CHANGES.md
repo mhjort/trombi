@@ -1,5 +1,9 @@
 # Changes
 
+## 0.9.2
+
+* Fix a NPE with running legacy simulation (pre 0.8)
+
 ## 0.9.1
 
 * Move gatling-highcharts-reporter to own repository
