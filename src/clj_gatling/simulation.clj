@@ -88,17 +88,35 @@
                  (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
 
-(defn- run-scenario-constantly [options scenario user-id]
+
+(defn- run-scenario-constantly
+  [{:keys [concurrent-scenarios
+           runner
+           sent-requests
+           simulation-start
+           concurrency
+           concurrency-distribution
+           context] :as options}
+   scenario
+   user-id]
   (let [c (async/chan)
-        runner (:runner options)
-        simulation-start (:simulation-start options)
-        sent-requests (:sent-requests options)]
+        should-run-now? (if concurrency-distribution
+                          #(let [progress (calculate-progress runner @sent-requests simulation-start)
+                                 target-concurrency (* concurrency
+                                                       (concurrency-distribution progress context))]
+                             (> target-concurrency @concurrent-scenarios))
+                          (constantly true))]
     (go-loop []
-             (let [result (<! (run-scenario-once options scenario user-id))]
-               (>! c result)
-               (if (continue-run? runner @sent-requests simulation-start)
-                 (recur)
-                 (close! c))))
+             (if (should-run-now?)
+               (do
+                 (swap! concurrent-scenarios inc)
+                 (let [result (<! (run-scenario-once options scenario user-id))]
+                   (swap! concurrent-scenarios dec)
+                   (>! c result)))
+               (<! (async/timeout 200)))
+             (if (continue-run? runner @sent-requests simulation-start)
+               (recur)
+               (close! c)))
     c))
 
 (defn- print-scenario-info [scenario]
@@ -107,7 +125,8 @@
 
 (defn- run-scenario [options scenario]
   (print-scenario-info scenario)
-  (let [responses (async/merge (map #(run-scenario-constantly options scenario %)
+  (let [concurrent-scenarios (atom 0)
+        responses (async/merge (map #(run-scenario-constantly (assoc options :concurrent-scenarios concurrent-scenarios) scenario %)
                                     (:users scenario)))
         results (async/chan)]
     (go-loop []
@@ -118,8 +137,12 @@
                (close! results)))
     results))
 
-(defn run-scenarios [{:keys [post-hook context runner] :as options} scenarios]
-  (println "Running simulation with" (runner-info runner))
+(defn run-scenarios [{:keys [post-hook context runner concurrency-distribution] :as options} scenarios]
+  (println "Running simulation with"
+           (runner-info runner)
+           (if concurrency-distribution
+             "using concurrency distribution function"
+             ""))
   (validate [schema/RunnableScenario] scenarios)
   (let [simulation-start (local-time/local-now)
         sent-requests (atom 0)
