@@ -41,7 +41,7 @@
     (println (str "Open " results-dir "/index.html"))
     summary))
 
-(defn run [simulation {:keys [concurrency root timeout-in-ms context
+(defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
                               requests duration reporter error-file]
                        :or {concurrency 1
                             root "target/results"
@@ -50,6 +50,7 @@
   (let [results-dir (create-results-dir root)
         reporter (or reporter (gatling-highcharts-reporter results-dir))
         result (simulation/run simulation {:concurrency concurrency
+                                           :concurrency-distribution concurrency-distribution
                                            :timeout-in-ms timeout-in-ms
                                            :context context
                                            :requests requests

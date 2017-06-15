@@ -456,6 +456,30 @@
                                      :context-after map?
                                      :result false}]}]))))
 
+(deftest with-concurrency-function
+  (let [concurrency-function-called? (atom false)
+        context-to-fn (atom {})
+        progress-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :concurrency 10
+                         :requests 100
+                         :context {:value 1}
+                         :concurrency-distribution (fn [progress context]
+                                                     (reset! context-to-fn context)
+                                                     (reset! concurrency-function-called? true)
+                                                     (swap! progress-distribution conj progress)
+                                                     (if (< progress 0.5)
+                                                       0.1
+                                                       1.0)))
+    (testing "concurrency-function is called"
+      (is (= true @concurrency-function-called?)))
+    (testing "context is passed to concurrency-function"
+      (is (= {:value 1} @context-to-fn)))
+    (testing "Progress goes from 0 to 1"
+      (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
+      (is (= (sort @progress-distribution) @progress-distribution)))))
+
 (deftest scenario-weight
   (let [main-scenario {:name "Main"
                        :weight 2

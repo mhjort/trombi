@@ -35,6 +35,7 @@
         to-vector)))
 
 (defn run-single-scenario [scenario & {:keys [concurrency
+                                              concurrency-distribution
                                               context
                                               timeout-in-ms
                                               requests
@@ -48,6 +49,7 @@
                               :post-hook post-hook
                               :scenarios [scenario]}
                              {:concurrency concurrency
+                              :concurrency-distribution concurrency-distribution
                               :timeout-in-ms timeout-in-ms
                               :requests requests
                               :duration duration

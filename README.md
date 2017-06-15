@@ -185,10 +185,29 @@ Second parameter to `clj-gatling.core/run` function is options map. Options map 
  :timeout-in-ms 3000 ;Timeout for a request function. Defaults to 5000.
  :root "/tmp" ;Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
  :concurrency 100 ;Number of concurrent users clj-gatling tries to use. Default to 1.
+ :concurrency-distribution ;Function for defining how the concurrent users are distributed during the simulation. Optional
  :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
  :duration (clj-time.core/minutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored
  :error-file "/tmp/error.log"} ; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
 ```
+
+#### Ramp-up
+
+If you only set the `concurrency` the clj-gatling will use same concurrency from the beginning till end.
+If you want to have more control for that (for example ramp-up period) you can specify your own
+concurrency distribution function like this one:
+
+
+```clojure
+(fn [progress context]
+   (if (< progress 0.1)
+      0.1
+      1.0))
+```
+
+Progress is floating point number that goes from 0.0 to 1.0 during the simulation. Distribution function should
+return floating point number from 0.0 to 1.0. The concurrency at that point of time will be `concurrency` times
+the returned number.
 
 ### Examples
 
