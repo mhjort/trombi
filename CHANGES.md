@@ -1,5 +1,9 @@
 # Changes
 
+## 0.10.0
+
+* Support for concurrency distribution
+
 ## 0.9.3
 
 * Bump dependencies
