@@ -9,15 +9,17 @@
                                                  path-join
                                                  weighted-scenarios
                                                  choose-runner
-                                                 timestamp-str]]
+                                                 create-report-name]]
             [clj-gatling.simulation :as simulation]))
 
 (def buffer-size 20000)
 
-(defn- create-results-dir [root]
-  (let [results-dir (path-join root (timestamp-str))]
-    (create-dir (path-join results-dir "input"))
-    results-dir))
+(defn- create-results-dir 
+  ([root] (create-results-dir root nil))
+  ([root simulation-name]
+   (let [results-dir (path-join root (create-report-name simulation-name))]
+     (create-dir (path-join results-dir "input"))
+     results-dir)))
 
 ;Legacy function for running tests with old format (pre 0.8)
 (defn run-simulation [legacy-scenarios concurrency & [options]]
@@ -47,7 +49,7 @@
                             root "target/results"
                             timeout-in-ms 5000
                             context {}}}]
-  (let [results-dir (create-results-dir root)
+  (let [results-dir (create-results-dir root (:name simulation))
         reporter (or reporter (gatling-highcharts-reporter results-dir))
         result (simulation/run simulation {:concurrency concurrency
                                            :concurrency-distribution concurrency-distribution
