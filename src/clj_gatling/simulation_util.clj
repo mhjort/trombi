@@ -1,7 +1,8 @@
 (ns clj-gatling.simulation-util
   (:require [clj-time.core :as t]
             [clj-time.format :as f]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.string :as str])
   (:import [java.util List]
            [java.io File]
            [java.io StringWriter PrintWriter]
@@ -87,3 +88,9 @@
 (defn timestamp-str []
   (let [custom-formatter (f/formatter "yyyyMMddHHmmssSSS")]
     (f/unparse custom-formatter (t/now))))
+
+(defn create-report-name
+  "Create a gatling compatible filename for report output: 'SimulationName-Timestamp'"
+  [simulation-name]
+  (let [sanitized-prefix (str/replace (or simulation-name "empty_name") #"[^a-zA-Z0-9_]" "")]
+    (str sanitized-prefix "-" (timestamp-str))))
