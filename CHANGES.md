@@ -1,5 +1,9 @@
 # Changes
 
+## 0.10.1
+
+* Use Jenkins Gatling plugin compatible folder name for the results
+
 ## 0.10.0
 
 * Support for concurrency distribution

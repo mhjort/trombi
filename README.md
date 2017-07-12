@@ -15,7 +15,7 @@ maybe deprecated in future. You can see documentation for old versions [here](RE
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.10.0"]
+[clj-gatling "0.10.1"]
 ```
 
 ## Usage
@@ -247,6 +247,10 @@ Results look like this:
 clj-gatling calls the writer function periodically (currently after each 20000 requests) and then
 generator once when the simulation is over. There is an example on how to use custom reporter in
 examples folder.
+
+## Jenkins
+
+This is compatible with Jenkins Gatling Plugin. https://wiki.jenkins.io/display/JENKINS/Gatling+Plugin#GatlingPlugin-Configuration
 
 ## Why
 
