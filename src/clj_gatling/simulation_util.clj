@@ -40,43 +40,30 @@
                      (count (:requests %))) ;For legacy support
                scenarios)))
 
-(defn- idx-of-first-vector-with-nil [^List vector-of-vectors]
-  (.indexOf vector-of-vectors
-            (first (filter (fn [^List xs]
-                             (.contains xs nil)) vector-of-vectors))))
+(defn- split-by-weight [total weights]
+  (let [sum-weights (reduce + weights)
+        xs (map #(int (* total (/ % sum-weights))) weights)
+        mismatch (- total (reduce + xs))]
+    (map #(+ %1 %2) xs (concat (repeat mismatch 1) (repeat total 0)))))
 
-(defn- generate-empty-buckets [bucket-sizes]
-  (mapv #(repeat % nil) bucket-sizes))
-
-(defn split-to-buckets-with-sizes [xs bucket-sizes]
-  (reduce (fn [m v]
-            (update m (idx-of-first-vector-with-nil m) #(conj (butlast %) v)))
-          (generate-empty-buckets bucket-sizes)
-          xs))
-
-(defn- weighted [weights value]
-  (let [sum-of-weights (reduce + weights)]
-    ;We might get rounding errors and therefore we have to loop and
-    ;reduce weights until sum of weights is equal to given value
-    (loop [^List xs (mapv #(max 1
-                         (Math/round (double (* value (/ % sum-of-weights)))))
-                   weights)]
-      (let [max-elem-idx (.indexOf xs (apply max xs))]
-        (if (> (reduce + xs) value)
-          (recur (update xs max-elem-idx dec))
-          xs)))))
+(defn split-to-buckets [ids bucket-sizes]
+  (loop [start-idx 0
+         result []
+         sizes bucket-sizes]
+    (if (empty? sizes)
+      result
+      (recur (+ start-idx (first sizes))
+             (conj result (subvec ids start-idx (+ start-idx (first sizes))))
+             (drop 1 sizes)))))
 
 (defn weighted-scenarios [users scenarios]
   {:pre [(>= (count users) (count scenarios))]}
   (let [weights            (map #(or (:weight %) 1) scenarios)
-        concurrencies      (weighted weights (count users))
-        with-concurrencies (map #(assoc %1 :concurrency %2)
-                                scenarios
-                                concurrencies)]
+        xs                 (split-to-buckets (vec users)
+                                             (split-by-weight (count users) weights))]
     (map #(assoc (dissoc %1 :weight) :users %2)
          scenarios
-         (split-to-buckets-with-sizes users
-                                      (map :concurrency with-concurrencies)))))
+         xs)))
 
 (defn choose-runner [scenarios concurrency options]
   (let [duration (:duration options)
