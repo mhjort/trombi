@@ -1,5 +1,9 @@
 # Changes
 
+## 0.10.2
+
+* Fix weighted scenarios concurrency distribution algorithm
+
 ## 0.10.1
 
 * Use Jenkins Gatling plugin compatible folder name for the results
