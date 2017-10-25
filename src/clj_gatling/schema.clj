@@ -12,6 +12,8 @@
    (s/optional-key :context) (s/pred map?)
    (s/optional-key :skip-next-after-failure?) Boolean
    (s/optional-key :allow-early-termination?) Boolean
+   (s/optional-key :pre-hook) s/Any
+   (s/optional-key :post-hook) s/Any
    :steps [Step]})
 
 (def Scenario
@@ -20,6 +22,8 @@
    (s/optional-key :weight) s/Int
    (s/optional-key :skip-next-after-failure?) Boolean
    (s/optional-key :allow-early-termination?) Boolean
+   (s/optional-key :pre-hook) s/Any
+   (s/optional-key :post-hook) s/Any
    :steps [Step]})
 
 (def Simulation
