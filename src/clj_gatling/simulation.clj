@@ -88,8 +88,11 @@
                        (empty? (rest steps))
                        (and skip-next-after-failure?
                             (request-failed? result)))
-                 (>! result-channel (->> (dissoc result :exception)
-                                         (conj results)))
+                 (do
+                   (when post-hook
+                     (post-hook context))
+                   (>! result-channel (->> (dissoc result :exception)
+                                           (conj results))))
                  (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
 

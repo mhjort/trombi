@@ -82,6 +82,10 @@
    :request (fn [ctx]
               [return (assoc ctx :to-next-request return)])})
 
+(defn throwing-step [step-name]
+  {:name step-name
+   :request (fn [_] (throw (Exception. "Simulated")))})
+
 (defn get-result [requests request-name]
   (:result (first (filter #(= request-name (:name %)) requests))))
 
