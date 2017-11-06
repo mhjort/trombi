@@ -4,10 +4,10 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
-                 [org.clojure/core.async "0.2.374"]
+                 [org.clojure/core.async "0.3.443"]
                  [http-kit "2.2.0"]
-                 [clj-time "0.13.0"]
-                 [prismatic/schema "1.1.5"]
+                 [clj-time "0.14.0"]
+                 [prismatic/schema "1.1.7"]
                  [clojider-gatling-highcharts-reporter "0.2.0"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
