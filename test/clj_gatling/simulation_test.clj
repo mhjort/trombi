@@ -415,7 +415,7 @@
                                     :duration (time/millis 50))]
     (is (not (empty? result)))))
 
-(deftest with-hooks
+(deftest with-simulation-hooks
   (let [pre-hook-called? (atom false)
         post-hook-called? (atom false)
         ctx-in-post-hook (atom {})]
@@ -434,6 +434,26 @@
     (testing "post-hook function is called"
       (is (= true @post-hook-called?))
       (is (= {:value1 1 :value2 2} @ctx-in-post-hook)))))
+
+(deftest with-scenario-hooks
+  (let [pre-hook-called? (atom false)
+        post-hook-called? (atom false)
+        ctx-in-post-hook (atom {})]
+    (run-single-scenario {:name "scenario"
+                          :pre-hook (fn [{:keys [value]}]
+                                     (reset! pre-hook-called? true)
+                                     {:value (inc value)})
+                          :post-hook (fn [ctx]
+                                       (reset! ctx-in-post-hook ctx)
+                                       (reset! post-hook-called? true))
+                          :steps [(throwing-step "step")]}
+                         :concurrency 1
+                         :context {:value 1})
+    (testing "pre-hook function is called"
+      (is (= true @pre-hook-called?)))
+    (testing "post-hook function is called"
+      (is (= true @post-hook-called?))
+      (is (= {:value 2} @ctx-in-post-hook)))))
 
 (deftest fails-requests-when-they-take-longer-than-timeout
   (let [result (run-single-scenario {:name "scenario"

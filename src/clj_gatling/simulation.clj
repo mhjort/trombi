@@ -59,7 +59,8 @@
    :end (:end (last result))
    :requests result})
 
-(defn- run-scenario-once [{:keys [runner simulation-start] :as options} scenario user-id]
+(defn- run-scenario-once [{:keys [runner simulation-start] :as options}
+                          {:keys [pre-hook post-hook] :as scenario} user-id]
   (let [timeout (:timeout-in-ms options)
         sent-requests (:sent-requests options)
         result-channel (async/chan)
@@ -68,9 +69,13 @@
                                    (:skip-next-after-failure? scenario))
         should-terminate? #(and (:allow-early-termination? scenario)
                                 (not (continue-run? runner @sent-requests simulation-start)))
-        request-failed? #(not (:result %))]
+        request-failed? #(not (:result %))
+        merged-context (or (merge (:context options) (:context scenario)) {})
+        final-context (if pre-hook
+                        (pre-hook merged-context)
+                        merged-context)]
     (go-loop [steps (:steps scenario)
-              context (or (merge (:context options) (:context scenario)) {})
+              context final-context
               results []]
              (let [[result new-ctx] (<! (async-function-with-timeout (first steps)
                                                                      timeout
@@ -83,11 +88,13 @@
                        (empty? (rest steps))
                        (and skip-next-after-failure?
                             (request-failed? result)))
-                 (>! result-channel (->> (dissoc result :exception)
-                                         (conj results)))
+                 (do
+                   (when post-hook
+                     (post-hook context))
+                   (>! result-channel (->> (dissoc result :exception)
+                                           (conj results))))
                  (recur (rest steps) new-ctx (conj results result)))))
     result-channel))
-
 
 (defn- run-scenario-constantly
   [{:keys [concurrent-scenarios
