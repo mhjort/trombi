@@ -15,7 +15,7 @@ maybe deprecated in future. You can see documentation for old versions [here](RE
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.10.2"]
+[clj-gatling "0.11.0"]
 ```
 
 ## Usage
@@ -65,6 +65,8 @@ Simulation is specified as a Clojure map like this:
               :weight 2 ;Optional (default 1)
               :skip-next-after-failure? false ;Optional (default true)
               :allow-early-termination? true ;Optional (default false)
+              :pre-hook (fn [ctx] (scenario-setup) (assoc ctx :new-val value)) ;Optional
+              :post-hook (fn [ctx] (scenario-teardown)) ;Optional
               :steps [{:name "Step 1"
                        :request step1-fn}
                       {:name "Step 2"
@@ -76,9 +78,9 @@ Simulation is specified as a Clojure map like this:
                        :request another-step-fn}]}]}
 ```
 
-#### Hooks
+#### Global simulation Hooks
 
-You can define a `pre-hook` function that is executed before running the simulation.
+You can define a `pre-hook` function that is executed once before running the simulation.
 Function takes in the `context` map. You can change the context (e.g. by adding new keys)
 by returning new map. Also you can define a `post-hook` function which is called after
 running the simulation.
@@ -175,6 +177,12 @@ When clj-gatling terminates the simulation (either after the given duration or g
 scenarios will still finish. If scenario has multiple steps and takes long to run the simulation may take
 some time to fully terminate. If you want to disable that feature in scenario level you can set
 `allow-early-termination?` to true.
+
+#### Scenario hooks
+
+Scenario 'pre-hook' function is executed before running a scenario with single virtual user.
+Scenario 'post-hook' function is executed after the scenario with user has finished. Post-hook will always be
+executed (even when previous step fails).
 
 ### Options
 

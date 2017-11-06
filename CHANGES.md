@@ -1,5 +1,10 @@
 # Changes
 
+## 0.11.0
+
+* Add scenario hooks
+* Update dependencies
+
 ## 0.10.2
 
 * Fix weighted scenarios concurrency distribution algorithm
