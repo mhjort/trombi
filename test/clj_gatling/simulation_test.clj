@@ -498,6 +498,8 @@
       (is (= {:value 1} @context-to-fn)))
     (testing "Progress goes from 0 to 1"
       (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
+      (is #{0.1} @progress-distribution)
+      (is #{1.0} @progress-distribution)
       (is (= (sort @progress-distribution) @progress-distribution)))))
 
 (deftest scenario-weight
