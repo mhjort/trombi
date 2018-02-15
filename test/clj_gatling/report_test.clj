@@ -25,6 +25,13 @@
   {:name "mySimulation"
    :scenarios []})
 
+(def response-time-reporter
+  {:reporter-key :response-times
+   :parser (fn [simu idx results]
+             (mapcat #(map (fn [{:keys [start end]}]
+                             (- end start)) (:requests %)) results))
+   :combiner concat})
+
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
         start-time (local-date-time 2014 2 9 11 1 36)
@@ -50,3 +57,10 @@
                                 slow-writer)
     (is (equal? @(first result-lines) (take 2 scenario-results))
     (is (equal? @(second result-lines) [(last scenario-results)])))))
+
+(deftest parses-summary-using-multiple-reporters
+  (let [summary (report/parse-in-batches simulation
+                                         2
+                                         (from scenario-results)
+                                         [report/short-summary-reporter response-time-reporter])]
+    (is (equal? summary {:short {:ok 4 :ko 1} :response-times [446 697 428 20 428]}))))

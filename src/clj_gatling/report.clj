@@ -25,3 +25,42 @@
               (merge-with + m (apply hash-map curr)))
             {}
             (mapcat #(<!! %) write-results))))
+
+(def short-summary-reporter
+  {:reporter-key :short
+   :parser  (fn [_ _ batch]
+              (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
+                           {true :ok false :ko}))
+   :combiner #(merge-with + %1 %2)})
+
+(defn- parse-with-reporters [simulation idx batch reporters]
+  (reduce
+    into
+    (map (fn [{:keys [reporter-key parser]}]
+           {reporter-key (parser simulation idx batch)}) reporters)))
+
+(defn combine-with-reporters [reporters a b]
+  (let [reporters-map (reduce (fn [m curr]
+                                (assoc m (:reporter-key curr) curr))
+                              {}
+                              reporters)]
+    (reduce-kv (fn [m k v]
+              (let [combiner (:combiner (k reporters-map))]
+                (update m k #(combiner % (k b)))))
+               a
+               reporters-map)))
+
+(defn parse-in-batches [simulation batch-size results-channel reporters]
+  (validate schema/Simulation simulation)
+  (let [;Note! core.async/partition is deprecated function.
+        ;This should be changed to use transducers instead
+        results (a/partition batch-size results-channel)
+        write-results (loop [idx 0
+                             threads []]
+                        (if-let [result (<!! results)]
+                          (let [t (thread
+                                    (parse-with-reporters simulation idx result reporters))]
+                            (recur (inc idx) (conj threads t)))
+                          threads))]
+    (reduce (partial combine-with-reporters reporters)
+            (map #(<!! %) write-results))))
