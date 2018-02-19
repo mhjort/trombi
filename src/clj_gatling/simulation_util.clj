@@ -57,16 +57,26 @@
              (drop 1 sizes)))))
 
 ;https://stackoverflow.com/questions/10969708/parallel-doseq-for-clojure
-(defn split-equally [num coll]
+(defn split-equally [size coll]
   "Split a collection into a vector of (as close as possible) equally sized parts"
-  (loop [num num
+  (loop [size size
          parts []
          coll coll
          c (count coll)]
-    (if (<= num 0)
+    (if (<= size 0)
       parts
-      (let [t (quot (+ c num -1) num)]
-        (recur (dec num) (conj parts (take t coll)) (drop t coll) (- c t))))))
+      (let [t (quot (+ c size -1) size)]
+        (recur (dec size) (conj parts (take t coll)) (drop t coll) (- c t))))))
+
+(defn split-number-equally [size number]
+  "Split a number into a vector of (as close as possible) equally sized numbers"
+  (loop [size size
+         parts []
+         number number]
+    (if (<= size 0)
+      parts
+      (let [t (quot (+ number size -1) size)]
+        (recur (dec size) (conj parts t) (- number t))))))
 
 (defn weighted-scenarios [users scenarios]
   {:pre [(>= (count users) (count scenarios))]}
