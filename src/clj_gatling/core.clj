@@ -47,12 +47,14 @@
     (println (str "Open " results-dir "/index.html"))
     summary))
 
-(defn- create-reporters [reporter results-dir]
+(defn- create-reporters [reporter results-dir simulation]
   (let [r (if reporter
             (legacy-reporter->reporter :custom
-                                       reporter)
+                                       reporter
+                                       simulation)
             (legacy-reporter->reporter :highcharts
-                                       (gatling-highcharts-reporter results-dir)))]
+                                       (gatling-highcharts-reporter results-dir)
+                                       simulation))]
     [report/short-summary-reporter r]))
 
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
@@ -64,7 +66,7 @@
                             timeout-in-ms 5000
                             context {}}}]
   (let [results-dir (create-results-dir root (:name simulation))
-        reporters (create-reporters reporter results-dir)
+        reporters (create-reporters reporter results-dir simulation)
         _ (validate [schema/Reporter] reporters)
         summary (pipeline/run simulation {:concurrency concurrency
                                           :concurrency-distribution concurrency-distribution
@@ -78,6 +80,5 @@
                                           :error-file (or error-file
                                                           (path-join results-dir "error.log"))
                                           :duration duration})]
-    ((:generator (last reporters)) simulation)
     (println "Simulation" (:name simulation) "finished.")
     (:short summary)))

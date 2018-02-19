@@ -40,16 +40,27 @@
     (map (fn [{:keys [reporter-key parser]}]
            {reporter-key (parser simulation idx batch)}) reporters)))
 
+(defn- create-reporters-map [reporters]
+  (reduce (fn [m curr]
+            (assoc m (:reporter-key curr) curr))
+          {}
+          reporters))
+
+(def reporters-map (memoize create-reporters-map))
+
 (defn combine-with-reporters [reporters a b]
-  (let [reporters-map (reduce (fn [m curr]
-                                (assoc m (:reporter-key curr) curr))
-                              {}
-                              reporters)]
-    (reduce-kv (fn [m k v]
-              (let [combiner (:combiner (k reporters-map))]
-                (update m k #(combiner % (k b)))))
-               a
-               reporters-map)))
+  (reduce-kv (fn [m k v]
+               (let [combiner (:combiner (k (reporters-map reporters)))]
+                 (update m k #(combiner % (k b)))))
+             a
+             (reporters-map reporters)))
+
+(defn generate-with-reporters [reporters a]
+  (reduce-kv (fn [m k v]
+               (let [generator (:generator (k (reporters-map reporters)))]
+                 (update m k #(generator %))))
+             a
+             (reporters-map reporters)))
 
 (defn parse-in-batches [simulation batch-size results-channel reporters]
   (validate schema/Simulation simulation)

@@ -1,5 +1,6 @@
 (ns clj-gatling.pipeline
   (:require [clj-gatling.report :refer [combine-with-reporters
+                                        generate-with-reporters
                                         parse-in-batches
                                         short-summary-reporter]]
             [clj-gatling.simulation :as simu]
@@ -44,6 +45,7 @@
                                                          (assoc :users users)
                                                          (assoc-if-not-nil :requests requests))))
                               users-by-node
-                              requests-by-node)]
-    (reduce (partial combine-with-reporters reporters)
-            results-by-node)))
+                              requests-by-node)
+        result (reduce (partial combine-with-reporters reporters)
+            results-by-node)]
+    (generate-with-reporters reporters result)))

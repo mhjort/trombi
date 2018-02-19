@@ -20,7 +20,7 @@
   {:reporter-key reporter-key
    :parser  (fn [_ _ batch] [1])
    :combiner concat
-   :generator identity})
+   :generator (partial reduce +)})
 
 (deftest running-pipeline
   (let [node-ids (atom #{})
@@ -34,5 +34,6 @@
                                          :timeout-in-ms 1000
                                          :batch-size 10
                                          :reporters reporters})]
-    (is (equal? summary {:a [1 1 1] :b [1 1 1]}))
+    ;Stub reporter returns number of batches parsed per reporter
+    (is (equal? summary {:a 3 :b 3}))
     (is (= #{0 1 2} @node-ids))))

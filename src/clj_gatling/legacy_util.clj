@@ -30,8 +30,9 @@
                (dissoc :concurrency :weight)))
          scenarios)))
 
-(defn legacy-reporter->reporter [reporter-key reporter]
+(defn legacy-reporter->reporter [reporter-key reporter simulation]
   (-> reporter
       (assoc :reporter-key reporter-key)
       (assoc :combiner concat)
+      (update :generator #(fn [summary] (% simulation)))
       (rename-keys {:writer :parser})))
