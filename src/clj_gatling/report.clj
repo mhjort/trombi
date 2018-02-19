@@ -31,7 +31,8 @@
    :parser  (fn [_ _ batch]
               (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
                            {true :ok false :ko}))
-   :combiner #(merge-with + %1 %2)})
+   :combiner #(merge-with + %1 %2)
+   :generator identity})
 
 (defn- parse-with-reporters [simulation idx batch reporters]
   (reduce

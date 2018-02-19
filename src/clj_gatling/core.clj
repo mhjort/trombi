@@ -4,7 +4,11 @@
             [clojider-gatling-highcharts-reporter.reporter :refer [csv-writer]]
             [clojider-gatling-highcharts-reporter.generator :refer [create-chart]]
             [clj-gatling.report :as report]
-            [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios]]
+            [clj-gatling.schema :as schema]
+            [schema.core :refer [validate]]
+            [clj-gatling.pipeline :as pipeline]
+            [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios
+                                             legacy-reporter->reporter]]
             [clj-gatling.simulation-util :refer [create-dir
                                                  path-join
                                                  weighted-scenarios
@@ -43,26 +47,37 @@
     (println (str "Open " results-dir "/index.html"))
     summary))
 
+(defn- create-reporters [reporter results-dir]
+  (let [r (if reporter
+            (legacy-reporter->reporter :custom
+                                       reporter)
+            (legacy-reporter->reporter :highcharts
+                                       (gatling-highcharts-reporter results-dir)))]
+    [report/short-summary-reporter r]))
+
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
-                              requests duration reporter error-file]
+                              requests duration reporter error-file executor nodes]
                        :or {concurrency 1
                             root "target/results"
+                            executor pipeline/local-executor
+                            nodes 1
                             timeout-in-ms 5000
                             context {}}}]
   (let [results-dir (create-results-dir root (:name simulation))
-        reporter (or reporter (gatling-highcharts-reporter results-dir))
-        result (simulation/run simulation {:concurrency concurrency
-                                           :concurrency-distribution concurrency-distribution
-                                           :timeout-in-ms timeout-in-ms
-                                           :context context
-                                           :requests requests
-                                           :error-file (or error-file
-                                                           (path-join results-dir "error.log"))
-                                           :duration duration})
-        summary (report/create-result-lines simulation
-                                            buffer-size
-                                            result
-                                            (:writer reporter))]
-    ((:generator reporter) simulation)
+        reporters (create-reporters reporter results-dir)
+        _ (validate [schema/Reporter] reporters)
+        summary (pipeline/run simulation {:concurrency concurrency
+                                          :concurrency-distribution concurrency-distribution
+                                          :timeout-in-ms timeout-in-ms
+                                          :context context
+                                          :executor executor
+                                          :reporters reporters
+                                          :nodes nodes
+                                          :batch-size buffer-size
+                                          :requests requests
+                                          :error-file (or error-file
+                                                          (path-join results-dir "error.log"))
+                                          :duration duration})]
+    ((:generator (last reporters)) simulation)
     (println "Simulation" (:name simulation) "finished.")
-    summary))
+    (:short summary)))

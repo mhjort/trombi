@@ -31,3 +31,9 @@
    (s/optional-key :pre-hook) s/Any
    (s/optional-key :post-hook) s/Any
    :scenarios [Scenario]})
+
+(def Reporter
+  {:reporter-key s/Keyword
+   :parser s/Any
+   :combiner s/Any
+   :generator s/Any})
