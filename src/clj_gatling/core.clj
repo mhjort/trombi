@@ -58,7 +58,7 @@
     [report/short-summary-reporter r]))
 
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
-                              requests duration reporter error-file executor nodes]
+                              requests duration reporter reporters error-file executor nodes]
                        :or {concurrency 1
                             root "target/results"
                             executor pipeline/local-executor
@@ -66,7 +66,7 @@
                             timeout-in-ms 5000
                             context {}}}]
   (let [results-dir (create-results-dir root (:name simulation))
-        reporters (create-reporters reporter results-dir simulation)
+        reporters (or reporters (create-reporters reporter results-dir simulation))
         _ (validate [schema/Reporter] reporters)
         summary (pipeline/run simulation {:concurrency concurrency
                                           :concurrency-distribution concurrency-distribution
