@@ -35,4 +35,6 @@
       (assoc :reporter-key reporter-key)
       (assoc :combiner concat)
       (update :generator #(fn [summary] (% simulation)))
-      (rename-keys {:writer :parser})))
+      (rename-keys {:writer :parser})
+      (update :parser #(fn [simulation {:keys [batch-id batch]}]
+                         (% simulation batch-id batch)))))

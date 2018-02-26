@@ -13,9 +13,9 @@
   (println "Starting local executor with id:" node-id)
   (simulation-fn simulation options))
 
-(defn- simulation-runner [simulation {:keys [batch-size reporters] :as options}]
+(defn- simulation-runner [simulation {:keys [node-id batch-size reporters] :as options}]
   (let [results (simu/run simulation options)
-        raw-summary (parse-in-batches simulation batch-size results reporters)]
+        raw-summary (parse-in-batches simulation node-id batch-size results reporters)]
     raw-summary))
 
 (defn prun [f users-by-node requests-by-node]
@@ -43,6 +43,7 @@
                                           simulation-runner
                                           simulation (-> options
                                                          (assoc :users users)
+                                                         (assoc :node-id node-id)
                                                          (assoc-if-not-nil :requests requests))))
                               users-by-node
                               requests-by-node)

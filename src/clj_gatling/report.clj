@@ -28,17 +28,17 @@
 
 (def short-summary-reporter
   {:reporter-key :short
-   :parser  (fn [_ _ batch]
+   :parser  (fn [_ {:keys [batch]}]
               (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
                            {true :ok false :ko}))
    :combiner #(merge-with + %1 %2)
    :generator identity})
 
-(defn- parse-with-reporters [simulation idx batch reporters]
+(defn- parse-with-reporters [simulation batch reporters]
   (reduce
     into
     (map (fn [{:keys [reporter-key parser]}]
-           {reporter-key (parser simulation idx batch)}) reporters)))
+           {reporter-key (parser simulation batch)}) reporters)))
 
 (defn- create-reporters-map [reporters]
   (reduce (fn [m curr]
@@ -62,7 +62,7 @@
              a
              (reporters-map reporters)))
 
-(defn parse-in-batches [simulation batch-size results-channel reporters]
+(defn parse-in-batches [simulation node-id batch-size results-channel reporters]
   (validate schema/Simulation simulation)
   (let [;Note! core.async/partition is deprecated function.
         ;This should be changed to use transducers instead
@@ -71,7 +71,9 @@
                              threads []]
                         (if-let [result (<!! results)]
                           (let [t (thread
-                                    (parse-with-reporters simulation idx result reporters))]
+                                    (parse-with-reporters simulation
+                                                          {:node-id node-id :batch-id idx :batch result}
+                                                          reporters))]
                             (recur (inc idx) (conj threads t)))
                           threads))]
     (reduce (partial combine-with-reporters reporters)

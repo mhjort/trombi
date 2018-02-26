@@ -18,7 +18,7 @@
 
 (defn- stub-reporter [reporter-key]
   {:reporter-key reporter-key
-   :parser  (fn [_ _ batch] [1])
+   :parser  (fn [_ batch] [1])
    :combiner concat
    :generator (partial reduce +)})
 

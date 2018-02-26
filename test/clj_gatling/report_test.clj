@@ -27,9 +27,9 @@
 
 (def response-time-reporter
   {:reporter-key :response-times
-   :parser (fn [simu idx results]
+   :parser (fn [simu {:keys [batch]}]
              (mapcat #(map (fn [{:keys [start end]}]
-                             (- end start)) (:requests %)) results))
+                             (- end start)) (:requests %)) batch))
    :combiner concat})
 
 (deftest maps-scenario-results-to-log-lines
@@ -60,6 +60,7 @@
 
 (deftest parses-summary-using-multiple-reporters
   (let [summary (report/parse-in-batches simulation
+                                         0
                                          2
                                          (from scenario-results)
                                          [report/short-summary-reporter response-time-reporter])]
