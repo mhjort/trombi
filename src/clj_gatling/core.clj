@@ -66,6 +66,7 @@
                             timeout-in-ms 5000
                             context {}}}]
   (let [results-dir (create-results-dir root (:name simulation))
+        multiple-reporters? (not (nil? reporters))
         reporters (or reporters (create-reporters reporter results-dir simulation))
         _ (validate [schema/Reporter] reporters)
         summary (pipeline/run simulation {:concurrency concurrency
@@ -81,4 +82,6 @@
                                                           (path-join results-dir "error.log"))
                                           :duration duration})]
     (println "Simulation" (:name simulation) "finished.")
-    (:short summary)))
+    (if multiple-reporters?
+      summary
+      (:short summary))))

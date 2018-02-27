@@ -16,12 +16,6 @@
     (swap! node-ids conj node-id)
     (simulation-fn simulation options)))
 
-(defn- stub-reporter [reporter-key]
-  {:reporter-key reporter-key
-   :parser  (fn [_ batch] [1])
-   :combiner concat
-   :generator (partial reduce +)})
-
 (deftest running-pipeline
   (let [node-ids (atom #{})
         executor (stub-executor node-ids)

@@ -15,8 +15,8 @@
    :requests [{:name "Request1" :fn successful-request}
               {:name "Request2" :fn failing-request}]})
 
-(def simulation
-  {:name "Test simulation"
+(defn- simulation [simu-name]
+  {:name simu-name
    :scenarios [{:name "Test scenario"
                 :steps [(step "Step1" true)
                         (step "Step2" false)]}]})
@@ -25,7 +25,13 @@
   (let [summary (run-simulation [legacy-scenario] 1 {})]
     (is (= {:ok 1 :ko 1} summary))))
 
+(deftest simulation-returns-summary-of-all-reporters
+  (let [summary (run (simulation "test-all")
+                     {:reporters [(stub-reporter :a) (stub-reporter :b)]
+                      :concurrency 1})]
+    (is (equal? summary {:a 1 :b 1}))))
+
 (deftest simulation-returns-summary
-  (let [summary (run simulation {:concurrency 1})]
+  (let [summary (run (simulation "test-summary") {:concurrency 1})]
     (is (= {:ok 1 :ko 1} summary))))
 
