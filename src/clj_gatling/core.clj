@@ -18,7 +18,7 @@
 
 (def buffer-size 20000)
 
-(defn- create-results-dir 
+(defn- create-results-dir
   ([root] (create-results-dir root nil))
   ([root simulation-name]
    (let [results-dir (path-join root (create-report-name simulation-name))]
