@@ -33,6 +33,7 @@
 (defn legacy-reporter->reporter [reporter-key reporter simulation]
   (-> reporter
       (assoc :reporter-key reporter-key)
+      (assoc :init (constantly nil))
       (assoc :combiner concat)
       (update :generator #(fn [summary] (% simulation)))
       (rename-keys {:writer :parser})

@@ -28,6 +28,7 @@
 
 (def short-summary-reporter
   {:reporter-key :short
+   :init (constantly nil)
    :parser  (fn [_ {:keys [batch]}]
               (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
                            {true :ok false :ko}))

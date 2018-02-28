@@ -57,6 +57,10 @@
                                        simulation))]
     [report/short-summary-reporter r]))
 
+(defn- init-reporters [reporters results-dir context]
+  (doseq [reporter reporters]
+    ((:init reporter) {:context context :results-dir results-dir})))
+
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
                               requests duration reporter reporters error-file executor nodes]
                        :or {concurrency 1
@@ -69,6 +73,7 @@
         multiple-reporters? (not (nil? reporters))
         reporters (or reporters (create-reporters reporter results-dir simulation))
         _ (validate [schema/Reporter] reporters)
+        _ (init-reporters reporters results-dir context)
         summary (pipeline/run simulation {:concurrency concurrency
                                           :concurrency-distribution concurrency-distribution
                                           :timeout-in-ms timeout-in-ms
