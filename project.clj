@@ -8,7 +8,7 @@
                  [http-kit "2.2.0"]
                  [clj-time "0.14.2"]
                  [prismatic/schema "1.1.7"]
-                 [clojider-gatling-highcharts-reporter "0.2.0"]]
+                 [clojider-gatling-highcharts-reporter "0.2.1"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
                    :dependencies [[clj-async-test "0.0.5"]
