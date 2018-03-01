@@ -34,7 +34,6 @@
 
 (def Reporter
   {:reporter-key s/Keyword
-   :init s/Any
    :parser s/Any
    :combiner s/Any
    :generator s/Any})

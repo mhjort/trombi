@@ -58,8 +58,8 @@
     [report/short-summary-reporter r]))
 
 (defn- init-reporters [reporters results-dir context]
-  (doseq [reporter reporters]
-    ((:init reporter) {:context context :results-dir results-dir})))
+  (map #(% {:context context :results-dir results-dir})
+       reporters))
 
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
                               requests duration reporter reporters error-file executor nodes]
@@ -72,14 +72,14 @@
   (let [results-dir (create-results-dir root (:name simulation))
         multiple-reporters? (not (nil? reporters))
         reporters (or reporters (create-reporters reporter results-dir simulation))
-        _ (validate [schema/Reporter] reporters)
-        _ (init-reporters reporters results-dir context)
+        initialized-reporters (init-reporters reporters results-dir context)
+        _ (validate [schema/Reporter] initialized-reporters)
         summary (pipeline/run simulation {:concurrency concurrency
                                           :concurrency-distribution concurrency-distribution
                                           :timeout-in-ms timeout-in-ms
                                           :context context
                                           :executor executor
-                                          :reporters reporters
+                                          :reporters initialized-reporters
                                           :nodes nodes
                                           :batch-size buffer-size
                                           :requests requests

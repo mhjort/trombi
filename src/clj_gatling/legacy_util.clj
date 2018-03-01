@@ -31,11 +31,11 @@
          scenarios)))
 
 (defn legacy-reporter->reporter [reporter-key reporter simulation]
-  (-> reporter
-      (assoc :reporter-key reporter-key)
-      (assoc :init (constantly nil))
-      (assoc :combiner concat)
-      (update :generator #(fn [summary] (% simulation)))
-      (rename-keys {:writer :parser})
-      (update :parser #(fn [simulation {:keys [batch-id batch]}]
-                         (% simulation batch-id batch)))))
+  (fn [_]
+    (-> reporter
+        (assoc :reporter-key reporter-key)
+        (assoc :combiner concat)
+        (update :generator #(fn [summary] (% simulation)))
+        (rename-keys {:writer :parser})
+        (update :parser #(fn [simulation {:keys [batch-id batch]}]
+                           (% simulation batch-id batch))))))

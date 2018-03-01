@@ -63,5 +63,5 @@
                                          0
                                          2
                                          (from scenario-results)
-                                         [report/short-summary-reporter response-time-reporter])]
+                                         [(report/short-summary-reporter {}) response-time-reporter])]
     (is (equal? summary {:short {:ok 4 :ko 1} :response-times [446 697 428 20 428]}))))

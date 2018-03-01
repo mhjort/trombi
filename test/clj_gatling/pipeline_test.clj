@@ -19,8 +19,8 @@
 (deftest running-pipeline
   (let [node-ids (atom #{})
         executor (stub-executor node-ids)
-        reporters [(stub-reporter :a)
-                   (stub-reporter :b)]
+        reporters [((stub-reporter :a) {})
+                   ((stub-reporter :b) {})]
         summary (pipeline/run test-simu {:executor executor
                                          :nodes 3
                                          :concurrency 5
