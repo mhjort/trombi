@@ -12,6 +12,7 @@
             [clj-gatling.simulation-util :refer [create-dir
                                                  path-join
                                                  weighted-scenarios
+                                                 eval-if-needed
                                                  choose-runner
                                                  create-report-name]]
             [clj-gatling.simulation :as simulation]))
@@ -57,36 +58,34 @@
                                        simulation))]
     [report/short-summary-reporter r]))
 
-(defn- init-reporters [reporters results-dir context]
-  (map #(% {:context context :results-dir results-dir})
-       reporters))
-
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
-                              requests duration reporter reporters error-file executor nodes]
+                              requests duration reporter reporters error-file executor nodes] :as options
                        :or {concurrency 1
                             root "target/results"
                             executor pipeline/local-executor
                             nodes 1
                             timeout-in-ms 5000
                             context {}}}]
-  (let [results-dir (create-results-dir root (:name simulation))
+  (let [simulation-name (:name (eval-if-needed simulation))
+        results-dir (create-results-dir root simulation-name)
         multiple-reporters? (not (nil? reporters))
-        reporters (or reporters (create-reporters reporter results-dir simulation))
-        initialized-reporters (init-reporters reporters results-dir context)
-        _ (validate [schema/Reporter] initialized-reporters)
-        summary (pipeline/run simulation {:concurrency concurrency
-                                          :concurrency-distribution concurrency-distribution
-                                          :timeout-in-ms timeout-in-ms
-                                          :context context
-                                          :executor executor
-                                          :reporters initialized-reporters
-                                          :nodes nodes
-                                          :batch-size buffer-size
-                                          :requests requests
-                                          :error-file (or error-file
-                                                          (path-join results-dir "error.log"))
-                                          :duration duration})]
-    (println "Simulation" (:name simulation) "finished.")
+        reporters (or reporters
+                      (create-reporters reporter results-dir simulation))
+        summary (pipeline/run simulation (assoc options
+                                                :concurrency concurrency
+                                                :concurrency-distribution concurrency-distribution
+                                                :timeout-in-ms timeout-in-ms
+                                                :context context
+                                                :executor executor
+                                                :reporters reporters
+                                                :results-dir results-dir
+                                                :nodes nodes
+                                                :batch-size buffer-size
+                                                :requests requests
+                                                :error-file (or error-file
+                                                                (path-join results-dir "error.log"))
+                                                :duration duration))]
+    (println "Simulation" simulation-name "finished.")
     (if multiple-reporters?
       summary
       (:short summary))))

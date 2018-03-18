@@ -4,19 +4,34 @@
                                         parse-in-batches
                                         short-summary-reporter]]
             [clj-gatling.simulation :as simu]
-            [clj-gatling.simulation-util :refer [split-equally
+            [clj-gatling.simulation-util :refer [eval-if-needed
+                                                 split-equally
                                                  split-number-equally]]
             [clojure.set :refer [rename-keys]]
             [clojure.core.async :refer [thread <!!]]))
 
-(defn local-executor [node-id simulation-fn simulation options]
-  (println "Starting local executor with id:" node-id)
-  (simulation-fn simulation options))
+(defn init-reporters [reporters results-dir context]
+  (map (fn [reporter]
+         (let [reporter-creator (eval-if-needed reporter)]
+           (reporter-creator {:results-dir results-dir
+                              :context context})))
+       reporters))
 
-(defn- simulation-runner [simulation {:keys [node-id batch-size reporters] :as options}]
-  (let [results (simu/run simulation options)
-        raw-summary (parse-in-batches simulation node-id batch-size results reporters)]
+(defn simulation-runner [simulation {:keys [node-id
+                                            batch-size
+                                            reporters
+                                            initialized-reporters
+                                            results-dir
+                                            context] :as options}]
+  (let [evaluated-simulation (eval-if-needed simulation)
+        results (simu/run evaluated-simulation options)
+        initialized-reporters (init-reporters reporters results-dir context)
+        raw-summary (parse-in-batches evaluated-simulation node-id batch-size results initialized-reporters)]
     raw-summary))
+
+(defn local-executor [node-id simulation options]
+  (println "Starting local executor with id:" node-id)
+  (simulation-runner simulation options))
 
 (defn prun [f users-by-node requests-by-node]
   (let [results (loop [users-by-node users-by-node
@@ -34,19 +49,28 @@
     m))
 
 (defn run [simulation
-           {:keys [nodes executor concurrency reporters requests] :as options}]
+           {:keys [nodes
+                   executor
+                   concurrency
+                   reporters
+                   initialized-reporters
+                   requests
+                   results-dir
+                   context] :as options}]
   (let [users-by-node (split-equally nodes (range concurrency))
         requests-by-node (when requests
                            (split-number-equally nodes requests))
+        initialized-reporters (init-reporters reporters results-dir context)
         results-by-node (prun (fn [node-id users requests]
                                 (executor node-id
-                                          simulation-runner
-                                          simulation (-> options
-                                                         (assoc :users users)
-                                                         (assoc :node-id node-id)
-                                                         (assoc-if-not-nil :requests requests))))
+                                          simulation
+                                          (-> options
+                                              (dissoc :executor)
+                                              (assoc :users users)
+                                              (assoc :node-id node-id)
+                                              (assoc-if-not-nil :requests requests))))
                               users-by-node
                               requests-by-node)
-        result (reduce (partial combine-with-reporters reporters)
-            results-by-node)]
-    (generate-with-reporters reporters result)))
+        result (reduce (partial combine-with-reporters initialized-reporters)
+                       results-by-node)]
+    (generate-with-reporters initialized-reporters result)))

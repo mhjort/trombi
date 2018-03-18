@@ -95,3 +95,9 @@
      :parser  (fn [_ batch] [1])
      :combiner concat
      :generator (partial reduce +)}))
+
+(def a-reporter
+  (stub-reporter :a))
+
+(def b-reporter
+  (stub-reporter :b))

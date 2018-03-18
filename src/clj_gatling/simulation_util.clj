@@ -103,3 +103,26 @@
   [simulation-name]
   (let [sanitized-prefix (str/replace (or simulation-name "empty_name") #"[^a-zA-Z0-9_]" "")]
     (str sanitized-prefix "-" (timestamp-str))))
+
+(defn symbol-namespace [^clojure.lang.Symbol simulation]
+  (str "/"
+       (clojure.string/join "/"
+                            (-> simulation
+                                (str)
+                                (clojure.string/replace #"\." "/")
+                                (clojure.string/replace #"-" "_")
+                                (clojure.string/split #"/")
+                                (drop-last)))))
+
+(defn load-namespace [^clojure.lang.Symbol simulation]
+  (let [loadable-ns (symbol-namespace simulation)]
+    (when (not (= "/" loadable-ns)) ;No need to load if namespace is current ns
+      (load loadable-ns))))
+
+(defn eval-if-needed [instance-or-symbol]
+  (if (symbol? instance-or-symbol)
+    (let [loadable-ns (symbol-namespace instance-or-symbol)]
+      (when (not (= "/" loadable-ns)) ;No need to load if namespace is current ns
+        (load loadable-ns))
+      (eval instance-or-symbol))
+    instance-or-symbol))
