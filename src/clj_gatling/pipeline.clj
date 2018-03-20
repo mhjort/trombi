@@ -10,23 +10,31 @@
             [clojure.set :refer [rename-keys]]
             [clojure.core.async :refer [thread <!!]]))
 
-(defn init-reporters [reporters results-dir context]
-  (map (fn [reporter]
-         (let [reporter-creator (eval-if-needed reporter)]
-           (reporter-creator {:results-dir results-dir
-                              :context context})))
+(defn- init-report-generators [reporters results-dir context]
+  (map (fn [{:keys [reporter-key generator]}]
+         (let [generator-creator (eval-if-needed generator)]
+           (assoc (generator-creator {:results-dir results-dir
+                                      :context context})
+                  :reporter-key reporter-key)))
+       reporters))
+
+(defn- init-report-collectors [reporters results-dir context]
+  (map (fn [{:keys [reporter-key collector]}]
+         (let [collector-creator (eval-if-needed collector)]
+           (assoc (collector-creator {:results-dir results-dir
+                                      :context context})
+                  :reporter-key reporter-key)))
        reporters))
 
 (defn simulation-runner [simulation {:keys [node-id
                                             batch-size
                                             reporters
-                                            initialized-reporters
                                             results-dir
                                             context] :as options}]
   (let [evaluated-simulation (eval-if-needed simulation)
         results (simu/run evaluated-simulation options)
-        initialized-reporters (init-reporters reporters results-dir context)
-        raw-summary (parse-in-batches evaluated-simulation node-id batch-size results initialized-reporters)]
+        report-collectors (init-report-collectors reporters results-dir context)
+        raw-summary (parse-in-batches evaluated-simulation node-id batch-size results report-collectors)]
     raw-summary))
 
 (defn local-executor [node-id simulation options]
@@ -60,7 +68,8 @@
   (let [users-by-node (split-equally nodes (range concurrency))
         requests-by-node (when requests
                            (split-number-equally nodes requests))
-        initialized-reporters (init-reporters reporters results-dir context)
+        report-generators (init-report-generators reporters results-dir context)
+        report-collectors (init-report-collectors reporters results-dir context)
         results-by-node (prun (fn [node-id users requests]
                                 (executor node-id
                                           simulation
@@ -71,6 +80,6 @@
                                               (assoc-if-not-nil :requests requests))))
                               users-by-node
                               requests-by-node)
-        result (reduce (partial combine-with-reporters initialized-reporters)
+        result (reduce (partial combine-with-reporters report-collectors)
                        results-by-node)]
-    (generate-with-reporters initialized-reporters result)))
+    (generate-with-reporters report-generators result)))

@@ -25,14 +25,13 @@
     (is (= {:ok 1 :ko 1} summary))))
 
 (deftest simulation-returns-summary
-  (Thread/sleep 1000) ;TODO For some reason previous simulation is still running in background
+  (Thread/sleep 1500) ;TODO For some reason previous simulation is still running in background
   (let [summary (run (simulation "test-summary")
                      {:concurrency 1})]
     (is (= {:ok 1 :ko 1} summary))))
 
 (deftest simulation-returns-summary-of-all-reporters
   (let [summary (run (simulation "test-all")
-                     {:reporters ['clj-gatling.test-helpers/a-reporter
-                                  'clj-gatling.test-helpers/b-reporter]
+                     {:reporters [a-reporter b-reporter]
                       :concurrency 1})]
     (is (equal? summary {:a 1 :b 1}))))

@@ -26,7 +26,23 @@
             {}
             (mapcat #(<!! %) write-results))))
 
-(defn short-summary-reporter [options]
+(def short-summary-generator
+  (fn [_]
+    {:generate identity}))
+
+(def short-summary-collector
+  (fn [_]
+    {:collect  (fn [_ {:keys [batch]}]
+                 (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
+                              {true :ok false :ko}))
+     :combine #(merge-with + %1 %2)}))
+
+(def short-summary-reporter
+  {:reporter-key :short
+   :collector 'clj-gatling.report/short-summary-collector
+   :generator 'clj-gatling.report/short-summary-generator})
+
+(defn short-summary-reporter2 [options]
   {:reporter-key :short
    :parser  (fn [_ {:keys [batch]}]
               (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
@@ -37,8 +53,8 @@
 (defn- parse-with-reporters [simulation batch reporters]
   (reduce
     into
-    (map (fn [{:keys [reporter-key parser]}]
-           {reporter-key (parser simulation batch)}) reporters)))
+    (map (fn [{:keys [reporter-key collect]}]
+           {reporter-key (collect simulation batch)}) reporters)))
 
 (defn- create-reporters-map [reporters]
   (reduce (fn [m curr]
@@ -50,15 +66,15 @@
 
 (defn combine-with-reporters [reporters a b]
   (reduce-kv (fn [m k v]
-               (let [combiner (:combiner (k (reporters-map reporters)))]
-                 (update m k #(combiner % (k b)))))
+               (let [combine (:combine (k (reporters-map reporters)))]
+                 (update m k #(combine % (k b)))))
              a
              (reporters-map reporters)))
 
 (defn generate-with-reporters [reporters a]
   (reduce-kv (fn [m k v]
-               (let [generator (:generator (k (reporters-map reporters)))]
-                 (update m k #(generator %))))
+               (let [generate (:generate (k (reporters-map reporters)))]
+                 (update m k #(generate %))))
              a
              (reporters-map reporters)))
 

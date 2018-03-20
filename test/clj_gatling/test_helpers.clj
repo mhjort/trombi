@@ -90,11 +90,12 @@
   (:result (first (filter #(= request-name (:name %)) requests))))
 
 (defn stub-reporter [reporter-key]
-  (fn [_]
-    {:reporter-key reporter-key
-     :parser  (fn [_ batch] [1])
-     :combiner concat
-     :generator (partial reduce +)}))
+  {:reporter-key reporter-key
+   :collector (fn [_]
+                {:collect  (fn [_ batch] [1])
+                 :combine concat})
+   :generator (fn [_]
+                {:generate (partial reduce +)})})
 
 (def a-reporter
   (stub-reporter :a))

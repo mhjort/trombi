@@ -13,8 +13,8 @@
 (deftest running-pipeline
   (let [node-ids (atom #{})
         executor (stub-executor node-ids)
-        reporters ['clj-gatling.test-helpers/a-reporter
-                   'clj-gatling.test-helpers/b-reporter]
+        reporters [a-reporter
+                   b-reporter]
         summary (pipeline/run 'clj-gatling.example/test-simu {:executor executor
                                                               :nodes 3
                                                               :concurrency 5

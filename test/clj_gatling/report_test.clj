@@ -25,12 +25,13 @@
   {:name "mySimulation"
    :scenarios []})
 
-(def response-time-reporter
-  {:reporter-key :response-times
-   :parser (fn [simu {:keys [batch]}]
-             (mapcat #(map (fn [{:keys [start end]}]
-                             (- end start)) (:requests %)) batch))
-   :combiner concat})
+(def response-time-collector
+  (fn [_]
+    {:reporter-key :response-times
+     :collect (fn [simu {:keys [batch]}]
+                (mapcat #(map (fn [{:keys [start end]}]
+                                (- end start)) (:requests %)) batch))
+     :combine concat}))
 
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
@@ -63,5 +64,6 @@
                                          0
                                          2
                                          (from scenario-results)
-                                         [(report/short-summary-reporter {}) response-time-reporter])]
+                                         [(assoc (report/short-summary-collector {}) :reporter-key :short)
+                                          (response-time-collector {})])]
     (is (equal? summary {:short {:ok 4 :ko 1} :response-times [446 697 428 20 428]}))))
