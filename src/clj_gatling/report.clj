@@ -42,14 +42,6 @@
    :collector 'clj-gatling.report/short-summary-collector
    :generator 'clj-gatling.report/short-summary-generator})
 
-(defn short-summary-reporter2 [options]
-  {:reporter-key :short
-   :parser  (fn [_ {:keys [batch]}]
-              (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
-                           {true :ok false :ko}))
-   :combiner #(merge-with + %1 %2)
-   :generator identity})
-
 (defn- parse-with-reporters [simulation batch reporters]
   (reduce
     into
