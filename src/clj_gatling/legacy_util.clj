@@ -38,4 +38,5 @@
                 :combine concat})
   :generator (fn [_]
                {:generate (fn [summary]
-                           (generator simulation))})})
+                           (generator simulation))
+                :as-str str})})

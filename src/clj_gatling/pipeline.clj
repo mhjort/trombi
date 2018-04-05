@@ -1,6 +1,7 @@
 (ns clj-gatling.pipeline
   (:require [clj-gatling.report :refer [combine-with-reporters
                                         generate-with-reporters
+                                        as-str-with-reporters
                                         parse-in-batches
                                         short-summary-reporter]]
             [clj-gatling.simulation :as simu]
@@ -8,6 +9,7 @@
                                                  split-equally
                                                  split-number-equally]]
             [clojure.set :refer [rename-keys]]
+            [clojure.string :as string]
             [clojure.core.async :refer [thread <!!]]))
 
 (defn- init-report-generators [reporters results-dir context]
@@ -81,5 +83,8 @@
                               users-by-node
                               requests-by-node)
         result (reduce (partial combine-with-reporters report-collectors)
-                       results-by-node)]
-    (generate-with-reporters report-generators result)))
+                       results-by-node)
+        summary (generate-with-reporters report-generators result)]
+    (println (string/join "\n" (as-str-with-reporters report-generators summary)))
+    summary))
+

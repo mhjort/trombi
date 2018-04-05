@@ -28,7 +28,13 @@
 
 (def short-summary-generator
   (fn [_]
-    {:generate identity}))
+    {:generate identity
+     :as-str (fn [{:keys [ok ko]
+                   :or {ko 0 ok 0}}]
+               (let [total (+ ok ko)]
+                 (str "Total number of requests: " total
+                      ", successful: " ok
+                      ", failed: " ko ".")))}))
 
 (def short-summary-collector
   (fn [_]
@@ -69,6 +75,11 @@
                  (update m k #(generate %))))
              a
              (reporters-map reporters)))
+
+(defn as-str-with-reporters [reporters summary]
+  (map (fn [[k reporter]]
+         (str "Result for reporter `" (name k) "`: " ((:as-str reporter) (k summary))))
+       (reporters-map reporters)))
 
 (defn parse-in-batches [simulation node-id batch-size results-channel reporters]
   (validate schema/Simulation simulation)

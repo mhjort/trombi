@@ -95,7 +95,8 @@
                 {:collect  (fn [_ batch] [1])
                  :combine concat})
    :generator (fn [_]
-                {:generate (partial reduce +)})})
+                {:generate (partial reduce +)
+                 :as-str str})})
 
 (def a-reporter
   (stub-reporter :a))
