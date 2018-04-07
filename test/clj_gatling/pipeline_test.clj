@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [clj-gatling.test-helpers :refer :all]
             [clj-containment-matchers.clojure-test :refer :all]
-            [clj-gatling.report :refer [short-summary-reporter]]
             [clj-gatling.pipeline :as pipeline]))
 
 (defn- stub-executor [node-ids]

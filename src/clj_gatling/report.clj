@@ -26,28 +26,6 @@
             {}
             (mapcat #(<!! %) write-results))))
 
-(def short-summary-generator
-  (fn [_]
-    {:generate identity
-     :as-str (fn [{:keys [ok ko]
-                   :or {ko 0 ok 0}}]
-               (let [total (+ ok ko)]
-                 (str "Total number of requests: " total
-                      ", successful: " ok
-                      ", failed: " ko ".")))}))
-
-(def short-summary-collector
-  (fn [_]
-    {:collect  (fn [_ {:keys [batch]}]
-                 (rename-keys (frequencies (mapcat #(map :result (:requests %)) batch))
-                              {true :ok false :ko}))
-     :combine #(merge-with + %1 %2)}))
-
-(def short-summary-reporter
-  {:reporter-key :short
-   :collector 'clj-gatling.report/short-summary-collector
-   :generator 'clj-gatling.report/short-summary-generator})
-
 (defn- parse-with-reporters [simulation batch reporters]
   (reduce
     into

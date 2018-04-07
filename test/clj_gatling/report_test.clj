@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [clj-time.core :refer [local-date-time]]
             [clj-gatling.report :as report]
+            [clj-gatling.reporters.short-summary :as short-summary]
             [clj-containment-matchers.clojure-test :refer :all]
             [clojure.core.async :as a :refer [onto-chan chan]]
             [clj-containment-matchers.clojure-test :refer :all]))
@@ -64,6 +65,6 @@
                                          0
                                          2
                                          (from scenario-results)
-                                         [(assoc (report/short-summary-collector {}) :reporter-key :short)
+                                         [(assoc (short-summary/collector {}) :reporter-key :short)
                                           (response-time-collector {})])]
     (is (equal? summary {:short {:ok 4 :ko 1} :response-times [446 697 428 20 428]}))))

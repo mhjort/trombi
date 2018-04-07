@@ -2,8 +2,7 @@
   (:require [clj-gatling.report :refer [combine-with-reporters
                                         generate-with-reporters
                                         as-str-with-reporters
-                                        parse-in-batches
-                                        short-summary-reporter]]
+                                        parse-in-batches]]
             [clj-gatling.simulation :as simu]
             [clj-gatling.simulation-util :refer [eval-if-needed
                                                  split-equally

@@ -4,6 +4,7 @@
             [clojider-gatling-highcharts-reporter.reporter :refer [csv-writer]]
             [clojider-gatling-highcharts-reporter.generator :refer [create-chart]]
             [clj-gatling.report :as report]
+            [clj-gatling.reporters.short-summary :as short-summary]
             [clj-gatling.schema :as schema]
             [schema.core :refer [validate]]
             [clj-gatling.pipeline :as pipeline]
@@ -56,7 +57,7 @@
             (legacy-reporter->reporter :highcharts
                                        (gatling-highcharts-reporter results-dir)
                                        simulation))]
-    [report/short-summary-reporter r]))
+    [short-summary/reporter r]))
 
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
                               requests duration reporter reporters error-file executor nodes] :as options
