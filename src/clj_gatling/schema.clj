@@ -32,8 +32,45 @@
    (s/optional-key :post-hook) s/Any
    :scenarios [Scenario]})
 
+(def CollectorInput
+  {:context {}
+   :results-dir s/Str})
+
+(def Collector
+  (s/make-fn-schema {:collect s/Any
+                     :combine s/Any}
+                    [[CollectorInput]]))
+
+(def GeneratorInput
+  {:context {}
+   :results-dir s/Str})
+
+(def Generator
+  (s/make-fn-schema {:generate s/Any
+                     :as-str s/Any}
+                    [[GeneratorInput]]))
+
 (def Reporter
   {:reporter-key s/Keyword
-   :parser s/Any
-   :combiner s/Any
-   :generator s/Any})
+   :collector (s/either s/Symbol Collector)
+   :generator (s/either s/Symbol s/Any)})
+
+(def Executor
+  (s/make-fn-schema {} [[s/Int Simulation {}]]))
+
+(def Options
+  {(s/optional-key :concurrency) s/Int
+   (s/optional-key :root) s/Str
+   (s/optional-key :executor) Executor
+   (s/optional-key :nodes) s/Int
+   (s/optional-key :timeout-in-ms) s/Int
+   (s/optional-key :context) (s/pred map?)
+   (s/optional-key :requests) s/Int
+   (s/optional-key :duration) org.joda.time.DateTime
+   (s/optional-key :concurrency-distribution) (s/make-fn-schema
+                                                float
+                                                [[float {}]])
+   (s/optional-key :error-file) s/Str
+   (s/optional-key :reporter) s/Any ;Legacy fn
+   (s/optional-key :reporters) [Reporter]
+   })

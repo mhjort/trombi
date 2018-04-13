@@ -69,6 +69,7 @@
                             nodes 1
                             timeout-in-ms 5000
                             context {}}}]
+  (validate schema/Options options)
   (let [simulation-name (:name (eval-if-needed simulation))
         results-dir (create-results-dir root simulation-name)
         multiple-reporters? (not (nil? reporters))

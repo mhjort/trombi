@@ -16,6 +16,8 @@
                    b-reporter]
         summary (pipeline/run 'clj-gatling.example/test-simu {:executor executor
                                                               :nodes 3
+                                                              :context {}
+                                                              :results-dir "tmp"
                                                               :concurrency 5
                                                               :requests 25
                                                               :timeout-in-ms 1000

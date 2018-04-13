@@ -1,6 +1,8 @@
 (ns clj-gatling.test-helpers
   (:require [clojure.core.async :refer [go <! <!! timeout]]
             [clj-gatling.simulation :as simulation]
+            [clj-gatling.schema :as schema]
+            [schema.core :refer [validate]]
             [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios]]
             [clj-gatling.simulation-util :refer [choose-runner
                                                  weighted-scenarios
@@ -91,10 +93,12 @@
 
 (defn stub-reporter [reporter-key]
   {:reporter-key reporter-key
-   :collector (fn [_]
+   :collector (fn [input]
+                (validate schema/CollectorInput input)
                 {:collect  (fn [_ batch] [1])
                  :combine concat})
-   :generator (fn [_]
+   :generator (fn [input]
+                (validate schema/GeneratorInput input)
                 {:generate (partial reduce +)
                  :as-str str})})
 
