@@ -66,7 +66,7 @@
    (s/optional-key :timeout-in-ms) s/Int
    (s/optional-key :context) (s/pred map?)
    (s/optional-key :requests) s/Int
-   (s/optional-key :duration) org.joda.time.DateTime
+   (s/optional-key :duration) org.joda.time.ReadablePeriod
    (s/optional-key :concurrency-distribution) (s/make-fn-schema
                                                 float
                                                 [[float {}]])
