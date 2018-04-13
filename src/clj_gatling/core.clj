@@ -51,9 +51,11 @@
 
 (defn- create-reporters [reporter results-dir simulation]
   (let [r (if reporter
-            (legacy-reporter->reporter :custom
-                                       reporter
-                                       simulation)
+            (do
+              (println "Warn! :reporter option is deprecated. Use :reporters instead")
+              (legacy-reporter->reporter :custom
+                                         reporter
+                                         simulation))
             (legacy-reporter->reporter :highcharts
                                        (gatling-highcharts-reporter results-dir)
                                        simulation))]
