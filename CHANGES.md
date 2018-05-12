@@ -1,5 +1,10 @@
 # Changes
 
+## 0.12.0
+
+* Internal refactoring. Possibility to add custom remote reporters and executors.
+* Update dependencies. JDK9 support
+
 ## 0.11.0
 
 * Add scenario hooks
