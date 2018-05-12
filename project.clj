@@ -6,7 +6,7 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [org.clojure/core.async "0.3.443"]
                  [http-kit "2.3.0"]
-                 [clj-time "0.14.2"]
+                 [clj-time "0.14.3"]
                  [prismatic/schema "1.1.7"]
                  [clojider-gatling-highcharts-reporter "0.2.1"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
