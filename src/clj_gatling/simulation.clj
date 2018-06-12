@@ -65,7 +65,11 @@
     [(first steps) context [(rest steps) nil]]
 
     (ifn? step-fn)
-    (conj (step-fn context) [nil step-fn])
+    (let [result (step-fn context)
+          ret (if (vector? result)
+                result
+                [result context])]
+      (conj ret [nil step-fn]))
 
     :else
     [nil context [nil nil]]))
