@@ -217,6 +217,14 @@ Progress is floating point number that goes from 0.0 to 1.0 during the simulatio
 return floating point number from 0.0 to 1.0. The concurrency at that point of time will be `concurrency` times
 the returned number.
 
+#### Dynamic scenarios
+
+Sometimes a pre-determined sequence of steps does not provide enough
+flexibility to express the test scenario. In such a case, you may provide the
+key `step-fn` instead with a function taking the current `context` and
+returning a tuple specifying a `step` and a modified `context`. Returning a
+`nil` step marks the end of the scenario.
+
 ### Examples
 
 See example project a here: [clj-gatling-example](https://github.com/mhjort/clj-gatling-example)

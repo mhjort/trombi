@@ -59,6 +59,17 @@
    :end (:end (last result))
    :requests result})
 
+(defn- next-step [[steps step-fn] context]
+  (cond
+    (seq steps)
+    [(first steps) context [(rest steps) nil]]
+
+    (ifn? step-fn)
+    (conj (step-fn context) [nil step-fn])
+
+    :else
+    [nil context [nil nil]]))
+
 (defn- run-scenario-once [{:keys [runner simulation-start] :as options}
                           {:keys [pre-hook post-hook] :as scenario} user-id]
   (let [timeout (:timeout-in-ms options)
@@ -73,19 +84,20 @@
         merged-context (or (merge (:context options) (:context scenario)) {})
         final-context (if pre-hook
                         (pre-hook merged-context)
-                        merged-context)]
-    (go-loop [steps (:steps scenario)
-              context final-context
+                        merged-context)
+        step-ctx [(:steps scenario) (:step-fn scenario)]]
+    (go-loop [[step context step-ctx] (next-step step-ctx final-context)
               results []]
-             (let [[result new-ctx] (<! (async-function-with-timeout (first steps)
+             (let [[result new-ctx] (<! (async-function-with-timeout step
                                                                      timeout
                                                                      sent-requests
                                                                      user-id
-                                                                     context))]
+                                                                     context))
+                   [step' _ _ :as next-steps] (next-step step-ctx new-ctx)]
                (when-let [e (:exception result)]
                  (log-exception (:error-file options) e))
                (if (or (should-terminate?)
-                       (empty? (rest steps))
+                       (nil? step')
                        (and skip-next-after-failure?
                             (request-failed? result)))
                  (do
@@ -93,7 +105,7 @@
                      (post-hook context))
                    (>! result-channel (->> (dissoc result :exception)
                                            (conj results))))
-                 (recur (rest steps) new-ctx (conj results result)))))
+                 (recur next-steps (conj results result)))))
     result-channel))
 
 (defn- run-scenario-constantly
