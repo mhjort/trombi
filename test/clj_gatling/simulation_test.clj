@@ -516,3 +516,17 @@
     (is (approximately== (count-requests "Main") 66 :accuracy 20))
     (is (approximately== (count-requests "Second") 33 :accuracy 20))
     (is (approximately== 100 (+ (count-requests "Main") (count-requests "Second")) :accuracy 5))))
+
+(deftest with-step-fn
+  (let [result (run-single-scenario {:name "scenario"
+                                     :step-fn (fn [context]
+                                                (condp = (:current context)
+                                                  nil       [(step "step1" true)
+                                                             (assoc context :current :started)]
+                                                  :started  [(step "step2" true)
+                                                             (assoc context :current :step2)]
+                                                  :step2    [nil context]))}
+                                    :concurrency 1
+                                    :duration (time/millis 50))]
+    (is (= :step2 (-> result first :requests last :context-after :current))
+    (is (not (empty? result))))))
