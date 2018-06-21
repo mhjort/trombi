@@ -14,7 +14,8 @@
    (s/optional-key :allow-early-termination?) Boolean
    (s/optional-key :pre-hook) s/Any
    (s/optional-key :post-hook) s/Any
-   :steps [Step]})
+   (s/optional-key :steps) [Step]
+   (s/optional-key :step-fn) (s/pred ifn?)})
 
 (def Scenario
   {:name s/Str
@@ -24,7 +25,8 @@
    (s/optional-key :allow-early-termination?) Boolean
    (s/optional-key :pre-hook) s/Any
    (s/optional-key :post-hook) s/Any
-   :steps [Step]})
+   (s/optional-key :steps) [Step]
+   (s/optional-key :step-fn) (s/pred ifn?)})
 
 (def Simulation
   {:name s/Str
