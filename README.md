@@ -52,7 +52,8 @@ clj-gatling runs simulations to simulate load. Simulation consists of one or mul
 scenarios that will be run in parallel. One scenario contain one or multiple steps
 that are run sequentially. One simulation is configured to run with a given number
 of virtual users. As a result the tool returns response times (min, max, average, percentiles)
-and requests per second.
+and requests per second. Internally millisecond is used as a precision for benchmarks. Therefore
+this is not suited for testing systems with less than one millisecod response times.
 
 Simulation is specified as a Clojure map like this:
 
@@ -67,6 +68,7 @@ Simulation is specified as a Clojure map like this:
               :allow-early-termination? true ;Optional (default false)
               :pre-hook (fn [ctx] (scenario-setup) (assoc ctx :new-val value)) ;Optional
               :post-hook (fn [ctx] (scenario-teardown)) ;Optional
+              :step-fn ;Optional. Can be used instead of list of steps
               :steps [{:name "Step 1"
                        :request step1-fn}
                       {:name "Step 2"
@@ -184,6 +186,17 @@ Scenario 'pre-hook' function is executed before running a scenario with single v
 Scenario 'post-hook' function is executed after the scenario with user has finished. Post-hook will always be
 executed (even when previous step fails).
 
+#### Dynamic scenarios
+
+Sometimes a pre-determined sequence of steps does not provide enough
+flexibility to express the test scenario. In such a case, you may provide the
+key `step-fn` instead with a function taking the current `context` and
+returning a tuple specifying a `step` and a modified `context`. Returning a
+`nil` step marks the end of the scenario.
+
+Note! If `step-fn` never returns nil the simulation will run endlessly. To prevent that you can use
+option `:allow-early-termination?`
+
 ### Options
 
 Second parameter to `clj-gatling.core/run` function is options map. Options map contains following keys:
@@ -216,14 +229,6 @@ concurrency distribution function like this one:
 Progress is floating point number that goes from 0.0 to 1.0 during the simulation. Distribution function should
 return floating point number from 0.0 to 1.0. The concurrency at that point of time will be `concurrency` times
 the returned number.
-
-#### Dynamic scenarios
-
-Sometimes a pre-determined sequence of steps does not provide enough
-flexibility to express the test scenario. In such a case, you may provide the
-key `step-fn` instead with a function taking the current `context` and
-returning a tuple specifying a `step` and a modified `context`. Returning a
-`nil` step marks the end of the scenario.
 
 ### Examples
 
@@ -305,6 +310,6 @@ Use [GitHub issues](https://github.com/mhjort/clj-gatling/issues) and [Pull Requ
 
 ## License
 
-Copyright (C) 2014-2016 Markus Hjort
+Copyright (C) 2014-2018 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.
