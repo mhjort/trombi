@@ -1,5 +1,10 @@
 # Changes
 
+## 0.13.0
+
+* Add support for dynamic scenarios
+* Update dependencies.
+
 ## 0.12.0
 
 * Internal refactoring. Possibility to add custom remote reporters and executors.

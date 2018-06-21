@@ -1,4 +1,4 @@
-(defproject clj-gatling "0.12.0"
+(defproject clj-gatling "0.13.0"
   :description "Clojure library for load testing"
   :url "http://github.com/mhjort/clj-gatling"
   :license {:name "Eclipse Public License"
