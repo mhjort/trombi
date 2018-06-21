@@ -25,7 +25,6 @@
     (is (= {:ok 1 :ko 1} summary))))
 
 (deftest simulation-returns-summary
-  (Thread/sleep 1500) ;TODO For some reason previous simulation is still running in background
   (let [summary (run (simulation "test-summary")
                      {:concurrency 1})]
     (is (= {:ok 1 :ko 1} summary))))

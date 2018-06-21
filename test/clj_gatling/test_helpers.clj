@@ -82,6 +82,8 @@
 (defn step [step-name return]
   {:name step-name
    :request (fn [ctx]
+              ;Note! Highcharts reporter fails if start and end times are exactly the same values
+              (Thread/sleep 1)
               [return (assoc ctx :to-next-request return)])})
 
 (defn throwing-step [step-name]
