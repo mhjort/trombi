@@ -112,6 +112,19 @@
                  (recur next-steps (conj results result)))))
     result-channel))
 
+(defn- scenario-deficit
+  [{:keys [concurrency
+           concurrency-distribution
+           concurrent-scenarios
+           runner
+           simulation-start
+           sent-requests
+           context]}]
+  (let [progress (calculate-progress runner @sent-requests simulation-start)
+        target-concurrency (* concurrency (concurrency-distribution progress context))
+        deficit ( - target-concurrency @concurrent-scenarios)]
+    deficit))
+
 (defn- run-scenario-constantly
   [{:keys [concurrent-scenarios
            runner
@@ -124,10 +137,7 @@
    user-id]
   (let [c (async/chan)
         should-run-now? (if concurrency-distribution
-                          #(let [progress (calculate-progress runner @sent-requests simulation-start)
-                                 target-concurrency (* concurrency
-                                                       (concurrency-distribution progress context))]
-                             (> target-concurrency @concurrent-scenarios))
+                          #(pos? (scenario-deficit options))
                           (constantly true))]
     (go-loop []
              (if (should-run-now?)
@@ -146,11 +156,48 @@
   (println "Running scenario" (:name scenario)
            "with concurrency" (count (:users scenario))))
 
-(defn- run-scenario [options scenario]
+(defn- ramp-up-scenario
+  [{:keys [concurrency
+           runner
+           sent-requests
+           simulation-start
+           context]
+    :as options}
+   scenario]
+
+  (let [max-concurrent-timeouts 1024
+        results (async/chan)
+        users (:users scenario)
+        init-ch (async/chan)]
+    (go-loop [users users
+              users-ch init-ch]
+             (if (seq users)
+               (let [n (min max-concurrent-timeouts (int (scenario-deficit options)))
+                     users-left (if (pos? n) (drop n users) users)
+                     users-ch (if (pos? n)
+                                (let []
+                                  (async/merge
+                                    (conj (map (partial run-scenario-constantly options scenario) (take n users))
+                                          users-ch)))
+                                users-ch)]
+
+                 ; feed-out results during ramp-up period
+                 (let [timeout-ch (async/timeout 20)]
+                   (async/alt!
+                     timeout-ch nil
+                     users-ch ([v _] (>! results v))))
+                 (recur users-left users-ch))
+               (do
+                 (async/close! init-ch)
+                 (async/pipe users-ch results))))
+    results))
+
+(defn- run-scenario [{:keys [concurrency-distribution] :as options} scenario]
   (print-scenario-info scenario)
   (let [concurrent-scenarios (atom 0)
-        responses (async/merge (map #(run-scenario-constantly (assoc options :concurrent-scenarios concurrent-scenarios) scenario %)
-                                    (:users scenario)))
+        responses (if concurrency-distribution
+                    (ramp-up-scenario (assoc options :concurrent-scenarios concurrent-scenarios) scenario)
+                    (async/merge (map #(run-scenario-constantly (assoc options :concurrent-scenarios concurrent-scenarios) scenario %) (:users scenario))))
         results (async/chan)]
     (go-loop []
              (if-let [result (<! responses)]
