@@ -6,6 +6,7 @@
                                                  log-exception]]
             [schema.core :refer [validate]]
             [clj-time.local :as local-time]
+            [clj-gatling.timers :as timers]
             [clojure.core.async :as async :refer [go go-loop close! alts! <! >!]]))
 
 (set! *warn-on-reflection* true)
@@ -30,7 +31,7 @@
   (swap! sent-requests inc)
   (go
     (when-let [sleep-before (:sleep-before step)]
-      (<! (async/timeout (sleep-before original-context))))
+      (<! (timers/timeout (sleep-before original-context))))
     (let [original-context-with-user (assoc original-context :user-id user-id)
           start (now)
           return {:name (:name step)
@@ -38,7 +39,7 @@
                   :start start
                   :context-before original-context-with-user}
           response (asynchronize (:request step) original-context-with-user)
-          [{:keys [result end-time context exception]} c] (alts! [response (async/timeout timeout)])]
+          [{:keys [result end-time context exception]} c] (alts! [response (timers/timeout timeout)])]
       (if (= c response)
         [(assoc return :end end-time
                        :exception exception
@@ -134,7 +135,7 @@
                  (let [result (<! (run-scenario-once options scenario user-id))]
                    (swap! concurrent-scenarios dec)
                    (>! c result)))
-               (<! (async/timeout 200)))
+               (<! (timers/timeout 200)))
              (if (runners/continue-run? runner @sent-requests simulation-start)
                (recur)
                (close! c)))
