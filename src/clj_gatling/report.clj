@@ -2,7 +2,7 @@
   (:require [schema.core :refer [validate]]
             [clojure.set :refer [rename-keys]]
             [clj-gatling.schema :as schema]
-            [clojure.core.async :as a :refer [to-chan thread <!!]]))
+            [clojure.core.async :as a :refer [thread <!!]]))
 
 (defn create-result-lines [simulation buffer-size results-channel output-writer]
   (validate schema/Simulation simulation)
@@ -41,14 +41,14 @@
 (def reporters-map (memoize create-reporters-map))
 
 (defn combine-with-reporters [reporters a b]
-  (reduce-kv (fn [m k v]
+  (reduce-kv (fn [m k _]
                (let [combine (:combine (k (reporters-map reporters)))]
                  (update m k #(combine % (k b)))))
              a
              (reporters-map reporters)))
 
 (defn generate-with-reporters [reporters a]
-  (reduce-kv (fn [m k v]
+  (reduce-kv (fn [m k _]
                (let [generate (:generate (k (reporters-map reporters)))]
                  (update m k #(generate %))))
              a

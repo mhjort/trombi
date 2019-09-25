@@ -57,8 +57,9 @@
              (drop 1 sizes)))))
 
 ;https://stackoverflow.com/questions/10969708/parallel-doseq-for-clojure
-(defn split-equally [size coll]
+(defn split-equally
   "Split a collection into a vector of (as close as possible) equally sized parts"
+  [size coll]
   (loop [size size
          parts []
          coll coll
@@ -68,8 +69,9 @@
       (let [t (quot (+ c size -1) size)]
         (recur (dec size) (conj parts (take t coll)) (drop t coll) (- c t))))))
 
-(defn split-number-equally [size number]
+(defn split-number-equally
   "Split a number into a vector of (as close as possible) equally sized numbers"
+  [size number]
   (loop [size size
          parts []
          number number]

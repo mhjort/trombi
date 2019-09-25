@@ -7,7 +7,6 @@
             [clj-gatling.simulation-util :refer [eval-if-needed
                                                  split-equally
                                                  split-number-equally]]
-            [clojure.set :refer [rename-keys]]
             [clojure.string :as string]
             [clojure.core.async :refer [thread <!!]]))
 
@@ -44,7 +43,7 @@
 
 (defn prun [f users-by-node requests-by-node]
   (let [results (loop [users-by-node users-by-node
-                       request-by-node requests-by-node
+                       requests-by-node requests-by-node
                        threads []]
                   (if-let [users (first users-by-node)]
                     (let [t (thread (f (count threads) users (first requests-by-node)))]
@@ -62,7 +61,6 @@
                    executor
                    concurrency
                    reporters
-                   initialized-reporters
                    requests
                    results-dir
                    context] :as options}]

@@ -1,14 +1,12 @@
 (ns clj-gatling.simulation
-  (:require [clj-gatling.httpkit :as http]
-            [clj-gatling.simulation-runners :refer :all]
+  (:require [clj-gatling.simulation-runners :as runners]
             [clj-gatling.schema :as schema]
             [clj-gatling.simulation-util :refer [weighted-scenarios
                                                  choose-runner
                                                  log-exception]]
-            [schema.core :refer [check validate]]
+            [schema.core :refer [validate]]
             [clj-time.local :as local-time]
-            [clojure.set :refer [rename-keys]]
-            [clojure.core.async :as async :refer [go go-loop close! put! <!! alts! <! >!]]))
+            [clojure.core.async :as async :refer [go go-loop close! alts! <! >!]]))
 
 (set! *warn-on-reflection* true)
 
@@ -83,7 +81,7 @@
                                    true
                                    (:skip-next-after-failure? scenario))
         should-terminate? #(and (:allow-early-termination? scenario)
-                                (not (continue-run? runner @sent-requests simulation-start)))
+                                (not (runners/continue-run? runner @sent-requests simulation-start)))
         request-failed? #(not (:result %))
         merged-context (or (merge (:context options) (:context scenario)) {})
         final-context (if pre-hook
@@ -124,7 +122,7 @@
    user-id]
   (let [c (async/chan)
         should-run-now? (if concurrency-distribution
-                          #(let [progress (calculate-progress runner @sent-requests simulation-start)
+                          #(let [progress (runners/calculate-progress runner @sent-requests simulation-start)
                                  target-concurrency (* concurrency
                                                        (concurrency-distribution progress context))]
                              (> target-concurrency @concurrent-scenarios))
@@ -137,7 +135,7 @@
                    (swap! concurrent-scenarios dec)
                    (>! c result)))
                (<! (async/timeout 200)))
-             (if (continue-run? runner @sent-requests simulation-start)
+             (if (runners/continue-run? runner @sent-requests simulation-start)
                (recur)
                (close! c)))
     c))
@@ -162,7 +160,7 @@
 
 (defn run-scenarios [{:keys [post-hook context runner concurrency-distribution] :as options} scenarios]
   (println "Running simulation with"
-           (runner-info runner)
+           (runners/runner-info runner)
            (if concurrency-distribution
              "using concurrency distribution function"
              ""))

@@ -37,6 +37,6 @@
                            (writer simulation batch-id batch))
                 :combine concat})
   :generator (fn [_]
-               {:generate (fn [summary]
+               {:generate (fn [_]
                            (generator simulation))
                 :as-str str})})
