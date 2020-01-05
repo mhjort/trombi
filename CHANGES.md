@@ -1,5 +1,10 @@
 # Changes
 
+## 0.14.0
+
+* Upgrade Clojure from 1.8.0 to 1.10.1
+* Update dependencies
+
 ## 0.13.0
 
 * Add support for dynamic scenarios
