@@ -5,10 +5,6 @@
 
 Create and run load tests using Clojure (and get fancy reports).
 
-Note! Version 0.8.0 includes few changes on how simulations are defined.
-See more details in [change history](CHANGES.md). All changes are backwards
-compatible. The old way of defining the simulation is still supported but
-maybe deprecated in future. You can see documentation for old versions [here](README-old.md).
 
 ## Installation
 
@@ -268,6 +264,13 @@ Results look like this:
 clj-gatling calls the writer function periodically (currently after each 20000 requests) and then
 generator once when the simulation is over. There is an example on how to use custom reporter in
 examples folder.
+
+## Change History
+
+Note! Version 0.8.0 includes few changes on how simulations are defined.
+See more details in [change history](CHANGES.md). All changes are backwards
+compatible. The old way of defining the simulation is still supported but
+maybe deprecated in future. You can see documentation for old versions [here](README-old.md).
 
 ## Jenkins
 
