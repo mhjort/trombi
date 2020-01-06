@@ -228,7 +228,7 @@ the returned number.
 
 ### Examples
 
-See example project here: [metrics-simulation](https://github.com/mhjort/clj-gatling/example/metrics-simulation)
+See example project here: [metrics-simulation](https://github.com/mhjort/clj-gatling/tree/master/examples/metrics-simulation)
 
 ## Customization
 
