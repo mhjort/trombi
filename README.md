@@ -228,7 +228,7 @@ the returned number.
 
 ### Examples
 
-See example project a here: [clj-gatling-example](https://github.com/mhjort/clj-gatling-example)
+See example project here: [metrics-simulation](https://github.com/mhjort/clj-gatling/example/metrics-simulation)
 
 ## Customization
 
