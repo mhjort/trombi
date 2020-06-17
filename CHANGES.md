@@ -1,5 +1,10 @@
 # Changes
 
+## 0.15.0
+
+* Use own implementation of timeout to avoid reusing same timeout. That was an issue with hich concurrency
+* Upgrade core.async
+
 ## 0.14.0
 
 * Upgrade Clojure from 1.8.0 to 1.10.1
