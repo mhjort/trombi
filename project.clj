@@ -12,6 +12,6 @@
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
                    :dependencies [[clj-async-test "0.0.5"]
-                                  [org.clojure/test.check "0.10.0"]
+                                  [org.clojure/test.check "1.0.0"]
                                   [clj-containment-matchers "1.0.1"]] }}
   :aot [clj-time.core clj-gatling.simulation-runners])
