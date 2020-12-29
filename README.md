@@ -313,6 +313,6 @@ Use [GitHub issues](https://github.com/mhjort/clj-gatling/issues) and [Pull Requ
 
 ## License
 
-Copyright (C) 2014-2018 Markus Hjort
+Copyright (C) 2014-2020 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.
