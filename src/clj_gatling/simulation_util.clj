@@ -41,7 +41,13 @@
 
 (defn- split-by-weight [total weights]
   (let [sum-weights (reduce + weights)
-        xs (map #(int (* total (/ % sum-weights))) weights)
+        ;We first try to split mathematically with rounding error
+        ;And then later adding reminder to first parts
+        ;This means we get a bit different results depending on the order of weights
+        ;(split-by-weight 10 [1 1 2]) -> [3 2 5]
+        ;(split-by-weight 10 [2 1 1]) -> [6 2 2]
+        ;In this tool this is not an issue
+        xs (map #(max 1 (int (* total (/ % sum-weights)))) weights)
         mismatch (- total (reduce + xs))]
     (map #(+ %1 %2) xs (concat (repeat mismatch 1) (repeat total 0)))))
 
