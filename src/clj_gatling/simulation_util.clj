@@ -3,8 +3,7 @@
             [clj-time.format :as f]
             [clojure.java.io :as io]
             [clojure.string :as str])
-  (:import [java.util List]
-           [java.io File]
+  (:import [java.io File]
            [java.io StringWriter PrintWriter]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
