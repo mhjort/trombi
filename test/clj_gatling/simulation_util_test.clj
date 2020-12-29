@@ -19,6 +19,18 @@
                 (= users
                    (count (mapcat :users (weighted-scenarios (range users) scenarios))))))
 
+(def at-least-one-user-is-distributed-to-every-scenario
+  (prop/for-all [users (gen/choose 10 5000)
+                 scenarios scenario-generator]
+                (every? pos? (map #(count (:users %)) (weighted-scenarios (range users) scenarios)))))
+
 (defspec splits-all-users-to-weighted-scenarios
   100
   all-user-ids-are-distributed)
+
+(defspec at-least-one-user-is-distributed
+  100
+  at-least-one-user-is-distributed-to-every-scenario)
+
+;(tc/quick-check 100 splits-all-users-to-weighted-scenarios)
+;(tc/quick-check 100 all-user-ids-are-distributed)
