@@ -1,5 +1,9 @@
 # Changes
 
+## 0.15.1
+
+* Fix: Verify that at least one user is running every scenario
+
 ## 0.15.0
 
 * Use own implementation of timeout to avoid reusing same timeout. That was an issue with hich concurrency

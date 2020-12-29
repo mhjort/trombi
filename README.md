@@ -11,7 +11,7 @@ Create and run load tests using Clojure (and get fancy reports).
 Add the following to your `project.clj` `:dependencies`:
 
 ```clojure
-[clj-gatling "0.15.0"]
+[clj-gatling "0.15.1"]
 ```
 
 ## Usage
