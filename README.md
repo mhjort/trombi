@@ -226,6 +226,12 @@ Progress is floating point number that goes from 0.0 to 1.0 during the simulatio
 return floating point number from 0.0 to 1.0. The concurrency at that point of time will be `concurrency` times
 the returned number.
 
+#### Tuning parallelism
+
+Internally clj-gatling uses core.async which has a fixed size thread pool. For load test scripts that use high performance asynchronous non blocking IO (e.g. http-kit) library this is not an big issue. However, libraries that require thread per get request (e.g. clj-http) this is a real limitation.
+
+Latest version of core.async supports setting the thread pool size using system property `clojure.core.async.pool-size`. With that the thread pool could be set to match the concurrency used in the simulation.
+
 ### Examples
 
 See example project here: [metrics-simulation](https://github.com/mhjort/clj-gatling/tree/master/examples/metrics-simulation)
