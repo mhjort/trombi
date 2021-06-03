@@ -5,7 +5,8 @@
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-async-test.core :refer :all]
             [clojure.core.async :refer [go <! <!! timeout]]
-            [clj-time.core :as time]))
+            [clj-time.core :as time])
+  (:import (java.time Duration)))
 
 (use-fixtures :once setup-error-file-path)
 
@@ -232,6 +233,38 @@
                                       true)}]}
         result (run-single-scenario scenario
                                     :concurrency 1
+                                    :duration (Duration/ofMillis 100))]
+    (is (equal? result [{:name "scenario"
+                         :id 0
+                         :start number?
+                         :end number?
+                         :requests [{:name "step 1"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :context-before map?
+                                     :context-after map?
+                                     :result true}
+                                    {:name "step 2"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :context-before map?
+                                     :context-after map?
+                                     :result true}]}]))))
+
+(deftest deprecated-joda-time-duration-can-be-given
+  (let [scenario {:name "scenario"
+                  :steps [{:name "step 1"
+                           :request (fn [_]
+                                      (Thread/sleep 500)
+                                      true)}
+                          {:name "step 2"
+                           :request (fn [ctx]
+                                      (Thread/sleep 2000)
+                                      true)}]}
+        result (run-single-scenario scenario
+                                    :concurrency 1
                                     :duration (time/millis 100))]
     (is (equal? result [{:name "scenario"
                          :id 0
@@ -266,7 +299,7 @@
         result (run-single-scenario scenario
                                     :concurrency 1
                                     :allow-early-termination? true
-                                    :duration (time/millis 100))]
+                                    :duration (Duration/ofMillis 100))]
     (is (equal? result [{:name "scenario"
                          :id 0
                          :start number?
