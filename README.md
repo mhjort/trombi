@@ -316,8 +316,12 @@ It uses AWS Lambda technology for running distributed load tests in the cloud.
 
 Use [GitHub issues](https://github.com/mhjort/clj-gatling/issues) and [Pull Requests](https://github.com/mhjort/clj-gatling/pulls).
 
+### Development
+
+By default Leiningen is used for development. There is also experimental support for deps.edn (See Makefile).
+
 ## License
 
-Copyright (C) 2014-2020 Markus Hjort
+Copyright (C) 2014-2021 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.
