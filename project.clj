@@ -3,9 +3,9 @@
   :url "http://github.com/mhjort/clj-gatling"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.1"]
-                 [org.clojure/core.async "1.2.603"]
-                 [http-kit "2.3.0"]
+  :dependencies [[org.clojure/clojure "1.10.3"]
+                 [org.clojure/core.async "1.3.618"]
+                 [http-kit "2.5.3"]
                  [prismatic/schema "1.1.12"]
                  [clojider-gatling-highcharts-reporter "0.3.0"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
