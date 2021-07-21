@@ -2,9 +2,8 @@
  {org.clojure/clojure {:mvn/version "1.10.1"},
   org.clojure/core.async {:mvn/version "1.2.603"},
   http-kit/http-kit {:mvn/version "2.3.0"},
-  clj-time/clj-time {:mvn/version "0.15.2"},
   prismatic/schema {:mvn/version "1.1.12"},
-  clojider-gatling-highcharts-reporter/clojider-gatling-highcharts-reporter {:mvn/version "0.2.2"}}
+  clojider-gatling-highcharts-reporter/clojider-gatling-highcharts-reporter {:mvn/version "0.3.0"}}
  :aliases
  {:test
   {:extra-paths ["test"]
@@ -14,6 +13,7 @@
                                :sha "62ef1de18e076903374306060ac0e8a752e57c86"}}}
 
   :dev
-  {:extra-deps {clj-async-test/clj-async-test {:mvn/version "0.0.5"}
-               org.clojure/test.check {:mvn/version "1.1.0"}
-               clj-containment-matchers/clj-containment-matchers {:mvn/version "1.0.1"}}}}}
+  {:extra-deps {clj-time/clj-time {:mvn/version "0.15.2"},
+                clj-async-test/clj-async-test {:mvn/version "0.0.5"}
+                org.clojure/test.check {:mvn/version "1.1.0"}
+                clj-containment-matchers/clj-containment-matchers {:mvn/version "1.0.1"}}}}}
