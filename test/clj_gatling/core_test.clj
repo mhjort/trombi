@@ -3,8 +3,7 @@
             [clj-gatling.test-helpers :refer :all]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-gatling.core :refer [run run-simulation]]
-            [clj-async-test.core :refer :all]
-            [clj-time.core :as time]))
+            [clj-async-test.core :refer :all]))
 
 (use-fixtures :once setup-error-file-path)
 

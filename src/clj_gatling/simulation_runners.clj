@@ -1,6 +1,5 @@
 (ns clj-gatling.simulation-runners
-  (:require [clj-time.core :as time]
-            [clj-time.local :as local-time]))
+  (:import (java.time Duration LocalDateTime)))
 
 (set! *warn-on-reflection* true)
 
@@ -9,16 +8,16 @@
   (continue-run? [runner sent-requests start])
   (runner-info [runner]))
 
-(deftype DurationRunner [duration]
+(deftype DurationRunner [^Duration duration]
   RunnerProtocol
-  (calculate-progress [runner sent-requests start]
-    (let [now (local-time/local-now)
-          time-taken-in-secs (time/in-seconds (time/interval start now))
-          duration-in-secs (max (time/in-seconds duration) 1)]
-      (float (/ time-taken-in-secs duration-in-secs))))
-  (continue-run? [runner _ start]
-    (time/before? (local-time/local-now)
-                  (time/plus start duration)))
+  (calculate-progress [_ _ start]
+    (let [now (LocalDateTime/now)
+          time-taken-in-millis (.toMillis (Duration/between ^LocalDateTime start now))
+          duration-in-millis (max (.toMillis duration) 1)]
+      (float (/ time-taken-in-millis duration-in-millis))))
+  (continue-run? [_ _ start]
+    (.isBefore (LocalDateTime/now)
+                  (.plus ^LocalDateTime start duration)))
   (runner-info [_] (str "duration " duration)))
 
 (deftype FixedRequestNumberRunner [number-of-requests]

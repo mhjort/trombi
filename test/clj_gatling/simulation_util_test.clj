@@ -6,7 +6,7 @@
             [clojure.test.check.clojure-test :refer[defspec]]
             [clojure.test.check :as tc]
             [clojure.test.check.generators :as gen]
-            [clj-gatling.simulation-util :refer [weighted-scenarios]]))
+            [clj-gatling.simulation-util :as simulation-util]))
 
 (def scenario-generator (gen/vector
                           (gen/hash-map :name gen/string-ascii
@@ -17,12 +17,14 @@
   (prop/for-all [users (gen/choose 10 5000)
                  scenarios scenario-generator]
                 (= users
-                   (count (mapcat :users (weighted-scenarios (range users) scenarios))))))
+                   (count (mapcat :users
+                                  (simulation-util/weighted-scenarios (range users) scenarios))))))
 
 (def at-least-one-user-is-distributed-to-every-scenario
   (prop/for-all [users (gen/choose 10 5000)
                  scenarios scenario-generator]
-                (every? pos? (map #(count (:users %)) (weighted-scenarios (range users) scenarios)))))
+                (every? pos? (map #(count (:users %))
+                                  (simulation-util/weighted-scenarios (range users) scenarios)))))
 
 (defspec splits-all-users-to-weighted-scenarios
   100

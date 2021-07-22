@@ -1,10 +1,10 @@
 (ns clj-gatling.simulation-util
-  (:require [clj-time.core :as t]
-            [clj-time.format :as f]
-            [clojure.java.io :as io]
+  (:require [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.io File]
            [java.io StringWriter PrintWriter]
+           [java.time Duration LocalDateTime]
+           [java.time.format DateTimeFormatter]
            [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn create-dir [^String dir]
@@ -94,16 +94,30 @@
          scenarios
          xs)))
 
+(defn- convert-joda-duration-to-java-duration [duration]
+  (-> duration
+      (.toStandardDuration)
+      (.getMillis)
+      (Duration/ofMillis)))
+
+(defn- create-duration-runner [duration]
+  (if
+   (instance? Duration duration) (DurationRunner. duration)
+   (let [converted (convert-joda-duration-to-java-duration duration)]
+     (println "Deprecated Joda Time duration" duration "was converted to" converted)
+
+     (DurationRunner. converted))))
+
 (defn choose-runner [scenarios concurrency options]
   (let [duration (:duration options)
         requests (or (:requests options) (* concurrency (distinct-request-count scenarios)))]
     (if (nil? duration)
       (FixedRequestNumberRunner. requests)
-      (DurationRunner. duration))))
+      (create-duration-runner duration))))
 
 (defn timestamp-str []
-  (let [custom-formatter (f/formatter "yyyyMMddHHmmssSSS")]
-    (f/unparse custom-formatter (t/now))))
+  (let [custom-formatter (DateTimeFormatter/ofPattern "yyyyMMddHHmmssSSS")]
+    (.format custom-formatter (LocalDateTime/now))))
 
 (defn create-report-name
   "Create a gatling compatible filename for report output: 'SimulationName-Timestamp'"

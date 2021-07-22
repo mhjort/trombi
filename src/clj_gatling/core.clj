@@ -1,5 +1,5 @@
 (ns clj-gatling.core
-  (:import [org.joda.time LocalDateTime])
+  (:import (java.time LocalDateTime))
   (:require [clojider-gatling-highcharts-reporter.core :refer [gatling-highcharts-reporter]]
             [clojider-gatling-highcharts-reporter.reporter :refer [csv-writer]]
             [clojider-gatling-highcharts-reporter.generator :refer [create-chart]]
@@ -29,7 +29,7 @@
 
 ;Legacy function for running tests with old format (pre 0.8)
 (defn run-simulation [legacy-scenarios concurrency & [options]]
-  (let [start-time (LocalDateTime.)
+  (let [start-time (LocalDateTime/now)
         results-dir (create-results-dir (or (:root options) "target/results"))
         step-timeout (or (:timeout-in-ms options) 5000)
         scenarios (legacy-scenarios->scenarios legacy-scenarios)

@@ -1,11 +1,11 @@
 (ns clj-gatling.report-test
   (:require [clojure.test :refer :all]
-            [clj-time.core :refer [local-date-time]]
             [clj-gatling.report :as report]
             [clj-gatling.reporters.short-summary :as short-summary]
             [clj-containment-matchers.clojure-test :refer :all]
             [clojure.core.async :as a :refer [onto-chan chan]]
-            [clj-containment-matchers.clojure-test :refer :all]))
+            [clj-containment-matchers.clojure-test :refer :all])
+  (:import (java.time LocalDateTime)))
 
 (def scenario-results
   [{:name "Test scenario" :id 1 :start 1391936496814 :end 1391936496814
@@ -36,7 +36,7 @@
 
 (deftest maps-scenario-results-to-log-lines
   (let [result-lines [(promise) (promise)]
-        start-time (local-date-time 2014 2 9 11 1 36)
+        start-time (LocalDateTime/of 2014 2 9 11 1 36)
         output-writer (fn [simulation idx result]
                         (deliver (nth result-lines idx) result))
         summary (report/create-result-lines simulation
@@ -49,7 +49,7 @@
 
 (deftest waits-results-to-be-written-before-returning
   (let [result-lines [(atom nil) (atom nil)]
-        start-time (local-date-time 2014 2 9 11 1 36)
+        start-time (LocalDateTime/of 2014 2 9 11 1 36)
         slow-writer (fn [simulation idx result]
                       (Thread/sleep 100)
                       (reset! (nth result-lines idx) result))]
