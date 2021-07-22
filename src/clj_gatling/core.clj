@@ -6,6 +6,7 @@
             [clj-gatling.report :as report]
             [clj-gatling.reporters.short-summary :as short-summary]
             [clj-gatling.schema :as schema]
+            [clj-gatling.progress-tracker :as progress-tracker]
             [schema.core :refer [validate]]
             [clj-gatling.pipeline :as pipeline]
             [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios
@@ -37,7 +38,8 @@
                                           :timeout-in-ms step-timeout
                                           :context (:context options)
                                           :error-file (or (:error-file options)
-                                                          (path-join results-dir "error.log"))}
+                                                          (path-join results-dir "error.log"))
+                                          :progress-tracker (progress-tracker/create-console-progress-tracker)}
                                          (weighted-scenarios (range concurrency) scenarios))
         summary (report/create-result-lines {:name "Simulation" :scenarios scenarios}
                                             buffer-size
@@ -62,11 +64,13 @@
     [short-summary/reporter r]))
 
 (defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
-                              requests duration reporter reporters error-file executor nodes] :as options
+                              requests duration reporter reporters error-file executor nodes
+                              progress-tracker] :as options
                        :or {concurrency 1
                             root "target/results"
                             executor pipeline/local-executor
                             nodes 1
+                            progress-tracker (progress-tracker/create-console-progress-tracker)
                             timeout-in-ms 5000
                             context {}}}]
   (validate schema/Options options)
@@ -81,6 +85,7 @@
                                                 :timeout-in-ms timeout-in-ms
                                                 :context context
                                                 :executor executor
+                                                :progress-tracker progress-tracker
                                                 :reporters reporters
                                                 :results-dir results-dir
                                                 :nodes nodes

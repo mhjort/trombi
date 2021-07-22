@@ -1,6 +1,7 @@
 (ns clj-gatling.simulation
   (:require [clj-gatling.simulation-runners :as runners]
             [clj-gatling.schema :as schema]
+            [clj-gatling.progress-tracker :as progress-tracker]
             [clj-gatling.simulation-util :refer [weighted-scenarios
                                                  choose-runner
                                                  log-exception]]
@@ -145,10 +146,9 @@
   (println "Running scenario" (:name scenario)
            "with concurrency" (count (:users scenario))))
 
-(defn- run-scenario [options scenario]
+(defn- run-scenario [{:keys [concurrent-scenarios] :as options} scenario]
   (print-scenario-info scenario)
-  (let [concurrent-scenarios (atom 0)
-        responses (async/merge (map #(run-scenario-constantly (assoc options :concurrent-scenarios concurrent-scenarios) scenario %)
+  (let [responses (async/merge (map #(run-scenario-constantly (assoc options :concurrent-scenarios concurrent-scenarios) scenario %)
                                     (:users scenario)))
         results (async/chan)]
     (go-loop []
@@ -159,7 +159,8 @@
                (close! results)))
     results))
 
-(defn run-scenarios [{:keys [post-hook context runner concurrency-distribution] :as options} scenarios]
+(defn run-scenarios [{:keys [post-hook context runner concurrency-distribution progress-tracker] :as options}
+                     scenarios]
   (println "Running simulation with"
            (runners/runner-info runner)
            (if concurrency-distribution
@@ -168,20 +169,33 @@
   (validate [schema/RunnableScenario] scenarios)
   (let [simulation-start (LocalDateTime/now)
         sent-requests (atom 0)
-        run-scenario-with-opts (partial run-scenario
-                                        (assoc options
-                                               :simulation-start simulation-start
-                                               :sent-requests sent-requests))
+        scenario-concurrency-trackers (reduce (fn [m k]
+                                                (assoc m k (atom 0)))
+                                              {}
+                                              (map :name scenarios))
+        ;TODO Maybe use try-finally for stopping
+        stop-progress-tracker (progress-tracker/start {:runner runner
+                                                       :sent-requests sent-requests
+                                                       :start-time simulation-start
+                                                       :scenario-concurrency-trackers scenario-concurrency-trackers
+                                                       :progress-tracker progress-tracker})
+        run-scenario-with-opts (fn [{:keys [name] :as scenario}]
+                                 (run-scenario (assoc options
+                                                      :concurrent-scenarios (get scenario-concurrency-trackers name)
+                                                      :simulation-start simulation-start
+                                                      :sent-requests sent-requests)
+                                               scenario))
         responses (async/merge (map run-scenario-with-opts scenarios))
         results (async/chan)]
     (go-loop []
-             (if-let [result (<! responses)]
-               (do
-                 (>! results result)
-                 (recur))
-               (do
-                (close! results)
-                (when post-hook (post-hook context)))))
+      (if-let [result (<! responses)]
+        (do
+          (>! results result)
+          (recur))
+        (do
+          (close! results)
+          (stop-progress-tracker)
+          (when post-hook (post-hook context)))))
     results))
 
 (defn run [{:keys [scenarios pre-hook post-hook] :as simulation}

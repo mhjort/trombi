@@ -74,6 +74,9 @@
    (s/optional-key :concurrency-distribution) (s/make-fn-schema
                                                 float
                                                 [[float {}]])
+   (s/optional-key :progress-tracker) (s/make-fn-schema
+                                                s/Any
+                                                [[{}]])
    (s/optional-key :error-file) s/Str
    (s/optional-key :reporter) s/Any ;Legacy fn
    (s/optional-key :reporters) [Reporter]

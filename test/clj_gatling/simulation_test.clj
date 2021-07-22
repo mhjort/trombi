@@ -535,6 +535,16 @@
       (is #{1.0} @progress-distribution)
       (is (= (sort @progress-distribution) @progress-distribution)))))
 
+(deftest progress-tracker-is-called-if-defined
+  (let [progress-tracker-call-count (atom 0)]
+    (run-single-scenario {:name "progress-tracker-scenario"
+                          :steps [(step "step" true)]}
+                         :concurrency 1
+                         :duration (Duration/ofMillis 500)
+                         :progress-tracker (fn [_]
+                                             (swap! progress-tracker-call-count inc)))
+    (is (< 1 @progress-tracker-call-count))))
+
 (deftest scenario-weight
   (let [main-scenario {:name "Main"
                        :weight 2
