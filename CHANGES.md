@@ -1,5 +1,12 @@
 # Changes
 
+## 0.16.0
+
+* Add support for customizable progress tracker
+* Replace deprated clj-time with Java 8 time objects
+* Upgrade Clojure from 1.10.1 to 1.10.3
+* Update dependencies
+
 ## 0.15.1
 
 * Fix: Verify that at least one user is running every scenario

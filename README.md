@@ -12,6 +12,8 @@ Add the following to your `project.clj` `:dependencies`:
 
 [![Clojars Project](https://img.shields.io/clojars/v/clj-gatling.svg)](https://clojars.org/clj-gatling)
 
+> Note that `clj-time` dependency is not included anymore because from Java SE 8 onwards, users are asked to migrate to java.time (JSR-310)
+However, `clj-gatling` is backwards compatible and if you still want to use clj-time please add `[clj-time "0.15.2"]` as a dependency.
 
 ## Usage
 
@@ -202,8 +204,9 @@ Second parameter to `clj-gatling.core/run` function is options map. Options map 
  :root "/tmp" ;Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
  :concurrency 100 ;Number of concurrent users clj-gatling tries to use. Default to 1.
  :concurrency-distribution ;Function for defining how the concurrent users are distributed during the simulation. Optional
+ :progress-tracker ;Function used for tracking simulation progress. Optional.
  :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
- :duration (clj-time.core/minutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored
+ :duration (java.time.Duration/ofMinutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored
  :error-file "/tmp/error.log"} ; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
 ```
 
@@ -224,6 +227,21 @@ concurrency distribution function like this one:
 Progress is floating point number that goes from 0.0 to 1.0 during the simulation. Distribution function should
 return floating point number from 0.0 to 1.0. The concurrency at that point of time will be `concurrency` times
 the returned number.
+
+#### Progress tracker
+
+By default clj-gatling will write the progress periodically (every 200 milliseconds) to console output.
+
+If you want to disable this functionality you can specify option `:progress-tracker (fn [_])`.
+
+If you want to define your own progress tracker function you can specify your own like this one:
+
+```clojure
+(fn [{:keys [progress sent-requests total-concurrency]}]
+  (println "Progress:" progress ", sent requests:" sent-requests ", total concurrency:" total-concurrency))
+```
+
+Progress is floating point number that goes from 0.0 to 1.0 during the simulation.
 
 #### Tuning parallelism
 
