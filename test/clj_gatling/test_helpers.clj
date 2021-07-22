@@ -32,7 +32,8 @@
     (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                    :timeout-in-ms step-timeout
                                    :context (:context options)
-                                   :error-file error-file-path}
+                                   :error-file error-file-path
+                                   :progress-tracker (fn [_])}
                                   (weighted-scenarios (range concurrency) scenarios))
         to-vector)))
 
@@ -43,9 +44,11 @@
                                               requests
                                               duration
                                               users
+                                              progress-tracker
                                               pre-hook
                                               post-hook]
-                                        :or {timeout-in-ms 5000}}]
+                                       :or {timeout-in-ms 5000
+                                            progress-tracker (fn [_])}}]
   (to-vector (simulation/run {:name "Simulation"
                               :pre-hook pre-hook
                               :post-hook post-hook
@@ -57,7 +60,8 @@
                               :duration duration
                               :users users
                               :context context
-                              :error-file error-file-path})))
+                              :error-file error-file-path
+                              :progress-tracker progress-tracker})))
 
 (defn run-two-scenarios [scenario1 scenario2 & {:keys [concurrency requests]}]
   (to-vector (simulation/run {:name "Simulation"
@@ -65,7 +69,8 @@
                              {:concurrency concurrency
                               :requests requests
                               :timeout-in-ms 5000
-                              :error-file error-file-path})))
+                              :error-file error-file-path
+                              :progress-tracker (fn [_])})))
 
 (defn successful-request [cb context]
   ;TODO Try to find a better way for this

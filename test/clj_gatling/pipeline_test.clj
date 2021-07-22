@@ -21,6 +21,7 @@
                                                               :concurrency 5
                                                               :requests 25
                                                               :timeout-in-ms 1000
+                                                              :progress-tracker (fn [_])
                                                               :batch-size 10
                                                               :reporters reporters})]
     ;Stub reporter returns number of batches parsed per reporter
