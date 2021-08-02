@@ -12,7 +12,7 @@ Add the following to your `project.clj` `:dependencies`:
 
 [![Clojars Project](https://img.shields.io/clojars/v/clj-gatling.svg)](https://clojars.org/clj-gatling)
 
-> Note that `clj-time` dependency is not included anymore because from Java SE 8 onwards, users are asked to migrate to java.time (JSR-310)
+> Note that `clj-time` dependency is not included anymore because from Java SE 8 onward, users are asked to migrate to java.time (JSR-310)
 However, `clj-gatling` is backwards compatible and if you still want to use clj-time please add `[clj-time "0.15.2"]` as a dependency.
 
 ## Usage
@@ -50,7 +50,7 @@ scenarios that will be run in parallel. One scenario contain one or multiple ste
 that are run sequentially. One simulation is configured to run with a given number
 of virtual users. As a result the tool returns response times (min, max, average, percentiles)
 and requests per second. Internally millisecond is used as a precision for benchmarks. Therefore
-this is not suited for testing systems with less than one millisecod response times.
+this is not suited for testing systems with less than one millisecond response times.
 
 Simulation is specified as a Clojure map like this:
 
@@ -95,7 +95,7 @@ For example:
 * Scenario2 with weight 1 => concurrency 20
 
 Scenario weight is optional key with default value 1. In that case the users
-are split evenly between the scenarios
+are split evenly between the scenarios.
 
 Scenarios are also able to specific their own additional context via the
 optional `:context` key.

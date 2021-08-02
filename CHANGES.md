@@ -3,7 +3,7 @@
 ## 0.16.0
 
 * Add support for customizable progress tracker
-* Replace deprated clj-time with Java 8 time objects
+* Replace deprecated clj-time with Java 8 time objects
 * Upgrade Clojure from 1.10.1 to 1.10.3
 * Update dependencies
 
@@ -13,7 +13,7 @@
 
 ## 0.15.0
 
-* Use own implementation of timeout to avoid reusing same timeout. That was an issue with hich concurrency
+* Use own implementation of timeout to avoid reusing same timeout. That was an issue with high concurrency
 * Upgrade core.async
 
 ## 0.14.0
