@@ -24,7 +24,8 @@
   (f))
 
 (defn delete-error-logs []
-  (io/delete-file error-file-path))
+  (when (.exists (io/file error-file-path))
+    (io/delete-file error-file-path)))
 
 (defn run-legacy-simulation [legacy-scenarios concurrency & [options]]
   (let [step-timeout (or (:timeout-in-ms options) 5000)
