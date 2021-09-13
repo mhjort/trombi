@@ -1,5 +1,5 @@
 (ns clj-gatling.test-helpers
-  (:require [clojure.core.async :refer [go <! <!! timeout]]
+  (:require [clojure.core.async :refer [<!!]]
             [clj-gatling.simulation :as simulation]
             [clj-gatling.schema :as schema]
             [schema.core :refer [validate]]
