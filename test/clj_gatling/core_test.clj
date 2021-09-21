@@ -31,3 +31,22 @@
                      {:reporters [th/a-reporter th/b-reporter]
                       :concurrency 1})]
     (is (= summary {:a 1 :b 1}))))
+
+;This code can be used to test raw reporter in repl
+(comment
+  (let [average (fn [coll]
+                  (long (/ (reduce + coll) (count coll))))
+        map-vals (fn [f m]
+                   (reduce-kv #(assoc %1 %2 (f %3)) {} m))
+        calculate-averages (fn [data]
+                             (map-vals #(average (map (fn [{:keys [start end]}]
+                                                        (- end start)) %))
+                                       (group-by :name (mapcat :requests data))))
+        summary (run (simulation "test-raw")
+                     {:reporters [raw-reporter/file-reporter]
+                     ;{:reporters [raw-reporter/in-memory-reporter]
+                      :requests 100
+                      :concurrency 1})]
+    (calculate-averages (:raw summary))
+    )
+  )
