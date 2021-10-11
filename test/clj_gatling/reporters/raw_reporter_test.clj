@@ -1,7 +1,9 @@
 (ns clj-gatling.reporters.raw-reporter-test
   (:require [clojure.test :refer :all]
             [clj-gatling.simulation-util :refer [eval-if-needed]]
-            [clj-gatling.reporters.raw-reporter :as raw]))
+            [clj-gatling.reporters.raw-reporter :as raw])
+  (:import (java.nio.file Files)
+           (java.nio.file.attribute FileAttribute)))
 
 (def scenario-results
   [{:name "Test scenario" :id 1 :start 1391936496814 :end 1391936496814
@@ -14,8 +16,10 @@
     :requests [{:id 0 :name "Request1" :start 1391936497998 :end 1391936498426 :result true}]}])
 
 (defn- simulate-report-generation [{:keys [collect combine]} {:keys [generate as-str]}]
-  (let [report (generate (combine (collect {} {:batch (take 2 scenario-results)})
-                     (collect {} {:batch (drop 2 scenario-results)})))]
+  (let [batches (partition 1 scenario-results)
+        [collection1 collection2 collection3] (mapv #(collect {} {:batch %1 :node-id 0 :batch-id %2}) batches (range))
+        first-combination (combine collection1 collection2)
+        report (generate (combine first-combination collection3))]
     [report (as-str report)]))
 
 (deftest in-memory-reporter
@@ -24,3 +28,15 @@
         [report as-str] (simulate-report-generation collector generator)]
     (is (= scenario-results report))
     (is (= "Finished 5 requests." as-str))))
+
+(defn- create-temp-dir []
+  (str (Files/createTempDirectory "raw-reporter-test" (into-array FileAttribute []))))
+
+(deftest file-reporter
+  (let [results-dir (create-temp-dir)
+        params {:results-dir results-dir :context {}}
+        collector ((eval-if-needed (:collector raw/file-reporter)) params)
+        generator ((eval-if-needed (:generator raw/file-reporter)) params)
+        [report as-str] (simulate-report-generation collector generator)]
+    (is (= scenario-results report))
+    (is (= (str "Generated raw report to " results-dir "/raw.log") as-str))))

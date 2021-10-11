@@ -1,6 +1,7 @@
 (ns clj-gatling.core-test
   (:require [clojure.test :refer :all]
             [clj-gatling.test-helpers :as th]
+            [clj-gatling.reporters.raw-reporter :as raw-reporter]
             [clj-gatling.core :refer [run run-simulation]]))
 
 (use-fixtures :once th/setup-error-file-path)
@@ -31,6 +32,20 @@
                      {:reporters [th/a-reporter th/b-reporter]
                       :concurrency 1})]
     (is (= summary {:a 1 :b 1}))))
+
+(deftest simulation-returns-raw-report-from-file
+  (let [summary (run (simulation "test-file-raw")
+                     {:reporters [raw-reporter/file-reporter]
+                      :requests 10
+                      :concurrency 1})]
+    (is (= 10 (count (mapcat :requests (:raw summary)))))))
+
+(deftest simulation-returns-raw-report-from-memory
+  (let [summary (run (simulation "test-memory-raw")
+                     {:reporters [raw-reporter/in-memory-reporter]
+                      :requests 10
+                      :concurrency 1})]
+    (is (= 10 (count (mapcat :requests (:raw summary)))))))
 
 ;This code can be used to test raw reporter in repl
 (comment
