@@ -20,8 +20,12 @@ Please, use this only for testing with small number of parallel users-
 
   $ lein run metrics 50 100 --ramp-up
 
+  If you want to test raw reporter you can run with option `--raw-report`
+
+  $ lein run metrics 50 100 --raw-report
+
 ## License
 
-Copyright (C) 2014-2020 Markus Hjort
+Copyright (C) 2014-2021 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.
