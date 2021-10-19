@@ -1,5 +1,11 @@
 # Changes
 
+## 0.16.1
+
+* Add raw reporters
+* Fix highcharts reporter simulation timestamp on report frontpage
+* Update dependencies
+
 ## 0.16.0
 
 * Add support for customizable progress tracker
