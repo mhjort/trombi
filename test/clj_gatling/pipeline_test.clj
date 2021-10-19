@@ -1,6 +1,8 @@
 (ns clj-gatling.pipeline-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.test-helpers :refer :all]
+            [clj-gatling.reporters.raw-reporter :as raw]
+            [clj-gatling.reporters.short-summary :as sh]
+            [clj-gatling.test-helpers :as th]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-gatling.pipeline :as pipeline]))
 
@@ -12,8 +14,8 @@
 (deftest running-pipeline
   (let [node-ids (atom #{})
         executor (stub-executor node-ids)
-        reporters [a-reporter
-                   b-reporter]
+        reporters [th/a-reporter
+                   th/b-reporter]
         summary (pipeline/run 'clj-gatling.example/test-simu {:executor executor
                                                               :nodes 3
                                                               :context {}

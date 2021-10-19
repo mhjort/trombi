@@ -1,5 +1,5 @@
 (ns clj-gatling.test-helpers
-  (:require [clojure.core.async :refer [go <! <!! timeout]]
+  (:require [clojure.core.async :refer [<!!]]
             [clj-gatling.simulation :as simulation]
             [clj-gatling.schema :as schema]
             [schema.core :refer [validate]]
@@ -89,7 +89,7 @@
   {:name step-name
    :request (fn [ctx]
               ;Note! Highcharts reporter fails if start and end times are exactly the same values
-              (Thread/sleep 1)
+              (Thread/sleep (inc (rand-int 2)))
               [return (assoc ctx :to-next-request return)])})
 
 (defn throwing-step [step-name]

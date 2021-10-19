@@ -2,7 +2,6 @@
   (:require [clojure.test :refer :all]
             [clj-gatling.report :as report]
             [clj-gatling.reporters.short-summary :as short-summary]
-            [clj-containment-matchers.clojure-test :refer :all]
             [clojure.core.async :as a :refer [onto-chan chan]]
             [clj-containment-matchers.clojure-test :refer :all])
   (:import (java.time LocalDateTime)))
