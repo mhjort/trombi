@@ -205,6 +205,7 @@ Second parameter to `clj-gatling.core/run` function is options map. Options map 
  :concurrency 100 ;Number of concurrent users clj-gatling tries to use. Default to 1.
  :concurrency-distribution ;Function for defining how the concurrent users are distributed during the simulation. Optional
  :progress-tracker ;Function used for tracking simulation progress. Optional.
+ :reporters ;List of reporters to use. Optional. If omitted short summary reporter and highchart reporter are used
  :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
  :duration (java.time.Duration/ofMinutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored
  :error-file "/tmp/error.log"} ; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
@@ -249,44 +250,20 @@ Internally clj-gatling uses core.async which has a fixed size thread pool. For l
 
 Latest version of core.async supports setting the thread pool size using system property `clojure.core.async.pool-size`. With that the thread pool could be set to match the concurrency used in the simulation.
 
+###  Reporters
+
+By default clj-gatling generates two reports: Gatling Highcharts Report and short summary report. Reporters generate report to stdout and some reporters can even generate results to file. When you call `simulation/run` function it will return all the reports with reporter keys (e.g :short for short summary reporter). If you don't want to use the default reports you can specify list of reporters with `:reporters` key in options. Available reporters are following:
+
+* `clj-gatling.reporters.short-summary/reporter` This reporter returns summary with number of successful and failed requests
+* `clj-gatling.reporters.raw-reporter/in-memory-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). Stores results in memory. 
+* `clj-gatling.reporters.raw-reporter/file-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). Stores resutls to file
+* `clojider-gatling-highcharts-reporter.core/gatling-highcharts-reporter` Generates Gatling Highchart html report
+
+You can also specify your own custom reporter. Check https://github.com/mhjort/clj-gatling/blob/master/src/clj_gatling/reporters/raw_reporter.clj as an example
+
 ### Examples
 
 See example project here: [metrics-simulation](https://github.com/mhjort/clj-gatling/tree/master/examples/metrics-simulation)
-
-## Customization
-
-If you don't want to use built-in reporting by gatling-highcharts you can customize the reporting
-by implementing it yourself and using clj-gatling for load generation. You can do that by passing
-in `:reporter` map as an option. For example if you want to skip reporting totally pass this reporter:
-
-```clojure
-{:writer (fn [simulation idx results]
-            ;Do nothing
-          )
- :generator (fn [simulation]
-              ;Do nothing
-            )}
-```
-
-Results look like this:
-
-```clojure
-[{:name "Scenario name"
-  :id 1
-  :start 1472898793468
-  :end 1472898793908
-  :requests [{:name "Request name"
-              :id 1
-              :start 1472898793468
-              :end 1472898793908
-              :context-after {:user-id 1}
-              :context-before {:user-id 1}
-              :result true}]}]
-```
-
-clj-gatling calls the writer function periodically (currently after each 20000 requests) and then
-generator once when the simulation is over. There is an example on how to use custom reporter in
-examples folder.
 
 ## Change History
 
