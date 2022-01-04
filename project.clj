@@ -1,4 +1,4 @@
-(defproject clj-gatling "0.16.1"
+(defproject clj-gatling "0.17.0"
   :description "Clojure library for load testing"
   :url "http://github.com/mhjort/clj-gatling"
   :license {:name "Eclipse Public License"
@@ -13,5 +13,5 @@
                    :dependencies [[clj-time "0.15.2"]
                                   [clj-async-test "0.0.5"]
                                   [org.clojure/test.check "1.1.0"]
-                                  [clj-containment-matchers "1.0.1"]] }}
+                                  [clj-containment-matchers "1.0.1"]]}}
   :aot [clj-gatling.simulation-runners])

@@ -14,17 +14,32 @@
                           1 10))
 
 (def all-user-ids-are-distributed
-  (prop/for-all [users (gen/choose 10 5000)
+  (prop/for-all [users     (gen/choose 10 5000)
                  scenarios scenario-generator]
-                (= users
-                   (count (mapcat :users
-                                  (simulation-util/weighted-scenarios (range users) scenarios))))))
+    (= users
+       (count (mapcat :users
+                      (simulation-util/weighted-scenarios (range users) scenarios))))))
 
 (def at-least-one-user-is-distributed-to-every-scenario
-  (prop/for-all [users (gen/choose 10 5000)
+  (prop/for-all [users     (gen/choose 10 5000)
                  scenarios scenario-generator]
-                (every? pos? (map #(count (:users %))
-                                  (simulation-util/weighted-scenarios (range users) scenarios)))))
+    (every? pos? (map #(count (:users %))
+                      (simulation-util/weighted-scenarios (range users) scenarios)))))
+
+(def rate-is-distributed-if-given
+  (prop/for-all [users     (gen/choose 10 5000)
+                 rate      (gen/choose 10 2000)
+                 scenarios scenario-generator]
+    (= rate
+       (apply + (map :rate
+                     (simulation-util/weighted-scenarios (range users) rate scenarios))))))
+
+(def every-scenario-has-some-rate-if-given
+  (prop/for-all [users     (gen/choose 10 5000)
+                 rate      (gen/choose 10 2000)
+                 scenarios scenario-generator]
+    (every? pos? (map :rate
+                      (simulation-util/weighted-scenarios (range users) rate scenarios)))))
 
 (defspec splits-all-users-to-weighted-scenarios
   100
@@ -34,5 +49,33 @@
   100
   at-least-one-user-is-distributed-to-every-scenario)
 
-;(tc/quick-check 100 splits-all-users-to-weighted-scenarios)
-;(tc/quick-check 100 all-user-ids-are-distributed)
+(defspec splits-rate-to-weighted-scenarios
+  100
+  rate-is-distributed-if-given)
+
+(defspec every-scenario-has-some-rate
+  100
+  every-scenario-has-some-rate-if-given)
+
+;;(tc/quick-check 100 splits-all-users-to-weighted-scenarios)
+;;(tc/quick-check 100 all-user-ids-are-distributed)
+
+(defn nullary [])
+(defn unary [x])
+(defn binary [x y])
+(defn ternary [x y z])
+
+(deftest arg-count
+  (is (= 0 (simulation-util/arg-count nullary)))
+  (is (= 1 (simulation-util/arg-count unary)))
+  (is (= 2 (simulation-util/arg-count binary)))
+  (is (= 3 (simulation-util/arg-count ternary)))
+  (is (= 2 (simulation-util/arg-count (comp unary binary))))
+  (is (= 0 (simulation-util/arg-count #(println "foo"))))
+  (is (= 1 (simulation-util/arg-count #(println %1))))
+  (is (= 2 (simulation-util/arg-count #(println %1 %2))))
+  (is (= 3 (simulation-util/arg-count #(println %3))))
+  (is (= 0 (simulation-util/arg-count (fn []))))
+  (is (= 1 (simulation-util/arg-count (fn [x]))))
+  (is (= 2 (simulation-util/arg-count (fn [x y]))))
+  (is (= 3 (simulation-util/arg-count (fn [x y z])))))
