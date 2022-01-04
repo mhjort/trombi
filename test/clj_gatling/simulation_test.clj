@@ -175,7 +175,7 @@
                                      :start number?
                                      :end number?
                                      :context-before {:user-id 0
-                                                     :to-next-request true}
+                                                      :to-next-request true}
                                      :context-after map?
                                      :result true}]}]))))
 
@@ -394,19 +394,19 @@
                                   {:name "Test scenario2"
                                    :steps [(step "Step" true)]}
                                   :concurrency 2)]
-    ;Stop condition is not synced between parallel scenarios
-    ;so once in a while there might be one extra scenario
-    ;This is ok tolerance for max requests
+    ;; Stop condition is not synced between parallel scenarios
+    ;; so once in a while there might be one extra scenario
+    ;; This is ok tolerance for max requests
     (is (equal? (first (filter #(= 0 (:id %)) result)) {:name "Test scenario"
-                                                       :id 0
-                                                       :start number?
-                                                       :end number?
-                                                       :requests anything}))
+                                                        :id 0
+                                                        :start number?
+                                                        :end number?
+                                                        :requests anything}))
     (is (equal? (first (filter #(= 1 (:id %)) result)) {:name "Test scenario2"
-                                                       :id 1
-                                                       :start number?
-                                                       :end number?
-                                                       :requests anything}))))
+                                                        :id 1
+                                                        :start number?
+                                                        :end number?
+                                                        :requests anything}))))
 
 (deftest throws-exception-when-concurrency-is-smaller-than-number-of-parallel-scenarios
   (let [scenario1 {:name "scenario1" :steps [(step "step" true)]}
@@ -571,5 +571,5 @@
                                                   :step2    [nil context]))}
                                     :concurrency 1
                                     :duration (time/millis 50))]
-    (is (= :step2 (-> result first :requests last :context-after :current))
-    (is (not (empty? result))))))
+    (is (= :step2 (-> result first :requests last :context-after :current)))
+    (is (not (empty? result)))))

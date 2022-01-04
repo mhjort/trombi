@@ -26,6 +26,6 @@
                                                               :progress-tracker (fn [_])
                                                               :batch-size 10
                                                               :reporters reporters})]
-    ;Stub reporter returns number of batches parsed per reporter
+    ;; Stub reporter returns number of batches parsed per reporter
     (is (equal? summary {:a 3 :b 3}))
     (is (= #{0 1 2} @node-ids))))

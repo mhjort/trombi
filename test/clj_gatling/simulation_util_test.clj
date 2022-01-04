@@ -34,5 +34,5 @@
   100
   at-least-one-user-is-distributed-to-every-scenario)
 
-;(tc/quick-check 100 splits-all-users-to-weighted-scenarios)
-;(tc/quick-check 100 all-user-ids-are-distributed)
+;;(tc/quick-check 100 splits-all-users-to-weighted-scenarios)
+;;(tc/quick-check 100 all-user-ids-are-distributed)

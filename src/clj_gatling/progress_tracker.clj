@@ -11,7 +11,7 @@
           (when (= 100 progress-percent)
             (reset! finished? true)
             (println ""))
-          ;Flush is required for forcing writing to console in every round
+          ;; Flush is required for forcing writing to console in every round
           (flush))))))
 
 (defn start [{:keys [progress-tracker runner sent-requests start-time scenario-concurrency-trackers]}]

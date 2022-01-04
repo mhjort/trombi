@@ -92,24 +92,24 @@
         step-ctx [(:steps scenario) (:step-fn scenario)]]
     (go-loop [[step context step-ctx] (next-step step-ctx final-context)
               results []]
-             (let [[result new-ctx] (<! (async-function-with-timeout step
-                                                                     timeout
-                                                                     sent-requests
-                                                                     user-id
-                                                                     context))
-                   [step' _ _ :as next-steps] (next-step step-ctx new-ctx)]
-               (when-let [e (:exception result)]
-                 (log-exception (:error-file options) e))
-               (if (or (should-terminate?)
-                       (nil? step')
-                       (and skip-next-after-failure?
-                            (request-failed? result)))
-                 (do
-                   (when post-hook
-                     (post-hook context))
-                   (>! result-channel (->> (dissoc result :exception)
-                                           (conj results))))
-                 (recur next-steps (conj results result)))))
+      (let [[result new-ctx] (<! (async-function-with-timeout step
+                                                              timeout
+                                                              sent-requests
+                                                              user-id
+                                                              context))
+            [step' _ _ :as next-steps] (next-step step-ctx new-ctx)]
+        (when-let [e (:exception result)]
+          (log-exception (:error-file options) e))
+        (if (or (should-terminate?)
+                (nil? step')
+                (and skip-next-after-failure?
+                     (request-failed? result)))
+          (do
+            (when post-hook
+              (post-hook context))
+            (>! result-channel (->> (dissoc result :exception)
+                                    (conj results))))
+          (recur next-steps (conj results result)))))
     result-channel))
 
 (defn- run-scenario-constantly
@@ -130,33 +130,32 @@
                              (> target-concurrency @concurrent-scenarios))
                           (constantly true))]
     (go-loop []
-             (if (should-run-now?)
-               (do
-                 (swap! concurrent-scenarios inc)
-                 (let [result (<! (run-scenario-once options scenario user-id))]
-                   (swap! concurrent-scenarios dec)
-                   (>! c result)))
-               (<! (timers/timeout 200)))
-             (if (runners/continue-run? runner @sent-requests simulation-start)
-               (recur)
-               (close! c)))
+      (if (should-run-now?)
+        (do
+          (swap! concurrent-scenarios inc)
+          (let [result (<! (run-scenario-once options scenario user-id))]
+            (swap! concurrent-scenarios dec)
+            (>! c result)))
+        (<! (timers/timeout 200)))
+      (if (runners/continue-run? runner @sent-requests simulation-start)
+        (recur)
+        (close! c)))
     c))
 
 (defn- print-scenario-info [scenario]
   (println "Running scenario" (:name scenario)
            "with concurrency" (count (:users scenario))))
 
-(defn- run-scenario [{:keys [concurrent-scenarios] :as options} scenario]
+(defn- run-scenario [options scenario]
   (print-scenario-info scenario)
-  (let [responses (async/merge (map #(run-scenario-constantly (assoc options :concurrent-scenarios concurrent-scenarios) scenario %)
-                                    (:users scenario)))
+  (let [responses (async/merge (map #(run-scenario-constantly options scenario %) (:users scenario)))
         results (async/chan)]
     (go-loop []
-             (if-let [result (<! responses)]
-               (do
-                 (>! results (response->result scenario result))
-                 (recur))
-               (close! results)))
+      (if-let [result (<! responses)]
+        (do
+          (>! results (response->result scenario result))
+          (recur))
+        (close! results)))
     results))
 
 (defn run-scenarios [{:keys [post-hook context runner concurrency-distribution progress-tracker] :as options}
@@ -173,7 +172,7 @@
                                                 (assoc m k (atom 0)))
                                               {}
                                               (map :name scenarios))
-        ;TODO Maybe use try-finally for stopping
+        ;; TODO Maybe use try-finally for stopping
         stop-progress-tracker (progress-tracker/start {:runner runner
                                                        :sent-requests sent-requests
                                                        :start-time simulation-start

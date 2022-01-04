@@ -36,17 +36,17 @@
 (defn- distinct-request-count [scenarios]
   (reduce +
           (map #(max (count (:steps %))
-                     (count (:requests %))) ;For legacy support
+                     (count (:requests %))) ;; For legacy support
                scenarios)))
 
 (defn- split-by-weight [total weights]
   (let [sum-weights (reduce + weights)
-        ;We first try to split mathematically with rounding error
-        ;And then later adding reminder to first parts
-        ;This means we get a bit different results depending on the order of weights
-        ;(split-by-weight 10 [1 1 2]) -> [3 2 5]
-        ;(split-by-weight 10 [2 1 1]) -> [6 2 2]
-        ;In this tool this is not an issue
+        ;; We first try to split mathematically with rounding error
+        ;; And then later adding reminder to first parts
+        ;; This means we get a bit different results depending on the order of weights
+        ;; (split-by-weight 10 [1 1 2]) -> [3 2 5]
+        ;; (split-by-weight 10 [2 1 1]) -> [6 2 2]
+        ;; In this tool this is not an issue
         xs (map #(max 1 (int (* total (/ % sum-weights)))) weights)
         mismatch (- total (reduce + xs))]
     (map #(+ %1 %2) xs (concat (repeat mismatch 1) (repeat total 0)))))
@@ -61,7 +61,7 @@
              (conj result (subvec ids start-idx (+ start-idx (first sizes))))
              (drop 1 sizes)))))
 
-;https://stackoverflow.com/questions/10969708/parallel-doseq-for-clojure
+;; https://stackoverflow.com/questions/10969708/parallel-doseq-for-clojure
 (defn split-equally
   "Split a collection into a vector of (as close as possible) equally sized parts"
   [size coll]
@@ -101,12 +101,11 @@
       (Duration/ofMillis)))
 
 (defn- create-duration-runner [duration]
-  (if
-   (instance? Duration duration) (DurationRunner. duration)
-   (let [converted (convert-joda-duration-to-java-duration duration)]
-     (println "Deprecated Joda Time duration" duration "was converted to" converted)
-
-     (DurationRunner. converted))))
+  (if (instance? Duration duration)
+    (DurationRunner. duration)
+    (let [converted (convert-joda-duration-to-java-duration duration)]
+      (println "Deprecated Joda Time duration" duration "was converted to" converted)
+      (DurationRunner. converted))))
 
 (defn choose-runner [scenarios concurrency options]
   (let [duration (:duration options)
@@ -137,13 +136,12 @@
 
 (defn load-namespace [^clojure.lang.Symbol simulation]
   (let [loadable-ns (symbol-namespace simulation)]
-    (when (not (= "/" loadable-ns)) ;No need to load if namespace is current ns
+    (when (not (= "/" loadable-ns)) ;; No need to load if namespace is current ns
       (load loadable-ns))))
 
 (defn eval-if-needed [instance-or-symbol]
   (if (symbol? instance-or-symbol)
-    (let [loadable-ns (symbol-namespace instance-or-symbol)]
-      (when (not (= "/" loadable-ns)) ;No need to load if namespace is current ns
-        (load loadable-ns))
+    (do
+      (load-namespace instance-or-symbol)
       (eval instance-or-symbol))
     instance-or-symbol))

@@ -16,7 +16,7 @@
 (defonce httpkit-callback-pool (let [pool-size (.availableProcessors (Runtime/getRuntime))
                                      queue (LinkedBlockingQueue.)
                                      factory (PrefixThreadFactory. "httpkit-callback-worker-")]
-                                     (ThreadPoolExecutor. pool-size pool-size 60 TimeUnit/SECONDS queue factory)))
+                                 (ThreadPoolExecutor. pool-size pool-size 60 TimeUnit/SECONDS queue factory)))
 
 (defn async-http-request [url callback {:keys [user-id]}]
   (let [check-status (fn [{:keys [status]}]

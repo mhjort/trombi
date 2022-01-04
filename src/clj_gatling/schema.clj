@@ -68,8 +68,8 @@
    (s/optional-key :timeout-in-ms) s/Int
    (s/optional-key :context) (s/pred map?)
    (s/optional-key :requests) s/Int
-   ;For backwards compatibility reasons we have to accept JodaTime Period as a duration
-   ;However, we might not have it in classpath so we have to use s/Any in schema
+   ;; For backwards compatibility reasons we have to accept JodaTime Period as a duration
+   ;; However, we might not have it in classpath so we have to use s/Any in schema
    (s/optional-key :duration) (s/either java.time.Duration s/Any)
    (s/optional-key :concurrency-distribution) (s/make-fn-schema
                                                 float
@@ -78,6 +78,6 @@
                                                 s/Any
                                                 [[{}]])
    (s/optional-key :error-file) s/Str
-   (s/optional-key :reporter) s/Any ;Legacy fn
-   (s/optional-key :reporters) [Reporter]
-   })
+   (s/optional-key :reporter) s/Any ;; Legacy fn
+   (s/optional-key :reporters) [Reporter]})
+

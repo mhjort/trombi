@@ -16,8 +16,7 @@
           duration-in-millis (max (.toMillis duration) 1)]
       (float (/ time-taken-in-millis duration-in-millis))))
   (continue-run? [_ _ start]
-    (.isBefore (LocalDateTime/now)
-                  (.plus ^LocalDateTime start duration)))
+    (.isBefore (LocalDateTime/now) (.plus ^LocalDateTime start duration)))
   (runner-info [_] (str "duration " duration)))
 
 (deftype FixedRequestNumberRunner [number-of-requests]

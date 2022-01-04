@@ -74,8 +74,8 @@
                               :progress-tracker (fn [_])})))
 
 (defn successful-request [cb context]
-  ;TODO Try to find a better way for this
-  ;This is required so that multiple scenarios start roughly at the same time
+  ;; TODO Try to find a better way for this
+  ;; This is required so that multiple scenarios start roughly at the same time
   (Thread/sleep 50)
   (cb true (assoc context :to-next-request true)))
 
@@ -88,7 +88,7 @@
 (defn step [step-name return]
   {:name step-name
    :request (fn [ctx]
-              ;Note! Highcharts reporter fails if start and end times are exactly the same values
+              ;; Note! Highcharts reporter fails if start and end times are exactly the same values
               (Thread/sleep (inc (rand-int 2)))
               [return (assoc ctx :to-next-request return)])})
 

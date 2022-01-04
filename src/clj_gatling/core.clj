@@ -28,7 +28,7 @@
      (create-dir (path-join results-dir "input"))
      results-dir)))
 
-;Legacy function for running tests with old format (pre 0.8)
+;; Legacy function for running tests with old format (pre 0.8)
 (defn run-simulation [legacy-scenarios concurrency & [options]]
   (let [start-time (LocalDateTime/now)
         results-dir (create-results-dir (or (:root options) "target/results"))

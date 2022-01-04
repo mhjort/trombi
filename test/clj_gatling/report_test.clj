@@ -43,8 +43,8 @@
                                             (from scenario-results)
                                             output-writer)]
     (is (equal? summary {:ok 4 :ko 1}))
-    (is (equal? @(first result-lines) (take 2 scenario-results))
-    (is (equal? @(second result-lines) [(last scenario-results)])))))
+    (is (equal? @(first result-lines) (take 2 scenario-results)))
+    (is (equal? @(second result-lines) [(last scenario-results)]))))
 
 (deftest waits-results-to-be-written-before-returning
   (let [result-lines [(atom nil) (atom nil)]
@@ -56,8 +56,8 @@
                                 2
                                 (from scenario-results)
                                 slow-writer)
-    (is (equal? @(first result-lines) (take 2 scenario-results))
-    (is (equal? @(second result-lines) [(last scenario-results)])))))
+    (is (equal? @(first result-lines) (take 2 scenario-results)))
+    (is (equal? @(second result-lines) [(last scenario-results)]))))
 
 (deftest parses-summary-using-multiple-reporters
   (let [summary (report/parse-in-batches simulation

@@ -56,20 +56,20 @@ Simulation is specified as a Clojure map like this:
 
 ```clojure
 {:name "Simulation"
- :pre-hook (fn [ctx] (do-some-setup) (assoc ctx :new-value value)) ;Optional
- :post-hook (fn [ctx] (do-some-teardown)) ;Optional
+ :pre-hook (fn [ctx] (do-some-setup) (assoc ctx :new-value value)) ;; Optional
+ :post-hook (fn [ctx] (do-some-teardown)) ;; Optional
  :scenarios [{:name "Scenario1"
-              :context ;Optional (default {})
-              :weight 2 ;Optional (default 1)
-              :skip-next-after-failure? false ;Optional (default true)
-              :allow-early-termination? true ;Optional (default false)
-              :pre-hook (fn [ctx] (scenario-setup) (assoc ctx :new-val value)) ;Optional
-              :post-hook (fn [ctx] (scenario-teardown)) ;Optional
-              :step-fn ;Optional. Can be used instead of list of steps
+              :context ;; Optional (default {})
+              :weight 2 ;; Optional (default 1)
+              :skip-next-after-failure? false ;; Optional (default true)
+              :allow-early-termination? true ;; Optional (default false)
+              :pre-hook (fn [ctx] (scenario-setup) (assoc ctx :new-val value)) ;; Optional
+              :post-hook (fn [ctx] (scenario-teardown)) ;; Optional
+              :step-fn ;; Optional. Can be used instead of list of steps
               :steps [{:name "Step 1"
                        :request step1-fn}
                       {:name "Step 2"
-                       :sleep-before (constantly 500) ;Optional
+                       :sleep-before (constantly 500) ;; Optional
                        :request step2-fn}]}
              {:name "Scenario2"
               :weight 1
@@ -109,18 +109,18 @@ has to return either directly as a boolean or then with core.async channel with
 a message of type boolean.
 
 ```clojure
-;Returning boolean directly
+;; Returning boolean directly
 (defn request-returning-boolean [context]
-  ;Call the system under test here
-  true) ;Return true/false based on the result of the call
+  ;; Call the system under test here
+  true) ;; Return true/false based on the result of the call
 ```
 
 ```clojure
-;Returning core.async channel
+;; Returning core.async channel
 (defn request-returning-channel [context]
   (go
-     ;Call the system under test here using non-blocking call
-     true)) ;Return true/false based on the result of the non-blocking call
+     ;; Call the system under test here using non-blocking call
+     true)) ;; Return true/false based on the result of the non-blocking call
 ```
 
 The latter is the recommended approach. When you use that it makes clj-gatling able
@@ -152,13 +152,13 @@ If your scenario contains multiple steps you can also pass values from a step to
 inside an scenario instance (same user) by returning a tuple instead of a boolean.
 
 ```clojure
-;step 1
+;; step 1
 (defn login [context]
   (go
     (let [user-name (login-to-system)]
       [true (assoc context :user-name user-name)])))
 
-;step 2
+;; step 2
 (defn open-frontpage [context]
   (go
     (open-page-with-name (:user-name context))))
@@ -199,16 +199,16 @@ option `:allow-early-termination?`
 Second parameter to `clj-gatling.core/run` function is options map. Options map contains following keys:
 
 ```clojure
-{:context {:environment "test"} ;Context that is passed to user defined functions. Defaults to empty map
- :timeout-in-ms 3000 ;Timeout for a request function. Defaults to 5000.
- :root "/tmp" ;Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
- :concurrency 100 ;Number of concurrent users clj-gatling tries to use. Default to 1.
- :concurrency-distribution ;Function for defining how the concurrent users are distributed during the simulation. Optional
- :progress-tracker ;Function used for tracking simulation progress. Optional.
- :reporters ;List of reporters to use. Optional. If omitted short summary reporter and highchart reporter are used
- :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
- :duration (java.time.Duration/ofMinutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored
- :error-file "/tmp/error.log"} ; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
+{:context {:environment "test"} ;; Context that is passed to user defined functions. Defaults to empty map
+ :timeout-in-ms 3000 ;; Timeout for a request function. Defaults to 5000.
+ :root "/tmp" ;; Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
+ :concurrency 100 ;; Number of concurrent users clj-gatling tries to use. Default to 1.
+ :concurrency-distribution ;; Function for defining how the concurrent users are distributed during the simulation. Optional
+ :progress-tracker ;; Function used for tracking simulation progress. Optional.
+ :reporters ;; List of reporters to use. Optional. If omitted short summary reporter and highchart reporter are used
+ :requests 10000 ;; Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
+ :duration (java.time.Duration/ofMinutes 5) ;; The time to run the simulation. Note! If duration is given, requests value will be ignored
+ :error-file "/tmp/error.log"} ;; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
 ```
 
 #### Ramp-up
