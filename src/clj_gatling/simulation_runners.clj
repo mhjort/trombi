@@ -21,8 +21,8 @@
 
 (deftype FixedRequestNumberRunner [number-of-requests]
   RunnerProtocol
-  (calculate-progress [runner sent-requests _]
+  (calculate-progress [_ sent-requests _]
     (float (/ sent-requests number-of-requests)))
-  (continue-run? [runner sent-requests _]
+  (continue-run? [_ sent-requests _]
     (< sent-requests number-of-requests))
   (runner-info [_] (str "number of requests " number-of-requests)))

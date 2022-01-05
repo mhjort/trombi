@@ -535,6 +535,47 @@
       (is #{1.0} @progress-distribution)
       (is (= (sort @progress-distribution) @progress-distribution)))))
 
+(deftest with-rate
+  (let [progress-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :rate 100
+                         :users (range 10)
+                         :requests 100
+                         :context {:value 1})
+    (testing "Progress goes from 0 to 1"
+      (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
+      (is #{0.1} @progress-distribution)
+      (is #{1.0} @progress-distribution)
+      (is (= (sort @progress-distribution) @progress-distribution)))))
+
+(deftest with-rate-function
+  (let [rate-function-called? (atom false)
+        context-to-fn (atom {})
+        progress-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :rate 100
+                         :users (range 10)
+                         :requests 100
+                         :context {:value 1}
+                         :rate-distribution (fn [progress context]
+                                              (reset! context-to-fn context)
+                                              (reset! rate-function-called? true)
+                                              (swap! progress-distribution conj progress)
+                                              (if (< progress 0.2)
+                                                0.1
+                                                1.0)))
+    (testing "rate-function is called"
+      (is (= true @rate-function-called?)))
+    (testing "context is passed to rate-function"
+      (is (= {:value 1} @context-to-fn)))
+    (testing "Progress goes from 0 to 1"
+      (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
+      (is #{0.1} @progress-distribution)
+      (is #{1.0} @progress-distribution)
+      (is (= (sort @progress-distribution) @progress-distribution)))))
+
 (deftest progress-tracker-is-called-if-defined
   (let [progress-tracker-call-count (atom 0)]
     (run-single-scenario {:name "progress-tracker-scenario"

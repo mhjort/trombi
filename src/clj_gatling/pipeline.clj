@@ -56,15 +56,29 @@
     (assoc m k v)
     m))
 
+(defn max-users
+  "Determines the maximum number of concurrent requests that can be running,
+  given the rate at which they are created and time out. Rounds up"
+  [rate timeout-in-ms]
+  (-> timeout-in-ms
+      (/ 1000) ;; To get timeout in s, as rate is per sec
+      (* rate)
+      (Math/ceil)
+      (int)))
+
 (defn run [simulation
            {:keys [nodes
                    executor
                    concurrency
+                   rate
+                   timeout-in-ms
                    reporters
                    requests
                    results-dir
                    context] :as options}]
-  (let [users-by-node (split-equally nodes (range concurrency))
+  (let [users-by-node (if rate
+                        (split-equally nodes (range (max-users rate timeout-in-ms)))
+                        (split-equally nodes (range concurrency)))
         requests-by-node (when requests
                            (split-number-equally nodes requests))
         report-generators (init-report-generators reporters results-dir context)
@@ -84,4 +98,3 @@
         summary (generate-with-reporters report-generators result)]
     (println (string/join "\n" (as-str-with-reporters report-generators summary)))
     summary))
-

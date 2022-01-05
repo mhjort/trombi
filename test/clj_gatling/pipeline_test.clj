@@ -1,10 +1,14 @@
 (ns clj-gatling.pipeline-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.reporters.raw-reporter :as raw]
-            [clj-gatling.reporters.short-summary :as sh]
             [clj-gatling.test-helpers :as th]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-gatling.pipeline :as pipeline]))
+
+(deftest max-users
+  (is (= 500 (pipeline/max-users 100 5000)))
+  (is (= 120 (pipeline/max-users 4 30000)))
+  (is (= 12 (pipeline/max-users 10 1200)))
+  (is (= 3 (pipeline/max-users 2 1200))))
 
 (defn- stub-executor [node-ids]
   (fn [node-id simulation options]

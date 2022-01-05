@@ -62,6 +62,7 @@
 
 (def Options
   {(s/optional-key :concurrency) s/Int
+   (s/optional-key :rate) s/Int
    (s/optional-key :root) s/Str
    (s/optional-key :executor) Executor
    (s/optional-key :nodes) s/Int
@@ -74,6 +75,9 @@
    (s/optional-key :concurrency-distribution) (s/make-fn-schema
                                                 float
                                                 [[float {}]])
+   (s/optional-key :rate-distribution) (s/make-fn-schema
+                                         float
+                                         [[float {}]])
    (s/optional-key :progress-tracker) (s/make-fn-schema
                                                 s/Any
                                                 [[{}]])

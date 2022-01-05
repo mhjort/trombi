@@ -5,7 +5,6 @@
 
 Create and run load tests using Clojure (and get fancy reports).
 
-
 ## Installation
 
 Add the following to your `project.clj` `:dependencies`:
@@ -20,7 +19,7 @@ However, `clj-gatling` is backwards compatible and if you still want to use clj-
 ### Basic example
 
 This will make 100 simultaneous http get requests (using http-kit library)
-to localhost server. Single request is considered to be ok if the response
+to localhost server. A single request is considered to be ok if the response
 http status code is 200.
 
 ```clojure
@@ -45,14 +44,14 @@ generates a detailed html report.
 
 ### Concepts
 
-clj-gatling runs simulations to simulate load. Simulation consists of one or multiple
-scenarios that will be run in parallel. One scenario contain one or multiple steps
+clj-gatling runs simulations to simulate load. A simulation consists of one or multiple
+scenarios that will be run in parallel. One scenario contains one or multiple steps
 that are run sequentially. One simulation is configured to run with a given number
 of virtual users. As a result the tool returns response times (min, max, average, percentiles)
 and requests per second. Internally millisecond is used as a precision for benchmarks. Therefore
 this is not suited for testing systems with less than one millisecond response times.
 
-Simulation is specified as a Clojure map like this:
+A simulation is specified as a Clojure map like this:
 
 ```clojure
 {:name "Simulation"
@@ -199,15 +198,17 @@ option `:allow-early-termination?`
 Second parameter to `clj-gatling.core/run` function is options map. Options map contains following keys:
 
 ```clojure
-{:context {:environment "test"} ;; Context that is passed to user defined functions. Defaults to empty map
+{:context {:environment "test"} ;; Context that is passed to user defined functions. Defaults to empty map.
  :timeout-in-ms 3000 ;; Timeout for a request function. Defaults to 5000.
- :root "/tmp" ;; Directory where cl-gatling temporary files and final results are written. Defaults to "target/results"
+ :root "/tmp" ;; Directory where cl-gatling temporary files and final results are written. Defaults to "target/results".
  :concurrency 100 ;; Number of concurrent users clj-gatling tries to use. Default to 1.
- :concurrency-distribution ;; Function for defining how the concurrent users are distributed during the simulation. Optional
+ :concurrency-distribution ;; Function for defining how the concurrent users are distributed during the simulation. Optional.
+ :rate 100 ;; Number of new requests to add per second. Note! If rate is given, concurrency value will be ignored.
+ :rate-distribution ;; Function for defining how the rate is adjusted during the simulation. Optional.
  :progress-tracker ;; Function used for tracking simulation progress. Optional.
- :reporters ;; List of reporters to use. Optional. If omitted short summary reporter and highchart reporter are used
- :requests 10000 ;; Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation
- :duration (java.time.Duration/ofMinutes 5) ;; The time to run the simulation. Note! If duration is given, requests value will be ignored
+ :reporters ;; List of reporters to use. Optional. If omitted short summary reporter and highchart reporter are used.
+ :requests 10000 ;; Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation.
+ :duration (java.time.Duration/ofMinutes 5) ;; The time to run the simulation. Note! If duration is given, requests value will be ignored.
  :error-file "/tmp/error.log"} ;; The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
 ```
 
@@ -216,7 +217,6 @@ Second parameter to `clj-gatling.core/run` function is options map. Options map 
 If you only set the `concurrency` the clj-gatling will use same concurrency from the beginning till end.
 If you want to have more control for that (for example ramp-up period) you can specify your own
 concurrency distribution function like this one:
-
 
 ```clojure
 (fn [progress context]
@@ -231,7 +231,7 @@ the returned number.
 
 #### Progress tracker
 
-By default clj-gatling will write the progress periodically (every 200 milliseconds) to console output.
+By default, clj-gatling will write the progress periodically (every 200 milliseconds) to console output.
 
 If you want to disable this functionality you can specify option `:progress-tracker (fn [_])`.
 
@@ -246,20 +246,20 @@ Progress is floating point number that goes from 0.0 to 1.0 during the simulatio
 
 #### Tuning parallelism
 
-Internally clj-gatling uses core.async which has a fixed size thread pool. For load test scripts that use high performance asynchronous non blocking IO (e.g. http-kit) library this is not an big issue. However, libraries that require thread per get request (e.g. clj-http) this is a real limitation.
+Internally clj-gatling uses `core.async`, which has a fixed size thread pool. For load test scripts that use a high performance, asynchronous, non-blocking I/O (e.g. `http-kit`) library this is not a big issue. However, for libraries that require a thread per get request (e.g. `clj-http`) this is a real limitation.
 
-Latest version of core.async supports setting the thread pool size using system property `clojure.core.async.pool-size`. With that the thread pool could be set to match the concurrency used in the simulation.
+The latest version of `core.async` supports setting the thread pool size using system property `clojure.core.async.pool-size`. With that the thread pool could be set to match the concurrency used in the simulation.
 
 ###  Reporters
 
-By default clj-gatling generates two reports: Gatling Highcharts Report and short summary report. Reporters generate report to stdout and some reporters can even generate results to file. When you call `simulation/run` function it will return all the reports with reporter keys (e.g :short for short summary reporter). If you don't want to use the default reports you can specify list of reporters with `:reporters` key in options. Available reporters are following:
+By default, clj-gatling generates two reports: Gatling Highcharts Report and a short summary report. Reporters generate report to stdout and some reporters can even generate results to file. When you call the `simulation/run` function it will return all the reports with reporter keys (e.g `:short` for the short summary reporter). If you don't want to use the default reports you can specify a list of reporters with the `:reporters` key in the options. Available reporters are following:
 
-* `clj-gatling.reporters.short-summary/reporter` This reporter returns summary with number of successful and failed requests
-* `clj-gatling.reporters.raw-reporter/in-memory-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). Stores results in memory. 
-* `clj-gatling.reporters.raw-reporter/file-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). Stores resutls to file
-* `clojider-gatling-highcharts-reporter.core/gatling-highcharts-reporter` Generates Gatling Highchart html report
+* `clj-gatling.reporters.short-summary/reporter` This reporter returns a summary with number of successful and failed requests.
+* `clj-gatling.reporters.raw-reporter/in-memory-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). It stores results in memory. 
+* `clj-gatling.reporters.raw-reporter/file-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). It stores results to file.
+* `clojider-gatling-highcharts-reporter.core/gatling-highcharts-reporter` Generates a Gatling Highchart html report.
 
-You can also specify your own custom reporter. Check https://github.com/mhjort/clj-gatling/blob/master/src/clj_gatling/reporters/raw_reporter.clj as an example
+You can also specify your own custom reporter. Check https://github.com/mhjort/clj-gatling/blob/master/src/clj_gatling/reporters/raw_reporter.clj as an example.
 
 ### Examples
 
@@ -267,10 +267,10 @@ See example project here: [metrics-simulation](https://github.com/mhjort/clj-gat
 
 ## Change History
 
-Note! Version 0.8.0 includes few changes on how simulations are defined.
+Note! Version 0.8.0 includes a few changes on how simulations are defined.
 See more details in [change history](CHANGES.md). All changes are backwards
 compatible. The old way of defining the simulation is still supported but
-maybe deprecated in future. You can see documentation for old versions [here](README-old.md).
+may be deprecated in future. You can see documentation for old versions [here](README-old.md).
 
 ## Jenkins
 
@@ -281,7 +281,6 @@ This is compatible with Jenkins Gatling Plugin. https://wiki.jenkins.io/display/
 AFAIK there are no other performance testing tool where you can specify
 your tests in Clojure. In my opinion Clojure syntax is very good for
 this purpose.
-
 
 ## Design Philosophy
 

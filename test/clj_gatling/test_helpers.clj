@@ -40,6 +40,8 @@
 
 (defn run-single-scenario [scenario & {:keys [concurrency
                                               concurrency-distribution
+                                              rate
+                                              rate-distribution
                                               context
                                               timeout-in-ms
                                               requests
@@ -56,6 +58,8 @@
                               :scenarios [scenario]}
                              {:concurrency concurrency
                               :concurrency-distribution concurrency-distribution
+                              :rate rate
+                              :rate-distribution rate-distribution
                               :timeout-in-ms timeout-in-ms
                               :requests requests
                               :duration duration

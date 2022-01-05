@@ -63,9 +63,9 @@
                                        simulation))]
     [short-summary/reporter r]))
 
-(defn run [simulation {:keys [concurrency concurrency-distribution root timeout-in-ms context
-                              requests duration reporter reporters error-file executor nodes
-                              progress-tracker] :as options
+(defn run [simulation {:keys [concurrency concurrency-distribution rate rate-distribution root
+                              timeout-in-ms context requests duration reporter reporters error-file
+                              executor nodes progress-tracker] :as options
                        :or {concurrency 1
                             root "target/results"
                             executor pipeline/local-executor
@@ -82,6 +82,8 @@
         summary (pipeline/run simulation (assoc options
                                                 :concurrency concurrency
                                                 :concurrency-distribution concurrency-distribution
+                                                :rate rate
+                                                :rate-distribution rate-distribution
                                                 :timeout-in-ms timeout-in-ms
                                                 :context context
                                                 :executor executor
