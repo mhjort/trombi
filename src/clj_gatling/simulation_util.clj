@@ -167,3 +167,19 @@
        first
        ((fn [^java.lang.reflect.Method x] (.getParameterTypes x)))
        java.lang.reflect.Array/getLength))
+
+(defn failure-message
+  "Generates a Gatling-suitable failure message for returned errors. Drops the
+  data from ExceptionInfo structures, as it would be too complex. Drops the
+  class from AssertionError, Exception, ExceptionInfo, and Throwable, as it is
+  not useful. Stringifies the error in all other cases."
+  [ex]
+  (if (or (some #{(class ex)} [AssertionError Exception Throwable])
+          (instance? clojure.lang.ExceptionInfo ex))
+    (ex-message ex)
+    (str ex)))
+
+(defn clean-result [result]
+  (if (:exception result)
+    (update result :exception failure-message)
+    result))

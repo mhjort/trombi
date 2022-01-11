@@ -79,3 +79,20 @@
   (is (= 1 (simulation-util/arg-count (fn [x]))))
   (is (= 2 (simulation-util/arg-count (fn [x y]))))
   (is (= 3 (simulation-util/arg-count (fn [x y z])))))
+
+(deftest failure-message
+  (is (= "Assert failed: (= 1 2)"
+         (simulation-util/failure-message (AssertionError. "Assert failed: (= 1 2)"))))
+  (is (= "Exception message"
+         (simulation-util/failure-message (Exception. "Exception message"))))
+  (is (= "ExceptionInfo message"
+         (simulation-util/failure-message (ex-info "ExceptionInfo message" {:data "foo"}))))
+  (is (= "Throwable message"
+         (simulation-util/failure-message (Throwable. "Throwable message"))))
+  (is (= "java.lang.RuntimeException: RuntimeException message"
+         (simulation-util/failure-message (RuntimeException. "RuntimeException message")))))
+
+(deftest clean-result
+  (is (= {:result true} (simulation-util/clean-result {:result true})))
+  (is (= {:result false :exception "Message"}
+         (simulation-util/clean-result {:result false :exception (Exception. "Message")}))))

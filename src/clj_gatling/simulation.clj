@@ -4,6 +4,7 @@
             [clj-gatling.progress-tracker :as progress-tracker]
             [clj-gatling.simulation-util :refer [arg-count
                                                  choose-runner
+                                                 clean-result
                                                  log-exception
                                                  weighted-scenarios]]
             [schema.core :refer [validate]]
@@ -16,17 +17,23 @@
 (defn- now [] (System/currentTimeMillis))
 
 (defn asynchronize [f ctx]
-  (let [parse-response (fn [result]
-                         (if (vector? result)
-                           {:result (first result) :end-time (now) :context (second result)}
-                           {:result result :end-time (now) :context ctx}))]
+  (let [parse-result   (fn [result]
+                         (if (instance? Throwable result)
+                           {:result false :exception result}
+                           {:result result}))
+        parse-response (fn [response]
+                         (if (vector? response)
+                           (assoc (parse-result (first response)) :end-time (now) :context (second response))
+                           (assoc (parse-result response) :end-time (now) :context ctx)))]
     (go
       (try
-        (let [result (f ctx)]
-          (if (instance? clojure.core.async.impl.channels.ManyToManyChannel result)
-            (parse-response (<! result))
-            (parse-response result)))
+        (let [response (f ctx)]
+          (if (instance? clojure.core.async.impl.channels.ManyToManyChannel response)
+            (parse-response (<! response))
+            (parse-response response)))
         (catch Exception e
+          {:result false :end-time (now) :context ctx :exception e})
+        (catch AssertionError e
           {:result false :end-time (now) :context ctx :exception e})))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id original-context]
@@ -48,8 +55,8 @@
                        :result result
                        :context-after context) context]
         [(assoc return :end (now)
-                       :exception exception
-                       :return false
+                       :exception (ex-info "clj-gatling: request timed out" {:timeout-in-ms timeout})
+                       :result false
                        :context-after original-context-with-user)
          original-context-with-user]))))
 
@@ -108,9 +115,8 @@
           (do
             (when post-hook
               (post-hook context))
-            (>! result-channel (->> (dissoc result :exception)
-                                    (conj results))))
-          (recur next-steps (conj results result)))))
+            (>! result-channel (conj results (clean-result result))))
+          (recur next-steps (conj results (clean-result result))))))
     result-channel))
 
 (defn- run-concurrent-scenario-constantly
