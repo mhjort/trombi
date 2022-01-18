@@ -1,6 +1,7 @@
 (ns clj-gatling.progress-tracker
   (:require [clj-gatling.simulation-runners :as runners])
-  (:import (java.util.concurrent Executors TimeUnit)))
+  (:import  (java.time LocalDateTime)
+            (java.util.concurrent Executors TimeUnit)))
 
 (defn create-console-progress-tracker []
   (let [finished? (atom false)]
@@ -11,7 +12,7 @@
           (when (= 100 progress-percent)
             (reset! finished? true)
             (println ""))
-          ;Flush is required for forcing writing to console in every round
+          ;;Flush is required for forcing writing to console in every round
           (flush))))))
 
 (defn start [{:keys [progress-tracker runner sent-requests start-time scenario-concurrency-trackers]}]
@@ -20,7 +21,7 @@
                   (.shutdownNow executor))
         runnable (fn []
                    (try
-                     (let [progress (runners/calculate-progress runner @sent-requests start-time)
+                     (let [[progress _] (runners/calculate-progress runner @sent-requests start-time (LocalDateTime/now))
                            total-concurrency (reduce + (map deref (vals scenario-concurrency-trackers)))]
                        (progress-tracker {:progress progress
                                           :sent-requests @sent-requests

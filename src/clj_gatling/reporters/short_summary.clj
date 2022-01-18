@@ -15,7 +15,7 @@
   (fn [_]
     {:collect (fn [_ {:keys [batch]}]
                 (let [freqs (frequencies (mapcat #(map :result (:requests %)) batch))]
-                  ;TODO Simulation should not return nil (it should return false instead)
+                  ;;TODO Simulation should not return nil (it should return false instead)
                   (rename-keys freqs {true :ok false :ko nil :ko})))
      :combine #(merge-with + %1 %2)}))
 

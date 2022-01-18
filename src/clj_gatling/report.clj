@@ -9,8 +9,8 @@
   (let [summary (fn [result]
                   (rename-keys (frequencies (mapcat #(map :result (:requests %)) result))
                                {true :ok false :ko}))
-        ;Note! core.async/partition is deprecated function.
-        ;This should be changed to use transducers instead
+        ;;Note! core.async/partition is deprecated function.
+        ;;This should be changed to use transducers instead
         results (a/partition buffer-size results-channel)
         write-results (loop [idx 0
                              threads []]
@@ -61,8 +61,8 @@
 
 (defn parse-in-batches [simulation node-id batch-size results-channel reporters]
   (validate schema/Simulation simulation)
-  (let [;Note! core.async/partition is deprecated function.
-        ;This should be changed to use transducers instead
+  (let [;;Note! core.async/partition is deprecated function.
+        ;;This should be changed to use transducers instead
         results (a/partition batch-size results-channel)
         write-results (loop [idx 0
                              threads []]

@@ -47,7 +47,7 @@
                       :concurrency 1})]
     (is (= 10 (count (mapcat :requests (:raw summary)))))))
 
-;This code can be used to test raw reporter in repl
+;;This code can be used to test raw reporter in repl
 (comment
   (let [average (fn [coll]
                   (long (/ (reduce + coll) (count coll))))
@@ -59,9 +59,7 @@
                                        (group-by :name (mapcat :requests data))))
         summary (run (simulation "test-raw")
                      {:reporters [raw-reporter/file-reporter]
-                     ;{:reporters [raw-reporter/in-memory-reporter]
+                     ;;{:reporters [raw-reporter/in-memory-reporter]
                       :requests 100
                       :concurrency 1})]
-    (calculate-averages (:raw summary))
-    )
-  )
+    (calculate-averages (:raw summary))))

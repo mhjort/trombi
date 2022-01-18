@@ -23,7 +23,7 @@
   (with-open [wtr (BufferedWriter. (FileWriter. file-name))]
     (loop [lines-left lines]
       (let [line (pr-str (first lines-left))]
-        (.write	wtr line)
+        (.write wtr line)
         (when (seq (rest lines-left))
           (.newLine wtr)
           (recur (rest lines-left)))))))
@@ -61,10 +61,10 @@
 (def file-generator
   (fn [{:keys [results-dir]}]
     {:generate (fn [[writer file-name]]
-                 ;In here we are sure that new results are not generated anymore
-                 ;and log collector writer can be closed
+                 ;;In here we are sure that new results are not generated anymore
+                 ;;and log collector writer can be closed
                  (.close writer)
-                 ;Note! Returned reader is never closed. For now this is by design
+                 ;;Note! Returned reader is never closed. For now this is by design
                  (first (file->lines-seq file-name)))
      :as-str (constantly (str "Generated raw report to " (raw-file-name results-dir)))}))
 

@@ -1,5 +1,9 @@
 # Changes
 
+## 0.17.0
+
+* Add support for simulations defined by rate (new requests/sec) rather than concurrency
+
 ## 0.16.1
 
 * Add raw reporters

@@ -3,10 +3,10 @@
             [clojure.core.async.impl.channels :as channels])
   (:import [java.util.concurrent DelayQueue Delayed TimeUnit]))
 
-;Core.async has a limit of 1024 concurrent limits for waiting a same timeout channel
-;Internally core.async has a cache of timeout channels of same value
-;See: https://github.com/clojure/core.async/blob/master/src/main/clojure/clojure/core/async/impl/timers.clj
-;This is a version of timers.clj where all that caching has removed
+;;Core.async has a limit of 1024 concurrent limits for waiting a same timeout channel
+;;Internally core.async has a cache of timeout channels of same value
+;;See: https://github.com/clojure/core.async/blob/master/src/main/clojure/clojure/core/async/impl/timers.clj
+;;This is a version of timers.clj where all that caching has removed
 (set! *warn-on-reflection* true)
 
 (defonce ^:private ^DelayQueue timeouts-queue

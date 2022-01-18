@@ -175,7 +175,7 @@
                                      :start number?
                                      :end number?
                                      :context-before {:user-id 0
-                                                     :to-next-request true}
+                                                      :to-next-request true}
                                      :context-after map?
                                      :result true}]}]))))
 
@@ -394,19 +394,19 @@
                                   {:name "Test scenario2"
                                    :steps [(step "Step" true)]}
                                   :concurrency 2)]
-    ;Stop condition is not synced between parallel scenarios
-    ;so once in a while there might be one extra scenario
-    ;This is ok tolerance for max requests
+    ;;Stop condition is not synced between parallel scenarios
+    ;;so once in a while there might be one extra scenario
+    ;;This is ok tolerance for max requests
     (is (equal? (first (filter #(= 0 (:id %)) result)) {:name "Test scenario"
-                                                       :id 0
-                                                       :start number?
-                                                       :end number?
-                                                       :requests anything}))
+                                                        :id 0
+                                                        :start number?
+                                                        :end number?
+                                                        :requests anything}))
     (is (equal? (first (filter #(= 1 (:id %)) result)) {:name "Test scenario2"
-                                                       :id 1
-                                                       :start number?
-                                                       :end number?
-                                                       :requests anything}))))
+                                                        :id 1
+                                                        :start number?
+                                                        :end number?
+                                                        :requests anything}))))
 
 (deftest throws-exception-when-concurrency-is-smaller-than-number-of-parallel-scenarios
   (let [scenario1 {:name "scenario1" :steps [(step "step" true)]}
@@ -509,7 +509,7 @@
                                      :context-after map?
                                      :result false}]}]))))
 
-(deftest with-concurrency-function
+(deftest with-2-arity-concurrency-function
   (let [concurrency-function-called? (atom false)
         context-to-fn (atom {})
         progress-distribution (atom [])]
@@ -534,6 +534,96 @@
       (is #{0.1} @progress-distribution)
       (is #{1.0} @progress-distribution)
       (is (= (sort @progress-distribution) @progress-distribution)))))
+
+(deftest with-1-arity-concurrency-function
+  (let [concurrency-function-called? (atom false)
+        context-to-fn (atom {})
+        duration-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :concurrency 10
+                         :requests 100
+                         :context {:value 1}
+                         :concurrency-distribution (fn [{:keys [progress duration context]}]
+                                                     (reset! context-to-fn context)
+                                                     (reset! concurrency-function-called? true)
+                                                     (swap! duration-distribution conj (.toMillis duration))
+                                                     (if (< progress 0.5)
+                                                       0.1
+                                                       1.0)))
+    (testing "concurrency-function is called"
+      (is (= true @concurrency-function-called?)))
+    (testing "context is passed to concurrency-function"
+      (is (= {:value 1} @context-to-fn)))
+    (testing "Duration has ordered values"
+      (is (> (count @duration-distribution) 10))
+      (is (= (sort @duration-distribution) @duration-distribution)))))
+
+(deftest with-rate
+  (let [progress-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :rate 100
+                         :users (range 10)
+                         :requests 100
+                         :context {:value 1})
+    (testing "Progress goes from 0 to 1"
+      (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
+      (is #{0.1} @progress-distribution)
+      (is #{1.0} @progress-distribution)
+      (is (= (sort @progress-distribution) @progress-distribution)))))
+
+(deftest with-2-arity-rate-function
+  (let [rate-function-called? (atom false)
+        context-to-fn (atom {})
+        progress-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :rate 100
+                         :users (range 10)
+                         :requests 100
+                         :context {:value 1}
+                         :rate-distribution (fn [progress context]
+                                              (reset! context-to-fn context)
+                                              (reset! rate-function-called? true)
+                                              (swap! progress-distribution conj progress)
+                                              (if (< progress 0.2)
+                                                0.1
+                                                1.0)))
+    (testing "rate-function is called"
+      (is (= true @rate-function-called?)))
+    (testing "context is passed to rate-function"
+      (is (= {:value 1} @context-to-fn)))
+    (testing "Progress goes from 0 to 1"
+      (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
+      (is #{0.1} @progress-distribution)
+      (is #{1.0} @progress-distribution)
+      (is (= (sort @progress-distribution) @progress-distribution)))))
+
+(deftest with-1-arity-rate-function
+  (let [rate-function-called? (atom false)
+        context-to-fn (atom {})
+        duration-distribution (atom [])]
+    (run-single-scenario {:name "scenario"
+                          :steps [(step "step" true)]}
+                         :rate 100
+                         :users (range 10)
+                         :requests 100
+                         :context {:value 1}
+                         :rate-distribution (fn [{:keys [progress duration context]}]
+                                              (reset! context-to-fn context)
+                                              (reset! rate-function-called? true)
+                                              (swap! duration-distribution conj (.toMillis duration))
+                                              (if (< progress 0.2)
+                                                0.1
+                                                1.0)))
+    (testing "rate-function is called"
+      (is (= true @rate-function-called?)))
+    (testing "context is passed to rate-function"
+      (is (= {:value 1} @context-to-fn)))
+    (testing "Duration has ordered values"
+      (is (> (count @duration-distribution) 10))
+      (is (= (sort @duration-distribution) @duration-distribution)))))
 
 (deftest progress-tracker-is-called-if-defined
   (let [progress-tracker-call-count (atom 0)]
@@ -571,5 +661,5 @@
                                                   :step2    [nil context]))}
                                     :concurrency 1
                                     :duration (time/millis 50))]
-    (is (= :step2 (-> result first :requests last :context-after :current))
-    (is (not (empty? result))))))
+    (is (= :step2 (-> result first :requests last :context-after :current)))
+    (is (not (empty? result)))))
