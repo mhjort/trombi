@@ -1,7 +1,6 @@
 # clj-gatling
 
 [![CircleCI](https://circleci.com/gh/mhjort/clj-gatling/tree/master.svg?style=svg)](https://circleci.com/gh/mhjort/clj-gatling/tree/master)
-[![Dependencies Status](http://jarkeeper.com/mhjort/clj-gatling/status.png)](http://jarkeeper.com/mhjort/clj-gatling)
 
 Create and run load tests using Clojure (and get fancy reports).
 
