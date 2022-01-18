@@ -46,7 +46,8 @@ generates a detailed html report.
 clj-gatling runs simulations to simulate load. A simulation consists of one or multiple
 scenarios that will be run in parallel. One scenario contains one or multiple steps
 that are run sequentially. One simulation is configured to run with a given number
-of virtual users. As a result the tool returns response times (min, max, average, percentiles)
+of virtual users or with given rate of new virtual users per second.
+As a result the tool returns response times (min, max, average, percentiles)
 and requests per second. Internally millisecond is used as a precision for benchmarks. Therefore
 this is not suited for testing systems with less than one millisecond response times.
 
