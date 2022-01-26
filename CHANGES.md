@@ -1,5 +1,9 @@
 # Changes
 
+## 0.17.1
+
+* Add support for stringified exceptions in reports
+
 ## 0.17.0
 
 * Add support for simulations defined by rate (new requests/sec) rather than concurrency
