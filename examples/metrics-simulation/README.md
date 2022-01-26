@@ -24,8 +24,12 @@ Please, use this only for testing with small number of parallel users-
 
   $ lein run metrics 50 100 --raw-report
 
+  If you want to run tests with given rate of new users per second you can run with option `--with-rate`
+
+  $ lein run metrics 50 100 --with-rate
+
 ## License
 
-Copyright (C) 2014-2021 Markus Hjort
+Copyright (C) 2014-2022 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.

@@ -32,16 +32,19 @@
                 (long (/ scenario-time-sum scenario-count)))
               scenario-counts)))
 
-(defn -main [simulation users requests-or-duration & [option]]
+(defn -main [simulation users-or-rate requests-or-duration & [option]]
   (let [simulation (or ((keyword simulation) simulations)
                        (throw (Exception. (str "No such simulation " simulation))))]
     (condp = option
       "--with-duration" (gatling/run simulation
-                                     {:concurrency (read-string users)
+                                     {:concurrency (read-string users-or-rate)
                                       :concurrency-distribution ramp-up-distribution
                                       :duration (Duration/ofSeconds (read-string requests-or-duration))})
+      "--with-rate" (gatling/run simulation
+                                 {:rate (read-string users-or-rate)
+                                  :requests (read-string requests-or-duration)})
       "--no-report" (gatling/run simulation
-                                 {:concurrency (read-string users)
+                                 {:concurrency (read-string users-or-rate)
                                   :concurrency-distribution ramp-up-distribution
                                   :reporter {:writer (fn [_ _ _])
                                              :generator (fn [simulation]
@@ -49,16 +52,16 @@
                                   :requests (read-string requests-or-duration)})
       "--raw-report" (println "Scenario averages calculated from raw report:"
                               (calculate-scenario-averages (:raw (gatling/run simulation
-                                                                              {:concurrency (read-string users)
+                                                                              {:concurrency (read-string users-or-rate)
                                                                                :concurrency-distribution ramp-up-distribution
                                                                                :reporters [raw-reporter/file-reporter]
                                                                                :requests (read-string requests-or-duration)}))))
       "--ramp-up" (gatling/run simulation
-                               {:concurrency (read-string users)
+                               {:concurrency (read-string users-or-rate)
                                 :concurrency-distribution ramp-up-distribution
                                 :root "tmp"
                                 :requests (read-string requests-or-duration)})
       (gatling/run simulation
-                   {:concurrency (read-string users)
+                   {:concurrency (read-string users-or-rate)
                     :root "tmp"
                     :requests (read-string requests-or-duration)}))))
