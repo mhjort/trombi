@@ -19,17 +19,17 @@
    :collector 'clj-gatling.reporters.raw-reporter/collector
    :generator 'clj-gatling.reporters.raw-reporter/generator})
 
-(defn- write-ends-as-lines [file-name lines]
+(defn- write-edns-as-lines [file-name lines]
   (with-open [wtr (BufferedWriter. (FileWriter. file-name))]
     (loop [lines-left lines]
-      (let [line (pr-str (first lines-left))]
-        (.write wtr line)
+      (let [line (first lines-left)]
+        (.write wtr (pr-str line))
         (when (seq (rest lines-left))
           (.newLine wtr)
           (recur (rest lines-left)))))))
 
-(defn- append-edns-as-lines [writer ends]
-  (doseq [edn ends]
+(defn- append-edns-as-lines [writer edns]
+  (doseq [edn edns]
     (.write writer (pr-str edn))
     (.newLine writer)))
 
@@ -48,7 +48,7 @@
     (let [writer (BufferedWriter. (FileWriter. (raw-file-name results-dir)))]
       {:collect (fn [_ {:keys [batch node-id batch-id]}]
                   (let [file-name (str results-dir "/batch-" node-id "-" batch-id ".log")]
-                    (write-ends-as-lines file-name batch)
+                    (write-edns-as-lines file-name batch)
                     [writer file-name]))
        :combine (fn [param1 param2]
                   (doseq [[writer file-name] [param1 param2]]

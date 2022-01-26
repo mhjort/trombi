@@ -1,4 +1,4 @@
-(defproject clj-gatling "0.17.0"
+(defproject clj-gatling "0.17.1"
   :description "Clojure library for load testing"
   :url "http://github.com/mhjort/clj-gatling"
   :license {:name "Eclipse Public License"
@@ -7,7 +7,7 @@
                  [org.clojure/core.async "1.3.622"]
                  [http-kit "2.5.3"]
                  [prismatic/schema "1.1.12"]
-                 [clojider-gatling-highcharts-reporter "0.3.1"]]
+                 [clojider-gatling-highcharts-reporter "0.3.2"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
                    :dependencies [[clj-time "0.15.2"]

@@ -127,7 +127,7 @@
                                      :context-after map?
                                      :result true}]}]))))
 
-(deftest when-function-returns-exception-it-is-handled-as-ko
+(deftest when-function-throws-exception-it-is-handled-as-ko
   (let [s {:name "Exception scenario"
            :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
         result (run-single-scenario s :concurrency 1)]
@@ -141,7 +141,25 @@
                                      :end number?
                                      :context-before map?
                                      :context-after map?
-                                     :result false}]}]))))
+                                     :result false
+                                     :exception "Simulated"}]}]))))
+
+(deftest when-function-returns-exception-it-is-handled-as-ko
+  (let [s {:name "Exception scenario"
+           :steps [{:name "Throwing" :request (fn [_] (Exception. "Simulated"))}]}
+        result (run-single-scenario s :concurrency 1)]
+    (is (equal? result [{:name "Exception scenario"
+                         :id 0
+                         :start number?
+                         :end number?
+                         :requests [{:name "Throwing"
+                                     :id 0
+                                     :start number?
+                                     :end number?
+                                     :context-before map?
+                                     :context-after map?
+                                     :result false
+                                     :exception "Simulated"}]}]))))
 
 (deftest when-function-throws-exception-it-is-logged
   (delete-error-logs)
@@ -507,7 +525,8 @@
                                      :end number?
                                      :context-before map?
                                      :context-after map?
-                                     :result false}]}]))))
+                                     :result false
+                                     :exception "clj-gatling: request timed out"}]}]))))
 
 (deftest with-2-arity-concurrency-function
   (let [concurrency-function-called? (atom false)
