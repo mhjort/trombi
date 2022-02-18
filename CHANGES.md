@@ -1,5 +1,11 @@
 # Changes
 
+## 0.17.2
+
+* Add support for latest version of Gatling Highcharts reports with percentiles
+* Catch also AssertionError and categorise it as a step failure
+* Bump dependencies
+
 ## 0.17.1
 
 * Add support for stringified exceptions in reports
