@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.3"]
-                 [org.clojure/core.async "1.3.622"]
+                 [org.clojure/core.async "1.5.648"]
                  [http-kit "2.5.3"]
                  [prismatic/schema "1.1.12"]
                  [clojider-gatling-highcharts-reporter "0.3.2"]]
