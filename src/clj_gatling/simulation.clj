@@ -32,6 +32,8 @@
             (parse-response (<! response))
             (parse-response response)))
         (catch Exception e
+          {:result false :end-time (now) :context ctx :exception e})
+        (catch AssertionError e
           {:result false :end-time (now) :context ctx :exception e})))))
 
 (defn async-function-with-timeout [step timeout sent-requests user-id original-context]
