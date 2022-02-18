@@ -3,7 +3,7 @@
   org.clojure/core.async                                                    {:mvn/version "1.5.648"},
   http-kit/http-kit                                                         {:mvn/version "2.5.3"},
   prismatic/schema                                                          {:mvn/version "1.2.0"},
-  clojider-gatling-highcharts-reporter/clojider-gatling-highcharts-reporter {:mvn/version "0.3.2"}}
+  clojider-gatling-highcharts-reporter/clojider-gatling-highcharts-reporter {:mvn/version "0.4.0"}}
  :aliases
  {:dev
   {:extra-deps {clj-time/clj-time                                 {:mvn/version "0.15.2"},

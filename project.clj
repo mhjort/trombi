@@ -7,7 +7,7 @@
                  [org.clojure/core.async "1.5.648"]
                  [http-kit "2.5.3"]
                  [prismatic/schema "1.2.0"]
-                 [clojider-gatling-highcharts-reporter "0.3.2"]]
+                 [clojider-gatling-highcharts-reporter "0.4.0"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
                    :dependencies [[clj-time "0.15.2"]
