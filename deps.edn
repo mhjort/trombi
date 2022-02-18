@@ -8,7 +8,7 @@
  {:dev
   {:extra-deps {clj-time/clj-time                                 {:mvn/version "0.15.2"},
                 clj-async-test/clj-async-test                     {:mvn/version "0.0.5"}
-                org.clojure/test.check                            {:mvn/version "1.1.0"}
+                org.clojure/test.check                            {:mvn/version "1.1.1"}
                 clj-containment-matchers/clj-containment-matchers {:mvn/version "1.0.1"}
                 lambdaisland/kaocha                               {:mvn/version "1.0.887"}
                 lambdaisland/kaocha-junit-xml                     {:mvn/version "0.0.76"}}}}}

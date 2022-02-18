@@ -12,6 +12,6 @@
                    :source-paths ["examples"]
                    :dependencies [[clj-time "0.15.2"]
                                   [clj-async-test "0.0.5"]
-                                  [org.clojure/test.check "1.1.0"]
+                                  [org.clojure/test.check "1.1.1"]
                                   [clj-containment-matchers "1.0.1"]]}}
   :aot [clj-gatling.simulation-runners])
