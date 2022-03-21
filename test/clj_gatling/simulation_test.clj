@@ -669,6 +669,21 @@
     (is (approximately== (count-requests "Second") 33 :accuracy 20))
     (is (approximately== 100 (+ (count-requests "Main") (count-requests "Second")) :accuracy 5))))
 
+(deftest after-force-stop-fn-is-called-new-scenarios-are-not-started-anymore
+  (let [sent-requests-when-force-stop-requested (atom 0)
+        force-stopping-tracker (fn [{:keys [force-stop-fn
+                                            sent-requests]}]
+                                 (reset! sent-requests-when-force-stop-requested sent-requests)
+                                 (force-stop-fn))
+        results (run-single-scenario {:name "progress-tracker-scenario"
+                                      :steps [(step "step" true)]}
+                                     :concurrency 1
+                                     :requests 500
+                                     :progress-tracker force-stopping-tracker)
+        request-count (count (map :requests results))]
+    (is (< request-count 500))
+    (is (= @sent-requests-when-force-stop-requested request-count))))
+
 (deftest with-step-fn
   (let [result (run-single-scenario {:name "scenario"
                                      :step-fn (fn [context]
