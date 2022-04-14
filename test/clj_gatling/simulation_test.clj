@@ -645,14 +645,19 @@
       (is (= (sort @duration-distribution) @duration-distribution)))))
 
 (deftest progress-tracker-is-called-if-defined
-  (let [progress-tracker-call-count (atom 0)]
+  (let [progress-tracker-call-count (atom 0)
+        default-progress-tracker-defined? (atom true)]
     (run-single-scenario {:name "progress-tracker-scenario"
                           :steps [(step "step" true)]}
                          :concurrency 1
                          :duration (Duration/ofMillis 500)
-                         :progress-tracker (fn [_]
+                         :default-progress-tracker (fn [_])
+                         :progress-tracker (fn [{:keys [default-progress-tracker]}]
+                                             (when-not (fn? default-progress-tracker)
+                                               (reset! default-progress-tracker-defined? false))
                                              (swap! progress-tracker-call-count inc)))
-    (is (< 1 @progress-tracker-call-count))))
+    (is (< 1 @progress-tracker-call-count))
+    (is (= true @default-progress-tracker-defined?))))
 
 (deftest scenario-weight
   (let [main-scenario {:name "Main"

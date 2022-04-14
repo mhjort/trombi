@@ -47,6 +47,7 @@
                                               requests
                                               duration
                                               users
+                                              default-progress-tracker
                                               progress-tracker
                                               pre-hook
                                               post-hook]
@@ -66,6 +67,7 @@
                               :users users
                               :context context
                               :error-file error-file-path
+                              :default-progress-tracker default-progress-tracker
                               :progress-tracker progress-tracker})))
 
 (defn run-two-scenarios [scenario1 scenario2 & {:keys [concurrency requests]}]

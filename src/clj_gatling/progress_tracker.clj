@@ -16,6 +16,7 @@
           (flush))))))
 
 (defn start [{:keys [progress-tracker
+                     default-progress-tracker
                      runner
                      force-stop-fn
                      sent-requests
@@ -31,6 +32,7 @@
                        (progress-tracker {:progress progress
                                           :sent-requests @sent-requests
                                           :total-concurrency total-concurrency
+                                          :default-progress-tracker default-progress-tracker
                                           :force-stop-fn force-stop-fn}))
                      (catch Exception e
                        (println "Failed to run progress tracker" progress-tracker "with exception" e))))]

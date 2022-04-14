@@ -262,7 +262,8 @@
                              concurrency-distribution
                              rate
                              rate-distribution
-                             progress-tracker] :as options}
+                             progress-tracker
+                             default-progress-tracker] :as options}
                      scenarios]
   (println "Running simulation with"
            (runners/runner-info runner)
@@ -288,6 +289,7 @@
                                                        :sent-requests sent-requests
                                                        :start-time simulation-start
                                                        :scenario-concurrency-trackers scenario-concurrency-trackers
+                                                       :default-progress-tracker default-progress-tracker
                                                        :progress-tracker progress-tracker})
         run-scenario-with-opts (fn [{:keys [name] :as scenario}]
                                  (run-scenario (if rate

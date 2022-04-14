@@ -70,12 +70,12 @@
                             root "target/results"
                             executor pipeline/local-executor
                             nodes 1
-                            progress-tracker (progress-tracker/create-console-progress-tracker)
                             timeout-in-ms 5000
                             context {}}}]
   (validate schema/Options options)
   (let [simulation-name (:name (eval-if-needed simulation))
         results-dir (create-results-dir root simulation-name)
+        default-progress-tracker (progress-tracker/create-console-progress-tracker)
         multiple-reporters? (not (nil? reporters))
         reporters (or reporters
                       (create-reporters reporter results-dir simulation))
@@ -87,7 +87,8 @@
                                                 :timeout-in-ms timeout-in-ms
                                                 :context context
                                                 :executor executor
-                                                :progress-tracker progress-tracker
+                                                :progress-tracker (or progress-tracker default-progress-tracker)
+                                                :default-progress-tracker default-progress-tracker
                                                 :reporters reporters
                                                 :results-dir results-dir
                                                 :nodes nodes
