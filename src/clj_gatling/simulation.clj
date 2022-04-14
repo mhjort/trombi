@@ -314,7 +314,7 @@
           (close! results)
           (stop-progress-tracker)
           (when post-hook (post-hook context)))))
-    results))
+    {:results results :force-stop-fn force-stop-fn}))
 
 (defn run [{:keys [scenarios pre-hook post-hook] :as simulation}
            {:keys [concurrency rate users context] :as options}]

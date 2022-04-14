@@ -32,10 +32,12 @@
                                             results-dir
                                             context] :as options}]
   (let [evaluated-simulation (eval-if-needed simulation)
-        results (simu/run evaluated-simulation options)
+        {:keys [results force-stop-fn]} (simu/run evaluated-simulation options)
         report-collectors (init-report-collectors reporters results-dir context)
-        raw-summary (parse-in-batches evaluated-simulation node-id batch-size results report-collectors)]
-    raw-summary))
+        ;; TODO Should this be go block instead?
+        results-ch (thread
+                     (parse-in-batches evaluated-simulation node-id batch-size results report-collectors))]
+    {:results-ch results-ch :force-stop-fn force-stop-fn}))
 
 (defn local-executor [node-id simulation options]
   (println "Starting local executor with id:" node-id)
@@ -83,18 +85,25 @@
                            (split-number-equally nodes requests))
         report-generators (init-report-generators reporters results-dir context)
         report-collectors (init-report-collectors reporters results-dir context)
-        results-by-node (prun (fn [node-id users requests]
-                                (executor node-id
-                                          simulation
-                                          (-> options
-                                              (dissoc :executor)
-                                              (assoc :users users)
-                                              (assoc :node-id node-id)
-                                              (assoc-if-not-nil :requests requests))))
-                              users-by-node
-                              requests-by-node)
-        result (reduce (partial combine-with-reporters report-collectors)
-                       results-by-node)
-        summary (generate-with-reporters report-generators result)]
+        responses-by-node (prun (fn [node-id users requests]
+                                  (executor node-id
+                                            simulation
+                                            (-> options
+                                                (dissoc :executor)
+                                                (assoc :users users)
+                                                (assoc :node-id node-id)
+                                                (assoc-if-not-nil :requests requests))))
+                                users-by-node
+                                requests-by-node)
+        force-stop-all-executors-fn (fn []
+                                      (doseq [force-stop-fn (map :force-stop-fn responses-by-node)]
+                                        (force-stop-fn)))
+        summary (promise)]
+        (thread (let [results-by-node (map #(<!! (:results-ch %)) responses-by-node)
+                        result (reduce (partial combine-with-reporters report-collectors)
+                                       results-by-node)
+                        report (generate-with-reporters report-generators result)]
+                    (println "Simulation" (:name (eval-if-needed simulation)) "finished.")
+                    (deliver summary report)))
     (println (string/join "\n" (as-str-with-reporters report-generators summary)))
-    summary))
+    {:summary summary :force-stop-fn force-stop-all-executors-fn}))

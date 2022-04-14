@@ -17,7 +17,8 @@
                                                  eval-if-needed
                                                  choose-runner
                                                  create-report-name]]
-            [clj-gatling.simulation :as simulation]))
+            [clj-gatling.simulation :as simulation]
+            [clojure.core.async :refer [thread]]))
 
 (def buffer-size 20000)
 
@@ -34,16 +35,16 @@
         results-dir (create-results-dir (or (:root options) "target/results"))
         step-timeout (or (:timeout-in-ms options) 5000)
         scenarios (legacy-scenarios->scenarios legacy-scenarios)
-        result (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                          :timeout-in-ms step-timeout
-                                          :context (:context options)
-                                          :error-file (or (:error-file options)
-                                                          (path-join results-dir "error.log"))
-                                          :progress-tracker (progress-tracker/create-console-progress-tracker)}
-                                         (weighted-scenarios (range concurrency) scenarios))
+        {:keys [results]} (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
+                                                     :timeout-in-ms step-timeout
+                                                     :context (:context options)
+                                                     :error-file (or (:error-file options)
+                                                                     (path-join results-dir "error.log"))
+                                                     :progress-tracker (progress-tracker/create-console-progress-tracker)}
+                                                    (weighted-scenarios (range concurrency) scenarios))
         summary (report/create-result-lines {:name "Simulation" :scenarios scenarios}
                                             buffer-size
-                                            result
+                                            results
                                             (partial csv-writer
                                                      (path-join results-dir "input")
                                                      start-time))]
@@ -63,7 +64,7 @@
                                        simulation))]
     [short-summary/reporter r]))
 
-(defn run [simulation {:keys [concurrency concurrency-distribution rate rate-distribution root
+(defn- run-with-pipeline [simulation {:keys [concurrency concurrency-distribution rate rate-distribution root
                               timeout-in-ms context requests duration reporter reporters error-file
                               executor nodes progress-tracker] :as options
                        :or {concurrency 1
@@ -76,28 +77,40 @@
   (let [simulation-name (:name (eval-if-needed simulation))
         results-dir (create-results-dir root simulation-name)
         default-progress-tracker (progress-tracker/create-console-progress-tracker)
-        multiple-reporters? (not (nil? reporters))
         reporters (or reporters
-                      (create-reporters reporter results-dir simulation))
-        summary (pipeline/run simulation (assoc options
-                                                :concurrency concurrency
-                                                :concurrency-distribution concurrency-distribution
-                                                :rate rate
-                                                :rate-distribution rate-distribution
-                                                :timeout-in-ms timeout-in-ms
-                                                :context context
-                                                :executor executor
-                                                :progress-tracker (or progress-tracker default-progress-tracker)
-                                                :default-progress-tracker default-progress-tracker
-                                                :reporters reporters
-                                                :results-dir results-dir
-                                                :nodes nodes
-                                                :batch-size buffer-size
-                                                :requests requests
-                                                :error-file (or error-file
-                                                                (path-join results-dir "error.log"))
-                                                :duration duration))]
-    (println "Simulation" simulation-name "finished.")
+                      (create-reporters reporter results-dir simulation))]
+    (pipeline/run simulation (assoc options
+                                    :concurrency concurrency
+                                    :concurrency-distribution concurrency-distribution
+                                    :rate rate
+                                    :rate-distribution rate-distribution
+                                    :timeout-in-ms timeout-in-ms
+                                    :context context
+                                    :executor executor
+                                    :progress-tracker (or progress-tracker default-progress-tracker)
+                                    :default-progress-tracker default-progress-tracker
+                                    :reporters reporters
+                                    :results-dir results-dir
+                                    :nodes nodes
+                                    :batch-size buffer-size
+                                    :requests requests
+                                    :error-file (or error-file
+                                                    (path-join results-dir "error.log"))
+                                    :duration duration))))
+
+(defn run [simulation {:keys [reporters] :as options}]
+  (let [multiple-reporters? (not (nil? reporters))
+        {:keys [summary]} (run-with-pipeline simulation options)]
     (if multiple-reporters?
-      summary
-      (:short summary))))
+      @summary
+      (:short @summary))))
+
+(defn run-async [simulation {:keys [reporters] :as options}]
+  (let [multiple-reporters? (not (nil? reporters))
+        {:keys [summary force-stop-fn]} (run-with-pipeline simulation options)]
+    (if multiple-reporters?
+      {:results summary :force-stop-fn force-stop-fn}
+      (let [results (promise)]
+        (thread
+          (deliver results (:short @summary)))
+        {:results results :force-stop-fn force-stop-fn}))))

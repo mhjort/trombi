@@ -2,7 +2,7 @@
   (:require [clojure.test :refer :all]
             [clj-gatling.test-helpers :as th]
             [clj-gatling.reporters.raw-reporter :as raw-reporter]
-            [clj-gatling.core :refer [run run-simulation]]))
+            [clj-gatling.core :refer [run run-async run-simulation]]))
 
 (use-fixtures :once th/setup-error-file-path)
 
@@ -32,6 +32,21 @@
                      {:reporters [th/a-reporter th/b-reporter]
                       :concurrency 1})]
     (is (= summary {:a 1 :b 1}))))
+
+(deftest simulation-can-be-run-asynchronously
+  (let [{:keys [results]} (run-async (simulation "test-summary")
+                                     {:concurrency 1})]
+    (is (= {:ok 1 :ko 1} @results))))
+
+;;TODO Test also with multiple-reporters
+
+(deftest simulation-can-be-stopped-when-running-asynchronously
+  (let [{:keys [results force-stop-fn]} (run-async (simulation "test-summary")
+                                                   {:requests 500
+                                                    :concurrency 1})]
+    (force-stop-fn)
+    (is (< (:ok @results) 250))
+    (is (< (:ko @results) 250))))
 
 (deftest simulation-returns-raw-report-from-file
   (let [summary (run (simulation "test-file-raw")

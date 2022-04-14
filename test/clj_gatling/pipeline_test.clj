@@ -1,5 +1,5 @@
 (ns clj-gatling.pipeline-test
-  (:require [clojure.test :refer :all]
+  (:require [clojure.test :refer [deftest is]]
             [clj-gatling.test-helpers :as th]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-gatling.pipeline :as pipeline]))
@@ -21,16 +21,17 @@
         executor (stub-executor node-ids)
         reporters [th/a-reporter
                    th/b-reporter]
-        summary (pipeline/run 'clj-gatling.example/test-simu {:executor executor
-                                                              :nodes 3
-                                                              :context {}
-                                                              :results-dir "tmp"
-                                                              :concurrency 5
-                                                              :requests 25
-                                                              :timeout-in-ms 1000
-                                                              :progress-tracker (fn [_])
-                                                              :batch-size 10
-                                                              :reporters reporters})]
+        {:keys [summary force-stop-fn]} (pipeline/run 'clj-gatling.example/test-simu {:executor executor
+                                                                                      :nodes 3
+                                                                                      :context {}
+                                                                                      :results-dir "tmp"
+                                                                                      :concurrency 5
+                                                                                      :requests 25
+                                                                                      :timeout-in-ms 1000
+                                                                                      :progress-tracker (fn [_])
+                                                                                      :batch-size 10
+                                                                                      :reporters reporters})]
     ;;Stub reporter returns number of batches parsed per reporter
-    (is (equal? summary {:a 3 :b 3}))
+    (force-stop-fn) ;;Makes sure that calling force-stop-fn does not throw an exception
+    (is (equal? @summary {:a 3 :b 3}))
     (is (= #{0 1 2} @node-ids))))

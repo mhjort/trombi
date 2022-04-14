@@ -36,6 +36,7 @@
                                    :error-file error-file-path
                                    :progress-tracker (fn [_])}
                                   (weighted-scenarios (range concurrency) scenarios))
+        :results
         to-vector)))
 
 (defn run-single-scenario [scenario & {:keys [concurrency
@@ -53,31 +54,31 @@
                                               post-hook]
                                        :or {timeout-in-ms 5000
                                             progress-tracker (fn [_])}}]
-  (to-vector (simulation/run {:name "Simulation"
-                              :pre-hook pre-hook
-                              :post-hook post-hook
-                              :scenarios [scenario]}
-                             {:concurrency concurrency
-                              :concurrency-distribution concurrency-distribution
-                              :rate rate
-                              :rate-distribution rate-distribution
-                              :timeout-in-ms timeout-in-ms
-                              :requests requests
-                              :duration duration
-                              :users users
-                              :context context
-                              :error-file error-file-path
-                              :default-progress-tracker default-progress-tracker
-                              :progress-tracker progress-tracker})))
+  (to-vector (:results (simulation/run {:name "Simulation"
+                                        :pre-hook pre-hook
+                                        :post-hook post-hook
+                                        :scenarios [scenario]}
+                                       {:concurrency concurrency
+                                        :concurrency-distribution concurrency-distribution
+                                        :rate rate
+                                        :rate-distribution rate-distribution
+                                        :timeout-in-ms timeout-in-ms
+                                        :requests requests
+                                        :duration duration
+                                        :users users
+                                        :context context
+                                        :error-file error-file-path
+                                        :default-progress-tracker default-progress-tracker
+                                        :progress-tracker progress-tracker}))))
 
 (defn run-two-scenarios [scenario1 scenario2 & {:keys [concurrency requests]}]
-  (to-vector (simulation/run {:name "Simulation"
-                              :scenarios [scenario1 scenario2]}
-                             {:concurrency concurrency
-                              :requests requests
-                              :timeout-in-ms 5000
-                              :error-file error-file-path
-                              :progress-tracker (fn [_])})))
+  (to-vector (:results (simulation/run {:name "Simulation"
+                                        :scenarios [scenario1 scenario2]}
+                                       {:concurrency concurrency
+                                        :requests requests
+                                        :timeout-in-ms 5000
+                                        :error-file error-file-path
+                                        :progress-tracker (fn [_])}))))
 
 (defn successful-request [cb context]
   ;;TODO Try to find a better way for this
