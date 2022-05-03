@@ -1,7 +1,6 @@
 (ns clj-gatling.pipeline-test
   (:require [clojure.test :refer [deftest is]]
             [clj-gatling.test-helpers :as th]
-            [clj-containment-matchers.clojure-test :refer :all]
             [clj-gatling.pipeline :as pipeline]))
 
 (deftest max-users
@@ -33,5 +32,5 @@
                                                                                       :reporters reporters})]
     ;;Stub reporter returns number of batches parsed per reporter
     (force-stop-fn) ;;Makes sure that calling force-stop-fn does not throw an exception
-    (is (equal? @summary {:a 3 :b 3}))
+    (is (= {:a 3 :b 3} @summary))
     (is (= #{0 1 2} @node-ids))))
