@@ -1,5 +1,10 @@
 # Changes
 
+## 0.17.3
+
+* Add support for force stopping simulation from the progress tracker
+* Add possibility to run simulation in background with new 'run-async` function in core
+
 ## 0.17.2
 
 * Add support for latest version of Gatling Highcharts reports with percentiles
