@@ -41,6 +41,11 @@ Running the simulation shows statistics in console and
 generates a detailed html report.
 (clj-gatling uses gatling-highcharts for reporting)
 
+Calling `run` function will block while simulation is running. If you want to more control you can also call `run-async` function. It takes same parameters as the synchronous call. However, it returns immediately and returns map with following keys:
+
+- `results`: A promise that is delivered once the simulation finishes. 
+- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit.
+
 ### Concepts
 
 clj-gatling runs simulations to simulate load. A simulation consists of one or multiple
@@ -259,14 +264,21 @@ By default, clj-gatling will write the progress periodically (every 200 millisec
 
 If you want to disable this functionality you can specify option `:progress-tracker (fn [_])`.
 
-If you want to define your own progress tracker function you can specify your own like this one:
+Following keys are passed to progress tracker function:
+- `progress`: Progress as a floating point number between 0.0 and 1.0.
+- `sent-requests`: Number of requests sent so far
+- `total-concurrency`: How many concurrent requests are in progress at the moment
+- `default-progress-tracker`: Function for default behaviour. This can be used to also call the default tracker from user-provided progress tracker
+- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit. 
+
+e.g. 
 
 ```clojure
-(fn [{:keys [progress sent-requests total-concurrency]}]
-  (println "Progress:" progress ", sent requests:" sent-requests ", total concurrency:" total-concurrency))
+(fn [{:keys [progress sent-requests total-concurrency default-progress-tracker force-stop-fn] :as params}]
+  (println "Progress:" progress ", sent requests:" sent-requests ", total concurrency:" total-concurrency)
+  (default-progress-tracker params) ;Call default behaviour
+)
 ```
-
-Progress is floating point number that goes from 0.0 to 1.0 during the simulation.
 
 #### Tuning parallelism
 
