@@ -528,6 +528,19 @@
                                      :result false
                                      :exception "clj-gatling: request timed out"}]}]))))
 
+(defn- every-other-element [xs]
+  (first (apply map list (partition 2 xs))))
+
+(defn- is-approximately-sorted? [xs]
+  ;; Original vector might contain small incontingencies
+  ;; It could for example look like this [1 0 3 4 5 6]
+  ;; This should be counted as a sorted list eventhough there is
+  ;; a one outlier. Therefore we try to remove every other element
+  ;; before the comparison
+  (let [cleaned-xs (every-other-element xs)
+        sorted-cleaned-xs (sort cleaned-xs)]
+    (is (= sorted-cleaned-xs cleaned-xs) "vector should be sorted")))
+
 (deftest with-2-arity-concurrency-function
   (let [concurrency-function-called? (atom false)
         context-to-fn (atom {})
@@ -552,7 +565,7 @@
       (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
       (is #{0.1} @progress-distribution)
       (is #{1.0} @progress-distribution)
-      (is (= (sort @progress-distribution) @progress-distribution)))))
+      (is-approximately-sorted? @progress-distribution))))
 
 (deftest with-1-arity-concurrency-function
   (let [concurrency-function-called? (atom false)
@@ -576,21 +589,7 @@
       (is (= {:value 1} @context-to-fn)))
     (testing "Duration has ordered values"
       (is (> (count @duration-distribution) 10))
-      (is (= (sort @duration-distribution) @duration-distribution)))))
-
-(deftest with-rate
-  (let [progress-distribution (atom [])]
-    (run-single-scenario {:name "scenario"
-                          :steps [(step "step" true)]}
-                         :rate 100
-                         :users (range 10)
-                         :requests 100
-                         :context {:value 1})
-    (testing "Progress goes from 0 to 1"
-      (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
-      (is #{0.1} @progress-distribution)
-      (is #{1.0} @progress-distribution)
-      (is (= (sort @progress-distribution) @progress-distribution)))))
+      (is-approximately-sorted? @duration-distribution))))
 
 (deftest with-2-arity-rate-function
   (let [rate-function-called? (atom false)
@@ -617,7 +616,7 @@
       (is (every? #(and (>= % 0.0) (<= % 1.0)) @progress-distribution))
       (is #{0.1} @progress-distribution)
       (is #{1.0} @progress-distribution)
-      (is (= (sort @progress-distribution) @progress-distribution)))))
+      (is-approximately-sorted? @progress-distribution))))
 
 (deftest with-1-arity-rate-function
   (let [rate-function-called? (atom false)
@@ -642,17 +641,23 @@
       (is (= {:value 1} @context-to-fn)))
     (testing "Duration has ordered values"
       (is (> (count @duration-distribution) 10))
-      (is (= (sort @duration-distribution) @duration-distribution)))))
+      (is-approximately-sorted? @duration-distribution))))
+
 
 (deftest progress-tracker-is-called-if-defined
-  (let [progress-tracker-call-count (atom 0)]
+  (let [progress-tracker-call-count (atom 0)
+        default-progress-tracker-defined? (atom true)]
     (run-single-scenario {:name "progress-tracker-scenario"
                           :steps [(step "step" true)]}
                          :concurrency 1
                          :duration (Duration/ofMillis 500)
-                         :progress-tracker (fn [_]
+                         :default-progress-tracker (fn [_])
+                         :progress-tracker (fn [{:keys [default-progress-tracker]}]
+                                             (when-not (fn? default-progress-tracker)
+                                               (reset! default-progress-tracker-defined? false))
                                              (swap! progress-tracker-call-count inc)))
-    (is (< 1 @progress-tracker-call-count))))
+    (is (< 1 @progress-tracker-call-count))
+    (is (= true @default-progress-tracker-defined?))))
 
 (deftest scenario-weight
   (let [main-scenario {:name "Main"
@@ -668,6 +673,21 @@
     (is (approximately== (count-requests "Main") 66 :accuracy 20))
     (is (approximately== (count-requests "Second") 33 :accuracy 20))
     (is (approximately== 100 (+ (count-requests "Main") (count-requests "Second")) :accuracy 5))))
+
+(deftest after-force-stop-fn-is-called-new-scenarios-are-not-started-anymore
+  (let [sent-requests-when-force-stop-requested (atom 0)
+        force-stopping-tracker (fn [{:keys [force-stop-fn
+                                            sent-requests]}]
+                                 (reset! sent-requests-when-force-stop-requested sent-requests)
+                                 (force-stop-fn))
+        results (run-single-scenario {:name "progress-tracker-scenario"
+                                      :steps [(step "step" true)]}
+                                     :concurrency 1
+                                     :requests 500
+                                     :progress-tracker force-stopping-tracker)
+        request-count (count (map :requests results))]
+    (is (< request-count 500))
+    (is (= @sent-requests-when-force-stop-requested request-count))))
 
 (deftest with-step-fn
   (let [result (run-single-scenario {:name "scenario"

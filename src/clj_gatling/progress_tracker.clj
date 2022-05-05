@@ -15,7 +15,13 @@
           ;;Flush is required for forcing writing to console in every round
           (flush))))))
 
-(defn start [{:keys [progress-tracker runner sent-requests start-time scenario-concurrency-trackers]}]
+(defn start [{:keys [progress-tracker
+                     default-progress-tracker
+                     runner
+                     force-stop-fn
+                     sent-requests
+                     start-time
+                     scenario-concurrency-trackers]}]
   (let [executor (Executors/newSingleThreadScheduledExecutor)
         stop-fn (fn []
                   (.shutdownNow executor))
@@ -25,7 +31,9 @@
                            total-concurrency (reduce + (map deref (vals scenario-concurrency-trackers)))]
                        (progress-tracker {:progress progress
                                           :sent-requests @sent-requests
-                                          :total-concurrency total-concurrency}))
+                                          :total-concurrency total-concurrency
+                                          :default-progress-tracker default-progress-tracker
+                                          :force-stop-fn force-stop-fn}))
                      (catch Exception e
                        (println "Failed to run progress tracker" progress-tracker "with exception" e))))]
     (.scheduleAtFixedRate executor runnable 10 200 TimeUnit/MILLISECONDS)
