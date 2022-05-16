@@ -1,5 +1,9 @@
 # Changes
 
+## 0.17.4
+
+* Fix progress calculation. Progress should never exceed 1.0
+
 ## 0.17.3
 
 * Add support for force stopping simulation from the progress tracker
