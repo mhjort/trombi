@@ -14,7 +14,8 @@
     (let [time-taken (Duration/between ^LocalDateTime start ^LocalDateTime now)
           time-taken-in-millis (.toMillis time-taken)
           duration-in-millis (max (.toMillis duration) 1)]
-      [(float (/ time-taken-in-millis duration-in-millis)) time-taken]))
+      ;; Progress should not exceed 1.0 eventhough more than max duration might pass before simulation finishes
+      [(min 1.0 (float (/ time-taken-in-millis duration-in-millis))) time-taken]))
   (continue-run? [_ _ start next]
     (.isBefore ^LocalDateTime next (.plus ^LocalDateTime start duration)))
   (runner-info [_] (str "duration " duration)))
