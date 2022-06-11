@@ -65,14 +65,15 @@
     [short-summary/reporter r]))
 
 (defn- run-with-pipeline [simulation {:keys [concurrency concurrency-distribution rate rate-distribution root
-                              timeout-in-ms context requests duration reporter reporters error-file
-                              executor nodes progress-tracker] :as options
-                       :or {concurrency 1
-                            root "target/results"
-                            executor pipeline/local-executor
-                            nodes 1
-                            timeout-in-ms 5000
-                            context {}}}]
+                                             timeout-in-ms context requests duration reporter reporters error-file
+                                             executor nodes progress-tracker experimental-test-runner-stats?] :as options
+                                      :or {concurrency 1
+                                           root "target/results"
+                                           executor pipeline/local-executor
+                                           nodes 1
+                                           timeout-in-ms 5000
+                                           context {}
+                                           experimental-test-runner-stats? false}}]
   (validate schema/Options options)
   (let [simulation-name (:name (eval-if-needed simulation))
         results-dir (create-results-dir root simulation-name)
@@ -96,7 +97,8 @@
                                     :requests requests
                                     :error-file (or error-file
                                                     (path-join results-dir "error.log"))
-                                    :duration duration))))
+                                    :duration duration
+                                    :experimental-test-runner-stats? experimental-test-runner-stats?))))
 
 (defn run [simulation {:keys [reporters] :as options}]
   (let [multiple-reporters? (not (nil? reporters))

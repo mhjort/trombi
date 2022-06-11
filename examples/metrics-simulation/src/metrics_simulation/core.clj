@@ -64,4 +64,5 @@
       (gatling/run simulation
                    {:concurrency (read-string users-or-rate)
                     :root "tmp"
+                    :experimental-test-runner-stats? true
                     :requests (read-string requests-or-duration)}))))
