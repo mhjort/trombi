@@ -1,5 +1,9 @@
 # Changes
 
+## 0.17.5
+
+* Add experimental support for tracking active thread count in test client
+
 ## 0.17.4
 
 * Fix progress calculation. Progress should never exceed 1.0

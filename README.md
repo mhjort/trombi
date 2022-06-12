@@ -301,6 +301,19 @@ You can also specify your own custom reporter. Check https://github.com/mhjort/c
 
 See example project here: [metrics-simulation](https://github.com/mhjort/clj-gatling/tree/master/examples/metrics-simulation)
 
+### Tuning the test runner
+
+In load testing the goal is to generate load to the system under the test. However, sometimes the test runner can be also a bottleneck.
+clj-gatling has been built on the idea that the request functions should be non-blocking. This way the test runner does not need to use
+that many threads and it is possible to generate huge amount of requests from the single machine. To track this behaviour there is now
+an experimental support for tracking active thread count in test client. By setting `:experimental-test-runner-stats? true` you can get
+statistics about thread count during the test simulation. In the end clj-gatling will produce following output to console:
+
+`Test runner statistics: {:active-thread-count {:average 30, :max 33}}`
+
+In general these numbers should be lower than the number of concurrency in the simulation. And when increasing the concurrency these numbers
+should not increase accordingly.
+
 ## Change History
 
 Note! Version 0.8.0 includes a few changes on how simulations are defined.
