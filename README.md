@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/mhjort/clj-gatling/tree/master.svg?style=svg)](https://circleci.com/gh/mhjort/clj-gatling/tree/master)
 
-Create and run load tests using Clojure (and get fancy reports).
+Create and run load tests using Clojure. Get results back as Clojure data and/or as fancy graphical charts.
 
 ## Installation
 
