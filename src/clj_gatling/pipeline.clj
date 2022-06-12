@@ -4,6 +4,7 @@
                                         as-str-with-reporters
                                         parse-in-batches]]
             [clj-gatling.simulation :as simu]
+            [clj-gatling.stats :as stats]
             [clj-gatling.simulation-util :refer [eval-if-needed
                                                  split-equally
                                                  split-number-equally]]
@@ -30,13 +31,24 @@
                                             batch-size
                                             reporters
                                             results-dir
-                                            context] :as options}]
+                                            context
+                                            experimental-test-runner-stats?] :as options}]
   (let [evaluated-simulation (eval-if-needed simulation)
+        {:keys [stop-fn print-fn]} (if experimental-test-runner-stats?
+                                     (stats/start-stats-gathering)
+                                     (stats/no-op))
         {:keys [results force-stop-fn]} (simu/run evaluated-simulation options)
         report-collectors (init-report-collectors reporters results-dir context)
         ;; TODO Should this be go block instead?
         results-ch (thread
-                     (parse-in-batches evaluated-simulation node-id batch-size results report-collectors))]
+                     (let [result (parse-in-batches evaluated-simulation
+                                                    node-id
+                                                    batch-size
+                                                    results
+                                                    report-collectors)]
+                       (stop-fn)
+                       (print-fn)
+                       result))]
     {:results-ch results-ch :force-stop-fn force-stop-fn}))
 
 (defn local-executor [node-id simulation options]

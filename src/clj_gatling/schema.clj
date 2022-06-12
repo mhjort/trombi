@@ -74,15 +74,16 @@
    ;;However, we might not have it in classpath so we have to use s/Any in schema
    (s/optional-key :duration) (s/either java.time.Duration s/Any)
    (s/optional-key :concurrency-distribution) (s/make-fn-schema
-                                                float
-                                                [[float {}]])
+                                               float
+                                               [[float {}]])
    (s/optional-key :rate-distribution) (s/make-fn-schema
-                                         float
-                                         [[float {}]])
+                                        float
+                                        [[float {}]])
    (s/optional-key :progress-tracker) (s/make-fn-schema
-                                                s/Any
-                                                [[{}]])
+                                       s/Any
+                                       [[{}]])
    (s/optional-key :error-file) s/Str
    (s/optional-key :reporter) s/Any ;Legacy fn
-   (s/optional-key :reporters) [Reporter]})
-
+   (s/optional-key :reporters) [Reporter]
+   ;;Experimental features (these might not be backwads compatible in future versions)
+   (s/optional-key :experimental-test-runner-stats?) s/Bool})
