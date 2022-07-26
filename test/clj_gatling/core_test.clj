@@ -1,5 +1,6 @@
 (ns clj-gatling.core-test
   (:require [clojure.test :refer :all]
+            [clj-async-test.core :refer :all]
             [clj-gatling.test-helpers :as th]
             [clj-gatling.reporters.raw-reporter :as raw-reporter]
             [clj-gatling.core :refer [run run-async run-simulation]]))
@@ -24,8 +25,10 @@
 
 (deftest simulation-returns-summary
   (let [summary (run (simulation "test-summary")
-                     {:concurrency 1})]
-    (is (= {:ok 1 :ko 1} summary))))
+                     {:requests 100
+                      :concurrency 1})]
+    (is (approximately== (:ok summary) 50 :accuracy 5))
+    (is (approximately== (:ko summary) 50 :accuracy 5))))
 
 (deftest simulation-returns-summary-of-all-reporters
   (let [summary (run (simulation "test-all")
@@ -35,8 +38,10 @@
 
 (deftest simulation-can-be-run-asynchronously
   (let [{:keys [results]} (run-async (simulation "test-summary")
-                                     {:concurrency 1})]
-    (is (= {:ok 1 :ko 1} @results))))
+                                     {:requests 100
+                                      :concurrency 1})]
+    (is (approximately== (:ok @results) 50 :accuracy 5))
+    (is (approximately== (:ko @results) 50 :accuracy 5))))
 
 ;;TODO Test also with multiple-reporters
 
@@ -45,22 +50,22 @@
                                                    {:requests 500
                                                     :concurrency 1})]
     (force-stop-fn)
-    (is (< (:ok @results) 250))
-    (is (< (:ko @results) 250))))
+    (is (< (:ok @results) 260))
+    (is (< (:ko @results) 260))))
 
 (deftest simulation-returns-raw-report-from-file
   (let [summary (run (simulation "test-file-raw")
                      {:reporters [raw-reporter/file-reporter]
-                      :requests 10
+                      :requests 100
                       :concurrency 1})]
-    (is (= 10 (count (mapcat :requests (:raw summary)))))))
+    (is (approximately== (count (mapcat :requests (:raw summary))) 100 :accuracy 5))))
 
 (deftest simulation-returns-raw-report-from-memory
   (let [summary (run (simulation "test-memory-raw")
                      {:reporters [raw-reporter/in-memory-reporter]
-                      :requests 10
+                      :requests 100
                       :concurrency 1})]
-    (is (= 10 (count (mapcat :requests (:raw summary)))))))
+    (is (approximately== (count (mapcat :requests (:raw summary))) 100 :accuracy 5))))
 
 ;;This code can be used to test raw reporter in repl
 (comment

@@ -37,6 +37,7 @@
         scenarios (legacy-scenarios->scenarios legacy-scenarios)
         {:keys [results]} (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                                      :timeout-in-ms step-timeout
+                                                     :concurrency concurrency
                                                      :context (:context options)
                                                      :error-file (or (:error-file options)
                                                                      (path-join results-dir "error.log"))

@@ -4,7 +4,7 @@
             [clj-gatling.httpkit :as httpkit]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-async-test.core :refer :all]
-            [clojure.core.async :refer [go <! <!! timeout]]
+            [clojure.core.async :refer [go <! timeout]]
             [clj-time.core :as time])
   (:import (java.time Duration)))
 
@@ -46,7 +46,8 @@
   (let [result (run-single-scenario {:name "Test scenario"
                                      :steps [(step "Step1" true)
                                              (step "Step2" false)]}
-                                    :concurrency 1)]
+                                    :concurrency 1
+                                    :users [0])]
     (is (equal? result [{:name "Test scenario"
                          :id 0
                          :start number?
@@ -69,154 +70,164 @@
 (deftest simulation-uses-given-user-ids
   (let [result (run-single-scenario {:name "Test scenario"
                                      :steps [(step "Step" true)]}
+                                    :concurrency 2
+                                    :requests 100
                                     :users [1 3])]
-    (is (equal? (sort-by :id result) [{:name "Test scenario"
-                                       :id 1
-                                       :start number?
-                                       :end number?
-                                       :requests [{:name "Step"
-                                                   :id 1
-                                                   :start number?
-                                                   :end number?
-                                                   :context-before map?
-                                                   :context-after map?
-                                                   :result true}]}
-                                      {:name "Test scenario"
-                                       :id 3
-                                       :start number?
-                                       :end number?
-                                       :requests [{:name "Step"
-                                                   :id 3
-                                                   :start number?
-                                                   :end number?
-                                                   :context-before map?
-                                                   :context-after map?
-                                                   :result true}]}]))))
+    (is (empty? (filter #(= 0 (:id %)) result)))
+    (is (empty? (filter #(= 2 (:id %)) result)))
+    (is (equal? (first (filter #(= 1 (:id %)) result)) {:name "Test scenario"
+                                                        :id 1
+                                                        :start number?
+                                                        :end number?
+                                                        :requests [{:name "Step"
+                                                                    :id 1
+                                                                    :start number?
+                                                                    :end number?
+                                                                    :context-before map?
+                                                                    :context-after map?
+                                                                    :result true}]}))
+    (is (equal? (first (filter #(= 3 (:id %)) result))  {:name "Test scenario"
+                                                         :id 3
+                                                         :start number?
+                                                         :end number?
+                                                         :requests [{:name "Step"
+                                                                     :id 3
+                                                                     :start number?
+                                                                     :end number?
+                                                                     :context-before map?
+                                                                     :context-after map?
+                                                                     :result true}]}))))
 
 (deftest simulation-with-request-returning-single-boolean-instead-of-tuple
-  (let [result (run-single-scenario {:name "Test scenario"
-                                     :steps [{:name "step"
-                                              :request (fn [_] true)}]}
-                                    :concurrency 1)]
-    (is (equal? result [{:name "Test scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}]}]))))
+  (let [results (run-single-scenario {:name "Test scenario"
+                                      :steps [{:name "step"
+                                               :request (fn [_] true)}]}
+                                     :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Test scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest simulation-with-request-returning-channel-with-boolean
-  (let [result (run-single-scenario {:name "Test scenario"
-                                     :steps [{:name "step"
-                                              :request (fn [_] (go true))}]}
-                                    :concurrency 1)]
-    (is (equal? result [{:name "Test scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}]}]))))
+  (let [results (run-single-scenario {:name "Test scenario"
+                                      :steps [{:name "step"
+                                               :request (fn [_] (go true))}]}
+                                     :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Test scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest when-function-throws-exception-it-is-handled-as-ko
   (let [s {:name "Exception scenario"
            :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
-        result (run-single-scenario s :concurrency 1)]
-    (is (equal? result [{:name "Exception scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "Throwing"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result false
-                                     :exception "Simulated"}]}]))))
+        results (run-single-scenario s :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Exception scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "Throwing"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result false
+                                      :exception "Simulated"}]})))))
 
 (deftest when-function-returns-exception-it-is-handled-as-ko
   (let [s {:name "Exception scenario"
            :steps [{:name "Throwing" :request (fn [_] (Exception. "Simulated"))}]}
-        result (run-single-scenario s :concurrency 1)]
-    (is (equal? result [{:name "Exception scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "Throwing"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result false
-                                     :exception "Simulated"}]}]))))
+        results (run-single-scenario s :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Exception scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "Throwing"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result false
+                                      :exception "Simulated"}]})))))
 
 (deftest when-function-throws-exception-it-is-logged
   (delete-error-logs)
-  (let [result (-> {:name "Exception logging scenario"
-                    :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
-                   (run-single-scenario :concurrency 1))]
+  (let [_ (-> {:name "Exception logging scenario"
+               :steps [{:name "Throwing" :request (fn [_] (throw (Exception. "Simulated")))}]}
+              (run-single-scenario :concurrency 1))]
     (is (-> (slurp error-file-path)
             (clojure.string/includes? "Simulated")))))
 
 (deftest simulation-passes-context-through-requests-in-scenario
-  (let [result (run-single-scenario {:name "scenario"
-                                     :steps [(step "step1" true)
-                                             {:name "step2"
-                                              :request (fn [{:keys [to-next-request] :as ctx}]
-                                                         [to-next-request ctx])}]}
-                                    :concurrency 1)]
-    (is (equal? result [{:name "scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step1"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after {:user-id 0
-                                                     :to-next-request true}
-                                     :result true}
-                                    {:name "step2"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before {:user-id 0
+  (let [results (run-single-scenario {:name "scenario"
+                                      :steps [(step "step1" true)
+                                              {:name "step2"
+                                               :request (fn [{:keys [to-next-request] :as ctx}]
+                                                          [to-next-request ctx])}]}
+                                     :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step1"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after {:user-id number?
                                                       :to-next-request true}
-                                     :context-after map?
-                                     :result true}]}]))))
+                                      :result true}
+                                     {:name "step2"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before {:user-id number?
+                                                       :to-next-request true}
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest simulation-passes-original-context-to-first-request
   (let [scenario {:name "scenario"
                   :steps [{:name "step1"
                            :request (fn [{:keys [test-val] :as ctx}]
                                       [(= 5 test-val) ctx])}]}
-        result (run-single-scenario scenario :concurrency 1
-                                    :context {:test-val 5})]
-    (is (equal? result [{:name "scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step1"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before {:test-val 5
-                                                      :user-id 0}
-                                     :context-after {:test-val 5
-                                                     :user-id 0}
-                                     :result true}]}]))))
+        results (run-single-scenario scenario :concurrency 1
+                                     :context {:test-val 5})]
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step1"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before {:test-val 5
+                                                       :user-id number?}
+                                      :context-after {:test-val 5
+                                                      :user-id number?}
+                                      :result true}]})))))
 
 (deftest simulation-passes-scenario-specific-context
   (let [scenario {:name "scenario"
@@ -224,20 +235,21 @@
                   :steps [{:name "step1"
                            :request (fn [{:keys [test-val] :as ctx}]
                                       [(= 5 test-val) ctx])}]}
-        result (run-single-scenario scenario :concurrency 1)]
-    (is (equal? result [{:name "scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step1"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before {:test-val 5
-                                                      :user-id 0}
-                                     :context-after {:test-val 5
-                                                     :user-id 0}
-                                     :result true}]}]))))
+        results (run-single-scenario scenario :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step1"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before {:test-val 5
+                                                       :user-id number?}
+                                      :context-after {:test-val 5
+                                                      :user-id number?}
+                                      :result true}]})))))
 
 (deftest does-not-stop-simulation-in-middle-of-scenario-by-default
   (let [scenario {:name "scenario"
@@ -249,27 +261,28 @@
                            :request (fn [ctx]
                                       (Thread/sleep 2000)
                                       true)}]}
-        result (run-single-scenario scenario
-                                    :concurrency 1
-                                    :duration (Duration/ofMillis 100))]
-    (is (equal? result [{:name "scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step 1"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}
-                                    {:name "step 2"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}]}]))))
+        results (run-single-scenario scenario
+                                     :concurrency 1
+                                     :duration (Duration/ofMillis 100))]
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step 1"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}
+                                     {:name "step 2"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest deprecated-joda-time-duration-can-be-given
   (let [scenario {:name "scenario"
@@ -281,27 +294,28 @@
                            :request (fn [ctx]
                                       (Thread/sleep 2000)
                                       true)}]}
-        result (run-single-scenario scenario
-                                    :concurrency 1
-                                    :duration (time/millis 100))]
-    (is (equal? result [{:name "scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step 1"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}
-                                    {:name "step 2"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}]}]))))
+        results (run-single-scenario scenario
+                                     :concurrency 1
+                                     :duration (time/millis 100))]
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "step 1"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}
+                                     {:name "step 2"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest stops-simulation-in-middle-of-scenario-when-enabled
   (let [scenario {:name "scenario"
@@ -314,47 +328,48 @@
                            :request (fn [ctx]
                                       (Thread/sleep 2000)
                                       true)}]}
-        result (run-single-scenario scenario
-                                    :concurrency 1
-                                    :allow-early-termination? true
-                                    :duration (Duration/ofMillis 100))]
-    (is (equal? result [{:name "scenario"
-                         :id 0
-                         :start number?
-                         :end number?
-                         :requests [{:name "step 1"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result true}]}]))))
+        results (run-single-scenario scenario
+                                     :concurrency 1
+                                     :allow-early-termination? true
+                                     :duration (Duration/ofMillis 100))]
+    (is (equal? (last results) {:name "scenario"
+                                :id number?
+                                :start number?
+                                :end number?
+                                :requests [{:name "step 1"
+                                            :id number?
+                                            :start number?
+                                            :end number?
+                                            :context-before map?
+                                            :context-after map?
+                                            :result true}]}))))
 
 (deftest sleeps-for-given-time-before-starting-request
   (let [request-started (promise)
         scenario {:name "scenario"
                   :steps [{:name "step"
-                           :sleep-before (fn [ctx] 500)
-                           :request (fn [ctx]
+                           :sleep-before (fn [_] 500)
+                           :request (fn [_]
                                       (deliver request-started true)
                                       true)}]}
-        result (future (run-single-scenario scenario :concurrency 1))]
+        results (future (run-single-scenario scenario :concurrency 1))]
     (Thread/sleep 200)
     (is (not (realized? request-started)))
     (Thread/sleep 400)
     (is (realized? request-started))
     (is @request-started)
-    (is (equal? @result [{:name "scenario"
-                          :id 0
+    (doseq [result @results]
+      (is (equal? result {:name "scenario"
+                          :id number?
                           :start number?
                           :end number?
                           :requests [{:name "step"
-                                      :id 0
+                                      :id number?
                                       :start number?
                                       :end number?
                                       :context-before map?
                                       :context-after map?
-                                      :result true}]}]))))
+                                      :result true}]})))))
 
 (def first-fails-scenario
   {:name "Scenario"
@@ -362,42 +377,41 @@
            (step "second" true)]})
 
 (deftest simulation-skips-second-request-if-first-fails
-  (let [result (run-single-scenario first-fails-scenario :concurrency 1)]
-    ;Note scenario is ran twice in this case to match number of handled requests which should be 2
-    (is (equal? result
-                (repeat 2 {:name "Scenario"
-                           :id 0
-                           :start number?
-                           :end number?
-                           :requests [{:name "first"
-                                       :id 0
-                                       :start number?
-                                       :end number?
-                                       :context-before map?
-                                       :context-after map?
-                                       :result false}]})))))
+  (let [results (run-single-scenario first-fails-scenario :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "first"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result false}]})))))
 
 (deftest second-request-is-not-skipped-in-failure-if-skip-next-after-failure-is-unset
-  (let [result (run-single-scenario (assoc first-fails-scenario :skip-next-after-failure? false) :concurrency 1)]
-    (is (equal? result
-                [{:name "Scenario"
-                           :id 0
-                           :start number?
-                           :end number?
-                           :requests [{:name "first"
-                                       :id 0
-                                       :start number?
-                                       :end number?
-                                       :context-before map?
-                                       :context-after map?
-                                       :result false}
-                                      {:name "second"
-                                       :id 0
-                                       :start number?
-                                       :end number?
-                                       :context-before map?
-                                       :context-after map?
-                                       :result true}]}]))))
+  (let [results (run-single-scenario (assoc first-fails-scenario :skip-next-after-failure? false) :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Scenario"
+                                   :id number?
+                                   :start number?
+                                   :end number?
+                                   :requests [{:name "first"
+                                               :id number?
+                                               :start number?
+                                               :end number?
+                                               :context-before map?
+                                               :context-after map?
+                                               :result false}
+                                              {:name "second"
+                                               :id number?
+                                               :start number?
+                                               :end number?
+                                               :context-before map?
+                                               :context-after map?
+                                               :result true}]})))))
 
 (deftest simulation-returns-result-when-run-with-http-requests-using-legacy-format
   (with-redefs [httpkit/async-http-request fake-async-http]
@@ -406,65 +420,47 @@
       (is (= true (get-result (:requests result) "Request1")))
       (is (= false (get-result (:requests result) "Request2"))))))
 
-(deftest simulation-returns-result-when-run-with-multiple-scenarios-with-one-user
-  (let [result (run-two-scenarios {:name "Test scenario"
-                                   :steps [(step "Step" true)]}
-                                  {:name "Test scenario2"
-                                   :steps [(step "Step" true)]}
-                                  :concurrency 2)]
-    ;;Stop condition is not synced between parallel scenarios
-    ;;so once in a while there might be one extra scenario
-    ;;This is ok tolerance for max requests
-    (is (equal? (first (filter #(= 0 (:id %)) result)) {:name "Test scenario"
-                                                        :id 0
-                                                        :start number?
-                                                        :end number?
-                                                        :requests anything}))
-    (is (equal? (first (filter #(= 1 (:id %)) result)) {:name "Test scenario2"
-                                                        :id 1
-                                                        :start number?
-                                                        :end number?
-                                                        :requests anything}))))
-
 (deftest throws-exception-when-concurrency-is-smaller-than-number-of-parallel-scenarios
   (let [scenario1 {:name "scenario1" :steps [(step "step" true)]}
         scenario2 (assoc scenario1 :name "scenario2")]
-    (is (thrown? AssertionError (run-two-scenarios scenario1 scenario2 :concurrency 1)))))
+    (is (thrown? AssertionError (run-two-scenarios scenario1 scenario2 :concurrency 1 :users [0])))))
 
 (deftest with-given-number-of-requests
-  (let [result (run-single-scenario {:name "scenario"
-                                     :steps [(step "step" true)]} :concurrency 1 :requests 2)]
-    (is (equal? result (repeat 2 {:name "scenario"
-                                  :start number?
-                                  :end number?
-                                  :id 0
-                                  :requests [{:name "step"
-                                              :id 0
-                                              :start number?
-                                              :end number?
-                                              :context-before map?
-                                              :context-after map?
-                                              :result true}]})))))
+  (let [results (run-single-scenario {:name "scenario"
+                                      :steps [(step "step" true)]} :concurrency 1 :users [0] :requests 2)]
+    (is (= 2 (count results)))
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :start number?
+                          :end number?
+                          :id number?
+                          :requests [{:name "step"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest with-multiple-number-of-requests
   (let [request-count (atom 0)
-        result (run-single-scenario {:name "scenario"
-                                     :steps [{:name "step"
-                                              :request (fn [ctx]
-                                                         (swap! request-count inc)
-                                                         [true ctx])}]}
-                                    :concurrency 100
-                                    :requests 2000)
-        handled-requests (->> result (map :requests) count)]
-    (is (approximately== handled-requests 2000))
+        results (run-single-scenario {:name "scenario"
+                                      :steps [{:name "step"
+                                               :request (fn [ctx]
+                                                          (swap! request-count inc)
+                                                          [true ctx])}]}
+                                     :concurrency 100
+                                     :requests 2000)
+        handled-requests (->> results (map :requests) count)]
+    (is (approximately== handled-requests 2000 :accuracy 5))
     (is (= handled-requests @request-count))))
 
 (deftest duration-given
-  (let [result (run-single-scenario {:name "scenario"
-                                     :steps [(step "step" true)]}
-                                    :concurrency 1
-                                    :duration (time/millis 50))]
-    (is (not (empty? result)))))
+  (let [results (run-single-scenario {:name "scenario"
+                                      :steps [(step "step" true)]}
+                                     :concurrency 1
+                                     :duration (time/millis 50))]
+    (is (not (empty? results)))))
 
 (deftest with-simulation-hooks
   (let [pre-hook-called? (atom false)
@@ -474,12 +470,12 @@
                           :steps [(step "step" true)]}
                          :concurrency 1
                          :context {:value1 1}
-                         :pre-hook (fn [ctx]
+                         :pre-hook (fn [_]
                                      (reset! pre-hook-called? true)
                                      {:value2 2})
                          :post-hook (fn [ctx]
-                                     (reset! post-hook-called? true)
-                                     (reset! ctx-in-post-hook ctx)))
+                                      (reset! post-hook-called? true)
+                                      (reset! ctx-in-post-hook ctx)))
     (testing "pre-hook function is called"
       (is (= true @pre-hook-called?)))
     (testing "post-hook function is called"
@@ -507,39 +503,37 @@
       (is (= {:value 2} @ctx-in-post-hook)))))
 
 (deftest fails-requests-when-they-take-longer-than-timeout
-  (let [result (run-single-scenario {:name "scenario"
-                                     :steps [{:name "step"
-                                              :request (fn [ctx]
-                                                         (go
-                                                           (<! (timeout 500))
-                                                           [true ctx]))}]}
-                                    :concurrency 1
-                                    :timeout-in-ms 100)]
-    (is (equal? result [{:name "scenario"
-                         :start number?
-                         :end number?
-                         :id 0
-                         :requests [{:name "step"
-                                     :id 0
-                                     :start number?
-                                     :end number?
-                                     :context-before map?
-                                     :context-after map?
-                                     :result false
-                                     :exception "clj-gatling: request timed out"}]}]))))
+  (let [results (run-single-scenario {:name "scenario"
+                                      :steps [{:name "step"
+                                               :request (fn [ctx]
+                                                          (go
+                                                            (<! (timeout 500))
+                                                            [true ctx]))}]}
+                                     :concurrency 1
+                                     :timeout-in-ms 100)]
+    (doseq [result results]
+      (is (equal? result {:name "scenario"
+                          :start number?
+                          :end number?
+                          :id number?
+                          :requests [{:name "step"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result false
+                                      :exception "clj-gatling: request timed out"}]})))))
 
-(defn- every-other-element [xs]
-  (first (apply map list (partition 2 xs))))
-
-(defn- is-approximately-sorted? [xs]
-  ;; Original vector might contain small incontingencies
+(defn- is-approximately-sorted? [xs & {:keys [accuracy] :or {accuracy 25}}]
+  ;; Original vector might contain small inconsistencies
   ;; It could for example look like this [1 0 3 4 5 6]
-  ;; This should be counted as a sorted list eventhough there is
-  ;; a one outlier. Therefore we try to remove every other element
-  ;; before the comparison
-  (let [cleaned-xs (every-other-element xs)
-        sorted-cleaned-xs (sort cleaned-xs)]
-    (is (= sorted-cleaned-xs cleaned-xs) "vector should be sorted")))
+  ;; This should be counted as a sorted list even though there is
+  ;; an outlier, so we work out the % of non-matches and compare that
+  (let [sorted-xs (sort xs)
+        no-match  (->> (map #(= %1 %2) xs sorted-xs)
+                       (filter false?))]
+    (is (>= accuracy (->> (count xs) (/ (count no-match)) (* 100))) "vector should be sorted")))
 
 (deftest with-2-arity-concurrency-function
   (let [concurrency-function-called? (atom false)
@@ -668,26 +662,29 @@
                          :weight 1
                          :steps [(step "step1" true)]}
         result (group-by :name
-                         (run-two-scenarios main-scenario second-scenario :concurrency 10 :requests 100))
+                         (run-two-scenarios main-scenario second-scenario :concurrency 10 :requests 10000))
         count-requests (fn [name] (reduce + (map #(count (:requests %)) (get result name))))]
-    (is (approximately== (count-requests "Main") 66 :accuracy 20))
-    (is (approximately== (count-requests "Second") 33 :accuracy 20))
-    (is (approximately== 100 (+ (count-requests "Main") (count-requests "Second")) :accuracy 5))))
+    (is (approximately== (count-requests "Main") 6666 :accuracy 35))
+    (is (approximately== (count-requests "Second") 3333 :accuracy 35))
+    (is (approximately== (+ (count-requests "Main") (count-requests "Second")) 10000 :accuracy 5))))
 
 (deftest after-force-stop-fn-is-called-new-scenarios-are-not-started-anymore
   (let [sent-requests-when-force-stop-requested (atom 0)
         force-stopping-tracker (fn [{:keys [force-stop-fn
                                             sent-requests]}]
-                                 (reset! sent-requests-when-force-stop-requested sent-requests)
-                                 (force-stop-fn))
+                                 (force-stop-fn)
+                                 (reset! sent-requests-when-force-stop-requested sent-requests))
         results (run-single-scenario {:name "progress-tracker-scenario"
-                                      :steps [(step "step" true)]}
+                                      :steps [(step "step" true 10)]}
                                      :concurrency 1
-                                     :requests 500
+                                     :requests 1000
                                      :progress-tracker force-stopping-tracker)
         request-count (count (map :requests results))]
-    (is (< request-count 500))
-    (is (= @sent-requests-when-force-stop-requested request-count))))
+    (is (< request-count 1000))
+    ;; There is a race condition between calling the force-stop-fn and sending
+    ;; more requests, and test requests are very fast, so this will be a little
+    ;; out
+    (is (= request-count @sent-requests-when-force-stop-requested))))
 
 (deftest with-step-fn
   (let [result (run-single-scenario {:name "scenario"

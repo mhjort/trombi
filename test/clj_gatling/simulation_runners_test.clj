@@ -7,6 +7,8 @@
 (deftest duration-runner
   (let [runner (DurationRunner. (Duration/ofSeconds 10))
         now (LocalDateTime/now)]
+    (testing "Progress is 0.0 when start has not yet been set"
+      (is (= [0.0 (Duration/ofSeconds 0)] (calculate-progress runner 0 nil now))))
     (testing "Progress is 0.0 when no time has passed"
       (is (= [0.0 (Duration/ofSeconds 0)] (calculate-progress runner 0 now now))))
     (testing "Progress is 0.5 when half the time has been passed"
@@ -19,6 +21,8 @@
 (deftest fixed-request-number-runner
   (let [runner (FixedRequestNumberRunner. 10)
         now (LocalDateTime/now)]
+    (testing "Progress is 0.0 when start has not yet been set"
+      (is (= [0.0 (Duration/ofSeconds 0)] (calculate-progress runner 0 nil now))))
     (testing "Progress is 0.0 when no requests have been sent"
       (is (= [0.0 (Duration/ofSeconds 0)] (calculate-progress runner 0 now now))))
     (testing "Progress is 0.5 when half the requests have been sent"

@@ -36,29 +36,29 @@
         (catch AssertionError e
           {:result false :end-time (now) :context ctx :exception e})))))
 
-(defn async-function-with-timeout [step timeout sent-requests user-id original-context]
-  (swap! sent-requests inc)
+(defn async-function-with-timeout [step timeout simulation-requests scenario-requests original-context]
+  (swap! scenario-requests inc)
+  (swap! simulation-requests (fn [r] (-> r (update :sent inc) (update :pending dec))))
   (go
     (when-let [sleep-before (:sleep-before step)]
       (<! (timers/timeout (sleep-before original-context))))
-    (let [original-context-with-user (assoc original-context :user-id user-id)
-          start (now)
-          return {:name (:name step)
-                  :id user-id
-                  :start start
-                  :context-before original-context-with-user}
-          response (asynchronize (:request step) original-context-with-user)
+    (let [return {:name (:name step)
+                  :id (:user-id original-context)
+                  :start (now)
+                  :context-before original-context}
+          response (asynchronize (:request step) original-context)
           [{:keys [result end-time context exception]} c] (alts! [response (timers/timeout timeout)])]
       (if (= c response)
         [(assoc return :end end-time
                        :exception exception
                        :result result
-                       :context-after context) context]
+                       :context-after context)
+         context]
         [(assoc return :end (now)
                        :exception (ex-info "clj-gatling: request timed out" {:timeout-in-ms timeout})
                        :result false
-                       :context-after original-context-with-user)
-         original-context-with-user]))))
+                       :context-after original-context)
+         original-context]))))
 
 (defn- response->result [scenario result]
   {:name (:name scenario)
@@ -82,39 +82,53 @@
     :else
     [nil context [nil nil]]))
 
-(defn- continue-run? [{:keys [runner sent-requests simulation-start next-run-at force-stop-ch]}]
-  (if (poll! force-stop-ch)
-    (do
-      (println "Force stop requested. Not starting new scenarios anymore")
-      false)
-    (runners/continue-run? runner sent-requests simulation-start next-run-at)))
+(defn- continue-fn [{:keys [runner simulation-start force-stop]}]
+  (fn [sent-requests next-run]
+    (if @force-stop
+      false
+      (do (swap! simulation-start #(or % (LocalDateTime/now)))
+          (runners/continue-run? runner sent-requests @simulation-start next-run)))))
 
-(defn- run-scenario-once [{:keys [runner force-stop-ch simulation-start] :as options}
-                          {:keys [pre-hook post-hook] :as scenario} user-id]
+(defn- scenario-context [options {:keys [pre-hook] :as scenario} user-id]
+  (let [merged-context (merge (:context options) (:context scenario) {:user-id user-id})]
+    (if pre-hook
+      (pre-hook merged-context)
+      merged-context)))
+
+(defn- requests-per-scenario-run
+  "Calculates the number of requests per run of a scenario. When explicit :steps
+  have been provided, this is completely accurate. Where a :step-fn has been
+  provided, we can only approximate based on the number of requests and runs the
+  scenario has done so far"
+  [scenario sent-requests runs]
+  (if (:steps scenario)
+    (count (:steps scenario))
+    (if (or (= 0 sent-requests) (= 0 runs))
+      1 ;;All we can do with no more info
+      (int (Math/ceil (/ sent-requests runs))))))
+
+(defn- run-scenario-once
+  [{:keys [force-stop runner scenario-requests simulation-requests simulation-start] :as options}
+   scenario
+   context]
   (let [timeout (:timeout-in-ms options)
-        sent-requests (:sent-requests options)
         result-channel (async/chan)
-        skip-next-after-failure? (if (nil? (:skip-next-after-failure? scenario))
-                                   true
-                                   (:skip-next-after-failure? scenario))
+        skip-next-after-failure? (or (nil? (:skip-next-after-failure? scenario))
+                                     (:skip-next-after-failure? scenario))
         request-failed? #(not (:result %))
-        merged-context (or (merge (:context options) (:context scenario)) {})
-        final-context (if pre-hook
-                        (pre-hook merged-context)
-                        merged-context)
-        should-terminate? #(and (:allow-early-termination? scenario)
-                                (not (continue-run? {:runner runner
-                                                     :force-stop-ch force-stop-ch
-                                                     :sent-requests @sent-requests
-                                                     :simulation-start simulation-start
-                                                     :next-run-at (LocalDateTime/now)})))
+        continue?         (continue-fn {:runner runner
+                                        :force-stop force-stop
+                                        :simulation-start simulation-start})
+        should-terminate? #(let [requests @simulation-requests]
+                             (and (:allow-early-termination? scenario)
+                                  (not (continue? (+ (:sent requests) (:pending requests)) (LocalDateTime/now)))))
         step-ctx [(:steps scenario) (:step-fn scenario)]]
-    (go-loop [[step context step-ctx] (next-step step-ctx final-context)
+    (go-loop [[step context step-ctx] (next-step step-ctx context)
               results []]
       (let [[result new-ctx] (<! (async-function-with-timeout step
                                                               timeout
-                                                              sent-requests
-                                                              user-id
+                                                              simulation-requests
+                                                              scenario-requests
                                                               context))
             [step' _ _ :as next-steps] (next-step step-ctx new-ctx)]
         (when-let [e (:exception result)]
@@ -123,54 +137,79 @@
                 (nil? step')
                 (and skip-next-after-failure?
                      (request-failed? result)))
-          (do
-            (when post-hook
-              (post-hook context))
-            (>! result-channel (conj results (clean-result result))))
+          (>! result-channel [(conj results (clean-result result)) context])
           (recur next-steps (conj results (clean-result result))))))
     result-channel))
 
+(defn- prepare-run [scenario simulation-requests scenario-requests scenario-runs]
+  (let [additional (requests-per-scenario-run scenario @scenario-requests @scenario-runs)
+        [old _]    (swap-vals! simulation-requests #(update % :pending + additional))]
+    [(+ (:sent old) (:pending old)) additional]))
+
+(defn- complete-run [simulation-requests scenario-runs expected-requests actual-requests]
+  (let [diff (- expected-requests actual-requests)]
+    (swap! simulation-requests #(update % :pending - diff)))
+  (swap! scenario-runs inc))
+
+(defn- atomic-concurrency-check
+  "Atomically check the concurrency and increment it if we should run now, then
+  return whether we should run."
+  [target-concurrency concurrent-scenarios]
+  (let [[old new] (swap-vals! concurrent-scenarios #(if (> target-concurrency %) (inc %) %))]
+    (> new old)))
+
 (defn- run-concurrent-scenario-constantly
   [{:keys [concurrent-scenarios
-           runner
-           force-stop-ch
-           sent-requests
-           simulation-start
            concurrency
            concurrency-distribution
-           context] :as options}
-   scenario
+           context
+           force-stop
+           init-sync
+           runner
+           scenario-requests
+           scenario-runs
+           simulation-requests
+           simulation-start] :as options}
+   {:keys [post-hook] :as scenario}
    user-id]
-  (let [c (async/chan)
-        should-run-now? (if concurrency-distribution
-                          (let [modifier-fn (if (= 2 (arg-count concurrency-distribution))
-                                              (fn [{:keys [progress context]}]
-                                                (concurrency-distribution progress context))
-                                              concurrency-distribution)]
-                            #(let [[progress duration] (runners/calculate-progress runner
-                                                                                   @sent-requests
-                                                                                   simulation-start
-                                                                                   (LocalDateTime/now))
-                                   target-concurrency (* concurrency (modifier-fn {:progress progress
-                                                                                   :duration duration
-                                                                                   :context context}))]
-                               (> target-concurrency @concurrent-scenarios)))
-                          (constantly true))]
-    (go-loop []
-      (if (should-run-now?)
-        (do
-          (swap! concurrent-scenarios inc)
-          (let [result (<! (run-scenario-once options scenario user-id))]
+  (let [c                (async/chan)
+        continue?        (continue-fn {:runner runner
+                                       :simulation-start simulation-start
+                                       :force-stop force-stop})
+        should-run-now?  (if concurrency-distribution
+                           (let [modifier-fn (if (= 2 (arg-count concurrency-distribution))
+                                               (fn [{:keys [progress context]}]
+                                                 (concurrency-distribution progress context))
+                                               concurrency-distribution)]
+                             #(let [[progress duration] (runners/calculate-progress runner
+                                                                                    (:sent @simulation-requests)
+                                                                                    @simulation-start
+                                                                                    (LocalDateTime/now))
+                                    target-concurrency (* concurrency (modifier-fn {:progress progress
+                                                                                    :duration duration
+                                                                                    :context context}))]
+                                (atomic-concurrency-check target-concurrency concurrent-scenarios)))
+                           #(atomic-concurrency-check concurrency concurrent-scenarios))
+        starting-context (scenario-context options scenario user-id)]
+    (swap! init-sync dec)
+    (go-loop [context starting-context]
+      (while (> @init-sync 0)
+        (<! (timers/timeout 100)))
+      (let [[old-total expected] (prepare-run scenario simulation-requests scenario-requests scenario-runs)]
+        (while (and (continue? old-total (LocalDateTime/now)) (not (should-run-now?)))
+          (<! (timers/timeout (rand-int 20))))
+        (if (continue? (:sent @simulation-requests) (LocalDateTime/now))
+          (do
+            (let [[result final-context] (<! (run-scenario-once options scenario context))]
+              (swap! concurrent-scenarios dec)
+              (complete-run simulation-requests scenario-runs expected (count result))
+              (>! c result)
+              (when post-hook
+                (post-hook final-context))
+              (recur (scenario-context options scenario user-id))))
+          (do
             (swap! concurrent-scenarios dec)
-            (>! c result)))
-        (<! (timers/timeout 200)))
-      (if (continue-run? {:runner runner
-                          :sent-requests @sent-requests
-                          :simulation-start simulation-start
-                          :next-run-at (LocalDateTime/now)
-                          :force-stop-ch force-stop-ch})
-        (recur)
-        (close! c)))
+            (close! c)))))
     c))
 
 (defn- run-at
@@ -178,7 +217,10 @@
   [run-tracker interval-ns]
   ;;Randomise the run times by +- 0.25*interval, to prevent sync-ups when distributed
   (let [jitter (int (- (rand-int (/ interval-ns 2)) (/ interval-ns 4)))]
-    (swap! run-tracker #(.plusNanos ^LocalDateTime % (+ interval-ns jitter)))))
+    (swap! run-tracker (fn [^LocalDateTime previous]
+                         (if (nil? previous)
+                           (LocalDateTime/now)
+                           (.plusNanos previous (+ interval-ns jitter)))))))
 
 (defn- rate->interval-ns
   "Converts a rate-per-second of requests to a nanosecond interval between requests"
@@ -189,50 +231,58 @@
 
 (defn- run-rate-scenario-constantly
   [{:keys [concurrent-scenarios
-           run-tracker
+           context
+           force-stop
+           init-sync
+           rate-run-tracker
            runner
-           force-stop-ch
            rate-distribution
-           prepared-requests
-           sent-requests
-           simulation-start
-           context] :as options}
-   scenario
+           scenario-requests
+           scenario-runs
+           simulation-requests
+           simulation-start] :as options}
+   {:keys [post-hook] :as scenario}
    user-id]
-  (let [c           (async/chan)
-        rate        (:rate scenario)
-        interval-ns (if rate-distribution
-                      (let [modifier-fn (if (= 2 (arg-count rate-distribution))
-                                          (fn [{:keys [progress context]}]
-                                            (rate-distribution progress context))
-                                          rate-distribution)]
-                        #(let [[progress duration] (runners/calculate-progress runner
-                                                                               @sent-requests
-                                                                               simulation-start
-                                                                               @run-tracker)
-                               target-rate (* rate (modifier-fn {:progress progress
-                                                                 :duration duration
-                                                                 :context context}))]
-                           (rate->interval-ns target-rate)))
-                      (constantly (rate->interval-ns rate)))]
-    (go-loop []
-      (let [next-run (run-at run-tracker (interval-ns))
-            pending  (swap! prepared-requests inc)]
+  (let [c            (async/chan)
+        continue?    (continue-fn {:runner runner
+                                   :simulation-start simulation-start
+                                   :force-stop force-stop})
+        rate         (:rate scenario)
+        interval-ns  (if rate-distribution
+                       (let [modifier-fn (if (= 2 (arg-count rate-distribution))
+                                           (fn [{:keys [progress context]}]
+                                             (rate-distribution progress context))
+                                           rate-distribution)]
+                         #(let [[progress duration] (runners/calculate-progress runner
+                                                                                (:sent @simulation-requests)
+                                                                                @simulation-start
+                                                                                @rate-run-tracker)
+                                target-rate (* rate (modifier-fn {:progress progress
+                                                                  :duration duration
+                                                                  :context context}))]
+                            (rate->interval-ns target-rate)))
+                       (constantly (rate->interval-ns rate)))
+        starting-context (scenario-context options scenario user-id)]
+    (swap! init-sync dec)
+    (go-loop [context starting-context]
+      (while (> @init-sync 0)
+        (<! (timers/timeout 100)))
+      (let [next-run (run-at rate-run-tracker (interval-ns))
+            [old-total expected] (prepare-run scenario simulation-requests scenario-requests scenario-runs)]
         ;;This means we only wait if there are not already enough waiting
         ;;requests to complete the scenario
-        (if (continue-run? {:runner runner
-                            :sent-requests pending
-                            :simulation-start simulation-start
-                            :next-run-at next-run
-                            :force-stop-ch force-stop-ch})
+        (if (continue? old-total next-run)
           (let [t (LocalDateTime/now)]
             (when (.isBefore t next-run)
               (<! (timers/timeout (.toMillis (Duration/between t next-run)))))
             (swap! concurrent-scenarios inc)
-            (let [result (<! (run-scenario-once options scenario user-id))]
+            (let [[result final-context] (<! (run-scenario-once options scenario context))]
               (swap! concurrent-scenarios dec)
-              (>! c result))
-            (recur))
+              (complete-run simulation-requests scenario-runs expected (count result))
+              (>! c result)
+              (when post-hook
+                (post-hook final-context)))
+            (recur (scenario-context options scenario user-id)))
           (close! c))))
     c))
 
@@ -241,11 +291,11 @@
     (println "Running scenario" (:name scenario)
              (if rate
                (str "with rate " rate " users/sec")
-               (str "with concurrency " (count (:users scenario)))))))
+               (str "with concurrency " (:concurrency scenario))))))
 
 (defn- run-scenario [run-constantly-fn options scenario]
   (print-scenario-info scenario)
-  (let [responses (async/merge (map #(run-constantly-fn options scenario %) (:users scenario)))
+  (let [responses (async/merge (pmap #(run-constantly-fn options scenario %) (:users scenario)))
         results (async/chan)]
     (go-loop []
       (if-let [result (<! responses)]
@@ -254,6 +304,9 @@
           (recur))
         (close! results)))
     results))
+
+(defn scenario-trackers [scenarios initial-value]
+  (reduce (fn [m k] (assoc m k (atom initial-value))) {} (map :name scenarios)))
 
 (defn run-scenarios [{:keys [post-hook
                              context
@@ -275,18 +328,21 @@
                (str "using request concurrency " concurrency " with concurrency distribution function")
                (str "using request concurrency " concurrency))))
   (validate [schema/RunnableScenario] scenarios)
-  (let [simulation-start (LocalDateTime/now)
-        prepared-requests (atom 0)
-        sent-requests (atom 0)
-        force-stop-ch (async/chan)
-        force-stop-fn #(async/put! force-stop-ch true)
-        scenario-concurrency-trackers (reduce (fn [m k] (assoc m k (atom 0))) {} (map :name scenarios))
-        rate-run-trackers (when rate
-                            (reduce (fn [m k] (assoc m k (atom simulation-start))) {} (map :name scenarios)))
+  (let [simulation-start (atom nil)
+        init-sync (atom (reduce (fn [acc s] (+ acc (count (:users s)))) 0 scenarios))
+        force-stop (atom false)
+        force-stop-fn (fn []
+                        (println "Force stop requested. Not starting new scenarios anymore")
+                        (reset! force-stop true))
+        scenario-request-trackers (scenario-trackers scenarios 0)
+        scenario-run-trackers (scenario-trackers scenarios 0)
+        scenario-concurrency-trackers (scenario-trackers scenarios 0)
+        rate-run-trackers (when rate (scenario-trackers scenarios nil))
+        simulation-requests (atom {:sent 0 :pending 0})
         ;;TODO Maybe use try-finally for stopping
         stop-progress-tracker (progress-tracker/start {:runner runner
                                                        :force-stop-fn force-stop-fn
-                                                       :sent-requests sent-requests
+                                                       :simulation-requests simulation-requests
                                                        :start-time simulation-start
                                                        :scenario-concurrency-trackers scenario-concurrency-trackers
                                                        :default-progress-tracker default-progress-tracker
@@ -297,11 +353,13 @@
                                                  run-concurrent-scenario-constantly)
                                                (assoc options
                                                  :concurrent-scenarios (get scenario-concurrency-trackers name)
-                                                 :run-tracker (get rate-run-trackers name)
-                                                 :force-stop-ch force-stop-ch
+                                                 :scenario-requests (get scenario-request-trackers name)
+                                                 :scenario-runs (get scenario-run-trackers name)
+                                                 :rate-run-tracker (get rate-run-trackers name)
+                                                 :force-stop force-stop
                                                  :simulation-start simulation-start
-                                                 :prepared-requests prepared-requests
-                                                 :sent-requests sent-requests)
+                                                 :init-sync init-sync
+                                                 :simulation-requests simulation-requests)
                                                scenario))
         responses (async/merge (map run-scenario-with-opts scenarios))
         results (async/chan)]
@@ -317,14 +375,13 @@
     {:results results :force-stop-fn force-stop-fn}))
 
 (defn run [{:keys [scenarios pre-hook post-hook] :as simulation}
-           {:keys [concurrency rate users context] :as options}]
+           {:keys [rate users context] :as options}]
   (validate schema/Simulation simulation)
-  (let [user-ids (or users (range concurrency))
-        final-ctx (merge context (when pre-hook (pre-hook context)))]
+  (let [final-ctx (merge context (when pre-hook (pre-hook context)))]
     (run-scenarios (assoc options
                           :context final-ctx
                           :post-hook post-hook
                           :runner (choose-runner scenarios
-                                                 (count user-ids)
+                                                 (count users)
                                                  options))
-                   (weighted-scenarios user-ids rate scenarios))))
+                   (weighted-scenarios users rate scenarios))))
