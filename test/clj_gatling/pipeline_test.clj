@@ -31,6 +31,10 @@
                                                                                       :batch-size 10
                                                                                       :reporters reporters})]
     ;;Stub reporter returns number of batches parsed per reporter
+    (Thread/sleep 250)
     (force-stop-fn) ;;Makes sure that calling force-stop-fn does not throw an exception
-    (is (= {:a 3 :b 3} @summary))
+    (is (< 0 (:a @summary)))
+    (is (> 25 (:a @summary)))
+    (is (< 0 (:b @summary)))
+    (is (> 25 (:b @summary)))
     (is (= #{0 1 2} @node-ids))))

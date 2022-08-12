@@ -92,7 +92,7 @@
                    context] :as options}]
   (let [users-by-node (if rate
                         (split-equally nodes (range (max-users rate timeout-in-ms)))
-                        (split-equally nodes (range concurrency)))
+                        (split-equally nodes (range (* concurrency 5))))
         requests-by-node (when requests
                            (split-number-equally nodes requests))
         report-generators (init-report-generators reporters results-dir context)
@@ -111,11 +111,10 @@
                                       (doseq [force-stop-fn (map :force-stop-fn responses-by-node)]
                                         (force-stop-fn)))
         summary (promise)]
-        (thread (let [results-by-node (map #(<!! (:results-ch %)) responses-by-node)
-                        result (reduce (partial combine-with-reporters report-collectors)
-                                       results-by-node)
-                        report (generate-with-reporters report-generators result)]
-                    (println "Simulation" (:name (eval-if-needed simulation)) "finished.")
-                    (deliver summary report)))
+    (thread (let [results-by-node (map #(<!! (:results-ch %)) responses-by-node)
+                  result (reduce (partial combine-with-reporters report-collectors) results-by-node)
+                  report (generate-with-reporters report-generators result)]
+              (println "Simulation" (:name (eval-if-needed simulation)) "finished.")
+              (deliver summary report)))
     (println (string/join "\n" (as-str-with-reporters report-generators summary)))
     {:summary summary :force-stop-fn force-stop-all-executors-fn}))

@@ -32,6 +32,7 @@
         scenarios (legacy-scenarios->scenarios legacy-scenarios)]
     (-> (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
                                    :timeout-in-ms step-timeout
+                                   :concurrency concurrency
                                    :context (:context options)
                                    :error-file error-file-path
                                    :progress-tracker (fn [_])}
@@ -65,18 +66,19 @@
                                         :timeout-in-ms timeout-in-ms
                                         :requests requests
                                         :duration duration
-                                        :users users
+                                        :users (or users (range (* concurrency 5)))
                                         :context context
                                         :error-file error-file-path
                                         :default-progress-tracker default-progress-tracker
                                         :progress-tracker progress-tracker}))))
 
-(defn run-two-scenarios [scenario1 scenario2 & {:keys [concurrency requests]}]
+(defn run-two-scenarios [scenario1 scenario2 & {:keys [concurrency users requests]}]
   (to-vector (:results (simulation/run {:name "Simulation"
                                         :scenarios [scenario1 scenario2]}
                                        {:concurrency concurrency
                                         :requests requests
                                         :timeout-in-ms 5000
+                                        :users (or users (range (* concurrency 5)))
                                         :error-file error-file-path
                                         :progress-tracker (fn [_])}))))
 
@@ -92,12 +94,15 @@
   (future (Thread/sleep 50)
           (callback (= "success" url))))
 
-(defn step [step-name return]
-  {:name step-name
-   :request (fn [ctx]
-              ;;Note! Highcharts reporter fails if start and end times are exactly the same values
-              (Thread/sleep (inc (rand-int 2)))
-              [return (assoc ctx :to-next-request return)])})
+(defn step
+  ([step-name return sleep-max]
+   {:name step-name
+    :request (fn [ctx]
+               ;;Note! Highcharts reporter fails if start and end times are exactly the same values
+               (Thread/sleep (inc (rand-int sleep-max)))
+               [return (assoc ctx :to-next-request return)])})
+  ([step-name return]
+   (step step-name return 2)))
 
 (defn throwing-step [step-name]
   {:name step-name
