@@ -1,5 +1,10 @@
 # Changes
 
+## 0.17.6
+
+* Fix a bug in console progress tracker.
+* Start runners in parallel to improve simulation results.
+
 ## 0.17.5
 
 * Add experimental support for tracking active thread count in test client
