@@ -682,9 +682,9 @@
         request-count (count (map :requests results))]
     (is (< request-count 1000))
     ;; There is a race condition between calling the force-stop-fn and sending
-    ;; more requests, and test requests are very fast, so this will be a little
+    ;; more requests, and test requests are very fast, so this could be a little
     ;; out
-    (is (= request-count @sent-requests-when-force-stop-requested))))
+    (is (some #{@sent-requests-when-force-stop-requested} (range request-count (+ request-count 3))))))
 
 (deftest with-step-fn
   (let [result (run-single-scenario {:name "scenario"
