@@ -3,7 +3,7 @@
   :url "http://github.com/mhjort/clj-gatling"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.10.3"]
+  :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.clojure/core.async "1.5.648"]
                  [http-kit "2.6.0"]
                  [prismatic/schema "1.4.1"]
