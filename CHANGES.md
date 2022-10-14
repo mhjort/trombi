@@ -4,6 +4,7 @@
 
 * Fix a bug in console progress tracker.
 * Start runners in parallel to improve simulation results.
+* Bump dependendencies & Clojure
 
 ## 0.17.5
 
