@@ -2,7 +2,7 @@
   (:require [clojure.core.async :refer [chan go >!]]
             [org.httpkit.client :as http]))
 
-(def base-url "http://clj-gatling-demo-server.herokuapp.com")
+(def base-url "http://localhost:8888")
 
 (defn- http-get [url _]
   (let [response (chan)
