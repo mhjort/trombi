@@ -5,8 +5,8 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.10.3"]
                  [org.clojure/core.async "1.5.648"]
-                 [http-kit "2.5.3"]
-                 [prismatic/schema "1.2.0"]
+                 [http-kit "2.6.0"]
+                 [prismatic/schema "1.4.1"]
                  [clojider-gatling-highcharts-reporter "0.4.0"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
