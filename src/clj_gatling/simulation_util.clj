@@ -49,7 +49,10 @@
         ;;In this tool this is not an issue
         xs (map #(max 1 (int (* total (/ % sum-weights)))) weights)
         mismatch (- total (reduce + xs))]
-    (map #(+ %1 %2) xs (concat (repeat mismatch 1) (repeat total 0)))))
+    (if (nat-int? mismatch)
+      (map #(+ %1 %2) xs (concat (repeat mismatch 1) (repeat total 0)))
+      (throw (ex-info "Negative remainder found when splitting by weight. Increase total or reduce weight variance"
+                      {:total total :weights weights})))))
 
 (defn split-to-buckets [ids bucket-sizes]
   (loop [start-idx 0
