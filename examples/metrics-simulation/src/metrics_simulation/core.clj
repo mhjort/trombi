@@ -61,8 +61,9 @@
                                 :concurrency-distribution ramp-up-distribution
                                 :root "tmp"
                                 :requests (read-string requests-or-duration)})
-      (gatling/run simulation
+      (let [result (gatling/run simulation
                    {:concurrency (read-string users-or-rate)
                     :root "tmp"
                     :experimental-test-runner-stats? true
-                    :requests (read-string requests-or-duration)}))))
+                    :requests (read-string requests-or-duration)})]
+        (println "Returned: " result)))))
