@@ -258,7 +258,7 @@
                                       (Thread/sleep 500)
                                       true)}
                           {:name "step 2"
-                           :request (fn [ctx]
+                           :request (fn [_]
                                       (Thread/sleep 2000)
                                       true)}]}
         results (run-single-scenario scenario
@@ -412,6 +412,26 @@
                                                :context-before map?
                                                :context-after map?
                                                :result true}]})))))
+
+(def first-step-returns-false-for-should-continue-scenario
+  {:name "Scenario"
+   :steps [(step-with-false-as-should-continue-scenario "first")
+           (step "second" true)]})
+
+(deftest stop-scenario-if-step-function-returns-false-for-should-continue-scenario
+  (let [results (run-single-scenario first-step-returns-false-for-should-continue-scenario :concurrency 1)]
+    (doseq [result results]
+      (is (equal? result {:name "Scenario"
+                          :id number?
+                          :start number?
+                          :end number?
+                          :requests [{:name "first"
+                                      :id number?
+                                      :start number?
+                                      :end number?
+                                      :context-before map?
+                                      :context-after map?
+                                      :result true}]})))))
 
 (deftest simulation-returns-result-when-run-with-http-requests-using-legacy-format
   (with-redefs [httpkit/async-http-request fake-async-http]
