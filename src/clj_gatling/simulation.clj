@@ -286,12 +286,11 @@
           (close! c))))
     c))
 
-(defn- print-scenario-info [scenario]
-  (let [rate (:rate scenario)]
-    (println "Running scenario" (:name scenario)
-             (if rate
-               (str "with rate " rate " users/sec")
-               (str "with concurrency " (:concurrency scenario))))))
+(defn- print-scenario-info [{:keys [rate users] :as scenario}]
+  (let [with-info (if rate
+                    (str "with rate " rate " users/sec")
+                    (str "with concurrency " (count users)))]
+    (println "Running scenario" (:name scenario) with-info)))
 
 (defn- run-scenario [run-constantly-fn options scenario]
   (print-scenario-info scenario)
