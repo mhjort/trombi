@@ -8,7 +8,7 @@ The tests are run against simple test server.
 
   First start the test server with command:
 
-  $ lein start-test-server [NUMBER_OF_THREADS_DEFAULT_IS_100_IF_THIS_PARAM_NOT_GIVEN]
+  $ lein run-test-server [NUMBER_OF_THREADS_DEFAULT_IS_100_IF_THIS_PARAM_NOT_GIVEN]
 
   Then start the simulation:
 
