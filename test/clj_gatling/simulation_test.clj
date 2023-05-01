@@ -415,7 +415,7 @@
 
 (def first-step-returns-false-for-should-continue-scenario
   {:name "Scenario"
-   :steps [(step-with-false-as-should-continue-scenario "first")
+   :steps [(step-returning-map "first" {:success? true :end-scenario? true})
            (step "second" true)]})
 
 (deftest stop-scenario-if-step-function-returns-false-for-should-continue-scenario

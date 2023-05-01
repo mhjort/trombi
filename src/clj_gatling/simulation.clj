@@ -9,7 +9,7 @@
                                                  weighted-scenarios]]
             [schema.core :refer [validate]]
             [clj-gatling.timers :as timers]
-            [clojure.core.async :as async :refer [go go-loop close! alts! <! >! poll!]])
+            [clojure.core.async :as async :refer [go go-loop close! alts! <! >!]])
   (:import (java.time Duration LocalDateTime)))
 
 (set! *warn-on-reflection* true)
@@ -22,18 +22,19 @@
                            {:result false :exception result}
                            {:result result}))
         parse-response (fn [response]
-                         (if (vector? response)
-                           (let [[result updated-context should-continue-scenario-or-nil?] response
-                                 should-continue-scenario? (or (nil? should-continue-scenario-or-nil?)
-                                                               should-continue-scenario-or-nil?)]
-                             (assoc (parse-result result)
-                                    :end-time (now)
-                                    :context updated-context
-                                    :should-continue-scenario? should-continue-scenario?))
-                           (assoc (parse-result response)
-                                  :end-time (now)
-                                  :context ctx
-                                  :should-continue-scenario? true)))]
+                         (let [defaults {:end-time (now)
+                                         :context ctx
+                                         :end-scenario? false}]
+                           (cond
+                             (vector? response) (let [[result updated-context] response]
+                                                  (merge defaults
+                                                         (parse-result result)
+                                                         {:context updated-context}))
+                             (map? response) (merge defaults
+                                                    (select-keys response [:updated-context
+                                                                           :end-scenario?])
+                                                    (parse-result (:success? response)))
+                             :else (merge defaults (parse-result response)))))]
     (go
       (try
         (let [response (f ctx)]
@@ -56,14 +57,14 @@
                   :start (now)
                   :context-before original-context}
           response (asynchronize (:request step) original-context)
-          [{:keys [result end-time context exception should-continue-scenario?]} c] (alts! [response (timers/timeout timeout)])]
+          [{:keys [result end-time context exception end-scenario?]} c] (alts! [response (timers/timeout timeout)])]
       (if (= c response)
         [(assoc return :end end-time
                        :exception exception
                        :result result
                        :context-after context)
          context
-         should-continue-scenario?]
+         end-scenario?]
         [(assoc return :end (now)
                        :exception (ex-info "clj-gatling: request timed out" {:timeout-in-ms timeout})
                        :result false
@@ -135,11 +136,11 @@
         step-ctx [(:steps scenario) (:step-fn scenario)]]
     (go-loop [[step context step-ctx] (next-step step-ctx context)
               results []]
-      (let [[result new-ctx should-continue-scenario?] (<! (async-function-with-timeout step
-                                                                                        timeout
-                                                                                        simulation-requests
-                                                                                        scenario-requests
-                                                                                        context))
+      (let [[result new-ctx end-scenario?] (<! (async-function-with-timeout step
+                                                                            timeout
+                                                                            simulation-requests
+                                                                            scenario-requests
+                                                                            context))
             [step' _ _ :as next-steps] (next-step step-ctx new-ctx)]
         (when-let [e (:exception result)]
           (log-exception (:error-file options) e))
@@ -147,7 +148,7 @@
                 (nil? step')
                 (and skip-next-after-failure?
                      (request-failed? result))
-                (not should-continue-scenario?))
+                end-scenario?)
           (>! result-channel [(conj results (clean-result result)) context])
           (recur next-steps (conj results (clean-result result))))))
     result-channel))

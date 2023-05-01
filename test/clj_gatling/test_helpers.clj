@@ -104,13 +104,13 @@
   ([step-name return]
    (step step-name return 2)))
 
-(defn step-with-false-as-should-continue-scenario [step-name]
+(defn step-returning-map [step-name return]
   (let [should-continue-scenario? false]
     {:name step-name
      :request (fn [ctx]
                 ;;Note! Highcharts reporter fails if start and end times are exactly the same values
                 (Thread/sleep (inc (rand-int 2)))
-                [true ctx should-continue-scenario?])}))
+                (assoc return :updated-context ctx))}))
 
 (defn throwing-step [step-name]
   {:name step-name
