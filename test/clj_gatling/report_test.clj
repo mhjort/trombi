@@ -42,7 +42,7 @@
                                             2
                                             (from scenario-results)
                                             output-writer)]
-    (is (equal? summary {:ok 4 :ko 1}))
+    (is (equal? (select-keys summary [:ok :ko]) {:ok 4 :ko 1}))
     (is (equal? @(first result-lines) (take 2 scenario-results)))
     (is (equal? @(second result-lines) [(last scenario-results)]))))
 
@@ -66,4 +66,7 @@
                                          (from scenario-results)
                                          [(assoc (short-summary/collector {}) :reporter-key :short)
                                           (response-time-collector {})])]
-    (is (equal? summary {:short {:ok 4 :ko 1} :response-times [446 697 428 20 428]}))))
+    (is (equal? summary {:short {:ok 4
+                                 :ko 1
+                                 :response-time {:global {:min int? :max int? :mean int?}}}
+                         :response-times [446 697 428 20 428]}))))
