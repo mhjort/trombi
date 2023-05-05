@@ -19,16 +19,35 @@
                 :steps [(th/step "Step1" true)
                         (th/step "Step2" false)]}]})
 
+(defn- multi-scenario-simulation [simu-name]
+  {:name simu-name
+   :scenarios [{:name "Test scenario1"
+                :steps [(th/step "Step1" true)
+                        (th/step "Step2" false)]}
+               {:name "Test scenario2"
+                :steps [(th/step "Step1" true)
+                        (th/step "Step2" false)]}]})
+
 (deftest legacy-simulation-returns-summary
   (let [summary (run-simulation [legacy-scenario] 1 {})]
     (is (= {:ok 1 :ko 1} summary))))
 
+(defn- mean [data]
+  (Math/round (double (/ (reduce + data) (count data)))))
+
 (deftest simulation-returns-summary
-  (let [summary (run (simulation "test-summary")
-                     {:requests 100
-                      :concurrency 1})]
-    (is (approximately== (:ok summary) 50 :accuracy 5))
-    (is (approximately== (:ko summary) 50 :accuracy 5))))
+  ;This test tries to test that clj-gatling can split concurrency to multiple scenarios in parallel
+  ;and that concurrency is stable and request count still matches
+  (let [concurrency-values (atom [])
+        summary (run (multi-scenario-simulation "test-summary")
+                     {:requests 2000
+                      :progress-tracker (fn [{:keys [total-concurrency]}]
+                                          (swap! concurrency-values conj total-concurrency))
+                      :concurrency 10})]
+    (is (approximately== 1000 (:ok summary) :accuracy 10))
+    (is (approximately== 1000 (:ko summary) :accuracy 10))
+    ;We drop first value because concurrency is not stable at the very beginning
+    (is (approximately== (mean (drop 1 @concurrency-values)) 10 :accuracy 20))))
 
 (deftest simulation-returns-summary-of-all-reporters
   (let [summary (run (simulation "test-all")
