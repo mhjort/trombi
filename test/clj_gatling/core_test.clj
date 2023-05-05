@@ -65,12 +65,19 @@
 ;;TODO Test also with multiple-reporters
 
 (deftest simulation-can-be-stopped-when-running-asynchronously
-  (let [{:keys [results force-stop-fn]} (run-async (simulation "test-summary")
-                                                   {:requests 500
-                                                    :concurrency 1})]
+  (let [tracker-calls (atom 0)
+        {:keys [force-stop-fn]} (run-async (simulation "test-summary")
+                                           {:duration (java.time.Duration/ofSeconds 10)
+                                            :progress-tracker (fn [_]
+                                                                (swap! tracker-calls inc))
+                                            :concurrency 1})
+        _ (Thread/sleep 100)
+        tracker-calls-before-force-stop @tracker-calls]
     (force-stop-fn)
-    (is (< (:ok @results) 260))
-    (is (< (:ko @results) 260))))
+    ;In here we test that progress tracker is not called after force stop has been requested
+    (Thread/sleep 200)
+    ;With force stop it is not guaranteed that we get proper reports so we don't check the results
+    (is (= tracker-calls-before-force-stop @tracker-calls))))
 
 (deftest simulation-returns-raw-report-from-file
   (let [summary (run (simulation "test-file-raw")
