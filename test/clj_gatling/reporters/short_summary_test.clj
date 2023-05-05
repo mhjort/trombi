@@ -31,5 +31,5 @@
       (is (= [{:ok 4 :ko 1 :response-time {:global {:min 20
                                                     :max 500
                                                     :mean 154}}}
-              "Total number of requests: 5, successful: 4, failed: 1."]
+              "Total number of requests: 5, successful: 4, failed: 1 with mean 154 ms."]
              (simulate-report-generation collector generator))))))

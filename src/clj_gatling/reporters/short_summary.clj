@@ -4,12 +4,13 @@
 (def generator
   (fn [_]
     {:generate identity
-     :as-str (fn [{:keys [ok ko]
+     :as-str (fn [{:keys [ok ko response-time]
                    :or {ko 0 ok 0}}]
                (let [total (+ ok ko)]
                  (str "Total number of requests: " total
                       ", successful: " ok
-                      ", failed: " ko ".")))}))
+                      ", failed: " ko
+                      " with mean " (-> response-time :global :mean) " ms.")))}))
 
 (defn- mean [data]
   (Math/round (double (/ (reduce + data) (count data)))))
