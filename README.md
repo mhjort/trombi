@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/mhjort/clj-gatling/tree/master.svg?style=svg)](https://circleci.com/gh/mhjort/clj-gatling/tree/master)
 
-Create and run load tests using Clojure. Get results back as Clojure data and/or as fancy graphical charts.
+Conduct load tests with Clojure, obtaining results as Clojure data or graphical charts. This tool targets stateful applications needing scripted logic in tests.
 
 ## Installation
 
@@ -43,8 +43,9 @@ generates a detailed html report.
 
 Calling `run` function will block while simulation is running. If you want to more control you can also call `run-async` function. It takes same parameters as the synchronous call. However, it returns immediately and returns map with following keys:
 
-- `results`: A promise that is delivered once the simulation finishes. 
-- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit.
+- `results`: A promise that is delivered once the simulation finishes.
+- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit
+                   When simulation is force stopped `clj-gatling` does not guarantee that results are very reliable. So it is better to ignore the results when you finish the simulation with force stop.
 
 ### Concepts
 
@@ -269,9 +270,9 @@ Following keys are passed to progress tracker function:
 - `sent-requests`: Number of requests sent so far
 - `total-concurrency`: How many concurrent requests are in progress at the moment
 - `default-progress-tracker`: Function for default behaviour. This can be used to also call the default tracker from user-provided progress tracker
-- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit. 
+- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit.
 
-e.g. 
+e.g.
 
 ```clojure
 (fn [{:keys [progress sent-requests total-concurrency default-progress-tracker force-stop-fn] :as params}]
@@ -290,8 +291,8 @@ The latest version of `core.async` supports setting the thread pool size using s
 
 By default, clj-gatling generates two reports: Gatling Highcharts Report and a short summary report. Reporters generate report to stdout and some reporters can even generate results to file. When you call the `simulation/run` function it will return all the reports with reporter keys (e.g `:short` for the short summary reporter). If you don't want to use the default reports you can specify a list of reporters with the `:reporters` key in the options. Available reporters are following:
 
-* `clj-gatling.reporters.short-summary/reporter` This reporter returns a summary with number of successful and failed requests.
-* `clj-gatling.reporters.raw-reporter/in-memory-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). It stores results in memory. 
+* `clj-gatling.reporters.short-summary/reporter` This reporter returns a summary with number of successful and failed requests. In addition to that global min, max and mean is reported.
+* `clj-gatling.reporters.raw-reporter/in-memory-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). It stores results in memory.
 * `clj-gatling.reporters.raw-reporter/file-reporter` This reporter returns all the raw results (scenarios & requests with their start and end times). It stores results to file.
 * `clojider-gatling-highcharts-reporter.core/gatling-highcharts-reporter` Generates a Gatling Highchart html report.
 

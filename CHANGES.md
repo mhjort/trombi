@@ -1,5 +1,12 @@
 # Changes
 
+## 0.18.0
+
+* Fix a bug in concurrency weight between multiple scenarios
+* Fix a race condition bug in force stop
+* Fix a bug in reporter console output showing values too early
+* Add global min, max and mean measurements to short summary
+
 ## 0.17.6
 
 * Fix a bug in console progress tracker.
