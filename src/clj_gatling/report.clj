@@ -47,12 +47,14 @@
              a
              (reporters-map reporters)))
 
-(defn generate-with-reporters [reporters a]
-  (reduce-kv (fn [m k _]
-               (let [generate (:generate (k (reporters-map reporters)))]
-                 (update m k #(generate %))))
-             a
-             (reporters-map reporters)))
+(defn generate-with-reporters [reporters combined-values-per-report-map]
+  ;In force stop case results might be empty
+  (when combined-values-per-report-map
+    (reduce-kv (fn [m k _]
+                 (let [generate (:generate (k (reporters-map reporters)))]
+                   (update m k #(generate %))))
+               combined-values-per-report-map
+               (reporters-map reporters))))
 
 (defn as-str-with-reporters [reporters summary]
   (map (fn [[k reporter]]
@@ -72,6 +74,9 @@
                                                           {:node-id node-id :batch-id idx :batch result}
                                                           reporters))]
                             (recur (inc idx) (conj threads t)))
-                          threads))]
-    (reduce (partial combine-with-reporters reporters)
-            (map #(<!! %) write-results))))
+                          threads))
+        results-from-channels (map #(<!! %) write-results)]
+    ;In force stop case results might be empty
+    (when (seq results-from-channels)
+      (reduce (partial combine-with-reporters reporters)
+              results-from-channels))))
