@@ -117,6 +117,6 @@
                   result (reduce (partial combine-with-reporters report-collectors) results-by-node)
                   report (generate-with-reporters report-generators result)]
               (println "Simulation" (:name (eval-if-needed simulation)) "finished.")
+              (println (string/join "\n" (as-str-with-reporters report-generators report)))
               (deliver summary report)))
-    (println (string/join "\n" (as-str-with-reporters report-generators summary)))
     {:summary summary :force-stop-fn force-stop-all-executors-fn}))
