@@ -66,7 +66,7 @@
                                         :timeout-in-ms timeout-in-ms
                                         :requests requests
                                         :duration duration
-                                        :users (or users (range (* concurrency 5)))
+                                        :users (or users (range concurrency))
                                         :context context
                                         :error-file error-file-path
                                         :default-progress-tracker default-progress-tracker

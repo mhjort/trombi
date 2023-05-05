@@ -92,7 +92,9 @@
                    context] :as options}]
   (let [users-by-node (if rate
                         (split-equally nodes (range (max-users rate timeout-in-ms)))
-                        (split-equally nodes (range (* concurrency 5))))
+                        ;When running simulation using concurrency mode the number of users
+                        ;must match exactly to the number of users
+                        (split-equally nodes (range concurrency)))
         requests-by-node (when requests
                            (split-number-equally nodes requests))
         report-generators (init-report-generators reporters results-dir context)
