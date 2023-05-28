@@ -1,6 +1,6 @@
-(defproject clj-gatling "0.18.0"
+(defproject syklotroni "1.0.0-beta1"
   :description "Clojure library for load testing"
-  :url "http://github.com/mhjort/clj-gatling"
+  :url "http://github.com/mhjort/syklotroni"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.11.1"]
