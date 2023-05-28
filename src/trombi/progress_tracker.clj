@@ -1,5 +1,5 @@
-(ns clj-gatling.progress-tracker
-  (:require [clj-gatling.simulation-runners :as runners])
+(ns trombi.progress-tracker
+  (:require [trombi.simulation-runners :as runners])
   (:import  (java.time LocalDateTime)
             (java.util.concurrent Executors TimeUnit)))
 

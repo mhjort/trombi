@@ -1,4 +1,4 @@
-(ns clj-gatling.schema
+(ns trombi.schema
   (:require [schema.core :as s]))
 
 (def Step

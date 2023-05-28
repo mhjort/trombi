@@ -18,4 +18,4 @@
                                   [org.clojure/tools.logging "1.2.4"]
                                   [org.apache.logging.log4j/log4j-api "2.19.0"]
                                   [org.apache.logging.log4j/log4j-core "2.19.0"]]}}
-  :aot [clj-gatling.simulation-runners])
+  :aot [trombi.simulation-runners])

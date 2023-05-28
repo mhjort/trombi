@@ -1,10 +1,10 @@
-(ns clj-gatling.test-helpers
+(ns trombi.test-helpers
   (:require [clojure.core.async :refer [<!!]]
-            [clj-gatling.simulation :as simulation]
-            [clj-gatling.schema :as schema]
+            [trombi.simulation :as simulation]
+            [trombi.schema :as schema]
             [schema.core :refer [validate]]
-            [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios]]
-            [clj-gatling.simulation-util :refer [choose-runner
+            [trombi.legacy-util :refer [legacy-scenarios->scenarios]]
+            [trombi.simulation-util :refer [choose-runner
                                                  weighted-scenarios
                                                  create-dir]]
             [clojure.java.io :as io]))

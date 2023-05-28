@@ -1,7 +1,7 @@
-(ns clj-gatling.reporters.short-summary-test
+(ns trombi.reporters.short-summary-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.simulation-util :refer [eval-if-needed]]
-            [clj-gatling.reporters.short-summary :refer [reporter]]))
+            [trombi.simulation-util :refer [eval-if-needed]]
+            [trombi.reporters.short-summary :refer [reporter]]))
 
 (def scenario-results
   [{:name "Test scenario" :id 1 :start 1391936496000 :end 1391936496100
@@ -23,8 +23,8 @@
 (deftest short-summary-test
   (testing "short-summary is defined correctly"
     (is (= {:reporter-key :short
-            :collector 'clj-gatling.reporters.short-summary/collector
-            :generator 'clj-gatling.reporters.short-summary/generator}
+            :collector 'trombi.reporters.short-summary/collector
+            :generator 'trombi.reporters.short-summary/generator}
            reporter))
   (let [collector ((eval-if-needed (:collector reporter)) {})
         generator ((eval-if-needed (:generator reporter)) {})]

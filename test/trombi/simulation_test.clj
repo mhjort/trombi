@@ -1,7 +1,7 @@
-(ns clj-gatling.simulation-test
+(ns trombi.simulation-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.test-helpers :refer :all]
-            [clj-gatling.httpkit :as httpkit]
+            [trombi.test-helpers :refer :all]
+            [trombi.httpkit :as httpkit]
             [clj-containment-matchers.clojure-test :refer :all]
             [clj-async-test.core :refer :all]
             [clojure.core.async :refer [go <! timeout]]
@@ -523,7 +523,7 @@
                                       :context-before map?
                                       :context-after map?
                                       :result false
-                                      :exception "clj-gatling: request timed out"}]})))))
+                                      :exception "trombi: request timed out"}]})))))
 
 (defn- is-approximately-sorted? [xs & {:keys [accuracy] :or {accuracy 25}}]
   ;; Original vector might contain small inconsistencies

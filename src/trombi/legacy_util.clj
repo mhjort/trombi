@@ -1,5 +1,5 @@
-(ns clj-gatling.legacy-util
-  (:require [clj-gatling.httpkit :as http]
+(ns trombi.legacy-util
+  (:require [trombi.httpkit :as http]
             [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async :refer [put!]]))
 

@@ -1,4 +1,4 @@
-(ns clj-gatling.simulation-runners
+(ns trombi.simulation-runners
   (:import (java.time Duration LocalDateTime)))
 
 (set! *warn-on-reflection* true)

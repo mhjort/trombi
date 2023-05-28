@@ -1,5 +1,5 @@
-(ns clj-gatling.perf-test
-  (:require [clj-gatling.core :as gatling])
+(ns trombi.perf-test
+  (:require [trombi.core :as gatling])
   (:gen-class))
 
 (defn- create-scenario [url]

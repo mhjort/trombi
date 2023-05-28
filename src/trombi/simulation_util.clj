@@ -1,11 +1,11 @@
-(ns clj-gatling.simulation-util
+(ns trombi.simulation-util
   (:require [clojure.java.io :as io]
             [clojure.string :as str])
   (:import [java.io File]
            [java.io StringWriter PrintWriter]
            [java.time Duration LocalDateTime]
            [java.time.format DateTimeFormatter]
-           [clj_gatling.simulation_runners FixedRequestNumberRunner DurationRunner]))
+           [trombi.simulation_runners FixedRequestNumberRunner DurationRunner]))
 
 (defn create-dir [^String dir]
   (.mkdirs (File. dir)))

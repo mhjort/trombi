@@ -1,8 +1,8 @@
-(ns clj-gatling.simulation-runners-test
+(ns trombi.simulation-runners-test
   (:require [clojure.test :refer [deftest testing is]]
-            [clj-gatling.simulation-runners :refer [calculate-progress]])
+            [trombi.simulation-runners :refer [calculate-progress]])
   (:import (java.time Duration LocalDateTime)
-           (clj_gatling.simulation_runners DurationRunner FixedRequestNumberRunner)))
+           (trombi.simulation_runners DurationRunner FixedRequestNumberRunner)))
 
 (deftest duration-runner
   (let [runner (DurationRunner. (Duration/ofSeconds 10))
