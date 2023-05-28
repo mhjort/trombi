@@ -1,10 +1,10 @@
-(ns clj-gatling.test-helpers
+(ns syklotroni.test-helpers
   (:require [clojure.core.async :refer [<!!]]
-            [clj-gatling.simulation :as simulation]
-            [clj-gatling.schema :as schema]
+            [syklotroni.simulation :as simulation]
+            [syklotroni.schema :as schema]
             [schema.core :refer [validate]]
-            [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios]]
-            [clj-gatling.simulation-util :refer [choose-runner
+            [syklotroni.legacy-util :refer [legacy-scenarios->scenarios]]
+            [syklotroni.simulation-util :refer [choose-runner
                                                  weighted-scenarios
                                                  create-dir]]
             [clojure.java.io :as io]))

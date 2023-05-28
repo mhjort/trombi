@@ -1,4 +1,4 @@
-(ns clj-gatling.timers
+(ns syklotroni.timers
   (:require [clojure.core.async.impl.protocols :as impl]
             [clojure.core.async.impl.channels :as channels])
   (:import [java.util.concurrent DelayQueue Delayed TimeUnit]))
@@ -40,7 +40,7 @@
 
 (defonce timeout-daemon
   (delay
-   (doto (Thread. ^Runnable timeout-worker "clj-gatling.timers/timeout-daemon")
+   (doto (Thread. ^Runnable timeout-worker "syklotroni.timers/timeout-daemon")
      (.setDaemon true)
      (.start))))
 

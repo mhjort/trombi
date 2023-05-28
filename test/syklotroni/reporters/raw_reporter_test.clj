@@ -1,7 +1,7 @@
-(ns clj-gatling.reporters.raw-reporter-test
+(ns syklotroni.reporters.raw-reporter-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.simulation-util :refer [eval-if-needed]]
-            [clj-gatling.reporters.raw-reporter :as raw])
+            [syklotroni.simulation-util :refer [eval-if-needed]]
+            [syklotroni.reporters.raw-reporter :as raw])
   (:import (java.nio.file Files)
            (java.nio.file.attribute FileAttribute)))
 

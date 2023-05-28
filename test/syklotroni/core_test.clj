@@ -1,9 +1,9 @@
-(ns clj-gatling.core-test
+(ns syklotroni.core-test
   (:require [clojure.test :refer :all]
             [clj-async-test.core :refer :all]
-            [clj-gatling.test-helpers :as th]
-            [clj-gatling.reporters.raw-reporter :as raw-reporter]
-            [clj-gatling.core :refer [run run-async run-simulation]]))
+            [syklotroni.test-helpers :as th]
+            [syklotroni.reporters.raw-reporter :as raw-reporter]
+            [syklotroni.core :refer [run run-async run-simulation]]))
 
 (use-fixtures :once th/setup-error-file-path)
 
@@ -36,7 +36,7 @@
   (Math/round (double (/ (reduce + data) (count data)))))
 
 (deftest simulation-returns-summary
-  ;This test tries to test that clj-gatling can split concurrency to multiple scenarios in parallel
+  ;This test tries to test that syklotroni can split concurrency to multiple scenarios in parallel
   ;and that concurrency is stable and request count still matches
   (let [concurrency-values (atom [])
         summary (run (multi-scenario-simulation "test-summary")

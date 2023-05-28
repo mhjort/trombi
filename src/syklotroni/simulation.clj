@@ -1,14 +1,14 @@
-(ns clj-gatling.simulation
-  (:require [clj-gatling.simulation-runners :as runners]
-            [clj-gatling.schema :as schema]
-            [clj-gatling.progress-tracker :as progress-tracker]
-            [clj-gatling.simulation-util :refer [arg-count
+(ns syklotroni.simulation
+  (:require [syklotroni.simulation-runners :as runners]
+            [syklotroni.schema :as schema]
+            [syklotroni.progress-tracker :as progress-tracker]
+            [syklotroni.simulation-util :refer [arg-count
                                                  choose-runner
                                                  clean-result
                                                  log-exception
                                                  weighted-scenarios]]
             [schema.core :refer [validate]]
-            [clj-gatling.timers :as timers]
+            [syklotroni.timers :as timers]
             [clojure.core.async :as async :refer [go go-loop close! alts! <! >! poll!]])
   (:import (java.time Duration LocalDateTime)))
 
@@ -55,7 +55,7 @@
                        :context-after context)
          context]
         [(assoc return :end (now)
-                       :exception (ex-info "clj-gatling: request timed out" {:timeout-in-ms timeout})
+                       :exception (ex-info "syklotroni: request timed out" {:timeout-in-ms timeout})
                        :result false
                        :context-after original-context)
          original-context]))))

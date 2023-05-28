@@ -1,8 +1,8 @@
-(ns clj-gatling.simulation-runners-test
+(ns syklotroni.simulation-runners-test
   (:require [clojure.test :refer [deftest testing is]]
-            [clj-gatling.simulation-runners :refer [calculate-progress]])
+            [syklotroni.simulation-runners :refer [calculate-progress]])
   (:import (java.time Duration LocalDateTime)
-           (clj_gatling.simulation_runners DurationRunner FixedRequestNumberRunner)))
+           (syklotroni.simulation_runners DurationRunner FixedRequestNumberRunner)))
 
 (deftest duration-runner
   (let [runner (DurationRunner. (Duration/ofSeconds 10))

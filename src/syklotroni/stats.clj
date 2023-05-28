@@ -1,4 +1,4 @@
-(ns clj-gatling.stats
+(ns syklotroni.stats
   (:require [clojure.core.async :refer [chan go alts! >!! <!! timeout]])
   (:import (java.time LocalDateTime)
            (java.lang.management ManagementFactory)))

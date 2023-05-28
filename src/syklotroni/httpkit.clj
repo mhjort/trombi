@@ -1,4 +1,4 @@
-(ns clj-gatling.httpkit
+(ns syklotroni.httpkit
   (:require [org.httpkit.client :as http])
   (:import  [org.httpkit PrefixThreadFactory]
             [org.httpkit.client HttpClient]

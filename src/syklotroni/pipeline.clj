@@ -1,11 +1,11 @@
-(ns clj-gatling.pipeline
-  (:require [clj-gatling.report :refer [combine-with-reporters
+(ns syklotroni.pipeline
+  (:require [syklotroni.report :refer [combine-with-reporters
                                         generate-with-reporters
                                         as-str-with-reporters
                                         parse-in-batches]]
-            [clj-gatling.simulation :as simu]
-            [clj-gatling.stats :as stats]
-            [clj-gatling.simulation-util :refer [eval-if-needed
+            [syklotroni.simulation :as simu]
+            [syklotroni.stats :as stats]
+            [syklotroni.simulation-util :refer [eval-if-needed
                                                  split-equally
                                                  split-number-equally]]
             [clojure.string :as string]

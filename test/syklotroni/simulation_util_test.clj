@@ -1,11 +1,11 @@
-(ns clj-gatling.simulation-util-test
+(ns syklotroni.simulation-util-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.test-helpers :refer :all]
+            [syklotroni.test-helpers :refer :all]
             [clojure.test.check.properties :as prop]
             [clj-containment-matchers.clojure-test :refer :all]
             [clojure.test.check.clojure-test :refer [defspec]]
             [clojure.test.check.generators :as gen]
-            [clj-gatling.simulation-util :as simulation-util])
+            [syklotroni.simulation-util :as simulation-util])
   (:import (clojure.lang ExceptionInfo)))
 
 (def scenario-generator (gen/vector

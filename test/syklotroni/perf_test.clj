@@ -1,5 +1,5 @@
-(ns clj-gatling.perf-test
-  (:require [clj-gatling.core :as gatling])
+(ns syklotroni.perf-test
+  (:require [syklotroni.core :as gatling])
   (:gen-class))
 
 (defn- create-scenario [url]

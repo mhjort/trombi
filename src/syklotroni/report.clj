@@ -1,7 +1,7 @@
-(ns clj-gatling.report
+(ns syklotroni.report
   (:require [schema.core :refer [validate]]
             [clojure.set :refer [rename-keys]]
-            [clj-gatling.schema :as schema]
+            [syklotroni.schema :as schema]
             [clojure.core.async :as a :refer [thread <!!]]))
 
 (defn create-result-lines [simulation buffer-size results-channel output-writer]

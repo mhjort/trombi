@@ -1,5 +1,5 @@
-(ns clj-gatling.progress-tracker
-  (:require [clj-gatling.simulation-runners :as runners])
+(ns syklotroni.progress-tracker
+  (:require [syklotroni.simulation-runners :as runners])
   (:import  (java.time LocalDateTime)
             (java.util.concurrent Executors TimeUnit)))
 
