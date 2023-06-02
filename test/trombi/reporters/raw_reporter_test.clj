@@ -1,7 +1,7 @@
-(ns clj-gatling.reporters.raw-reporter-test
+(ns trombi.reporters.raw-reporter-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.simulation-util :refer [eval-if-needed]]
-            [clj-gatling.reporters.raw-reporter :as raw])
+            [trombi.simulation-util :refer [eval-if-needed]]
+            [trombi.reporters.raw-reporter :as raw])
   (:import (java.nio.file Files)
            (java.nio.file.attribute FileAttribute)))
 

@@ -1,6 +1,6 @@
 (ns metrics-simulation.core
-  (:require [clj-gatling.core :as gatling]
-            [clj-gatling.reporters.raw-reporter :as raw-reporter]
+  (:require [trombi.core :as trombi]
+            [trombi.reporters.raw-reporter :as raw-reporter]
             [metrics-simulation.simulations :refer [simulations]])
   (:import (java.time Duration))
   (:gen-class))
@@ -36,14 +36,14 @@
   (let [simulation (or ((keyword simulation) simulations)
                        (throw (Exception. (str "No such simulation " simulation))))]
     (condp = option
-      "--with-duration" (gatling/run simulation
+      "--with-duration" (trombi/run simulation
                                      {:concurrency (read-string users-or-rate)
                                       :concurrency-distribution ramp-up-distribution
                                       :duration (Duration/ofSeconds (read-string requests-or-duration))})
-      "--with-rate" (gatling/run simulation
+      "--with-rate" (trombi/run simulation
                                  {:rate (read-string users-or-rate)
                                   :requests (read-string requests-or-duration)})
-      "--no-report" (gatling/run simulation
+      "--no-report" (trombi/run simulation
                                  {:concurrency (read-string users-or-rate)
                                   :concurrency-distribution ramp-up-distribution
                                   :reporter {:writer (fn [_ _ _])
@@ -51,17 +51,17 @@
                                                           (println "Ran" simulation "without report"))}
                                   :requests (read-string requests-or-duration)})
       "--raw-report" (println "Scenario averages calculated from raw report:"
-                              (calculate-scenario-averages (:raw (gatling/run simulation
+                              (calculate-scenario-averages (:raw (trombi/run simulation
                                                                               {:concurrency (read-string users-or-rate)
                                                                                :concurrency-distribution ramp-up-distribution
                                                                                :reporters [raw-reporter/file-reporter]
                                                                                :requests (read-string requests-or-duration)}))))
-      "--ramp-up" (gatling/run simulation
+      "--ramp-up" (trombi/run simulation
                                {:concurrency (read-string users-or-rate)
                                 :concurrency-distribution ramp-up-distribution
                                 :root "tmp"
                                 :requests (read-string requests-or-duration)})
-      (let [result (gatling/run simulation
+      (let [result (trombi/run simulation
                    {:concurrency (read-string users-or-rate)
                     :root "tmp"
                     :experimental-test-runner-stats? true

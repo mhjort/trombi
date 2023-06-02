@@ -1,7 +1,7 @@
-(ns clj-gatling.pipeline-test
+(ns trombi.pipeline-test
   (:require [clojure.test :refer [deftest is]]
-            [clj-gatling.test-helpers :as th]
-            [clj-gatling.pipeline :as pipeline]))
+            [trombi.test-helpers :as th]
+            [trombi.pipeline :as pipeline]))
 
 (deftest max-users
   (is (= 48000 (pipeline/max-users 800 60000)))
@@ -20,7 +20,7 @@
         executor (stub-executor node-ids)
         reporters [th/a-reporter
                    th/b-reporter]
-        {:keys [summary force-stop-fn]} (pipeline/run 'clj-gatling.example/test-simu {:executor executor
+        {:keys [summary force-stop-fn]} (pipeline/run 'trombi.example/test-simu {:executor executor
                                                                                       :nodes 3
                                                                                       :context {}
                                                                                       :results-dir "tmp"

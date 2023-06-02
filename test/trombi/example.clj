@@ -1,4 +1,4 @@
-(ns clj-gatling.example)
+(ns trombi.example)
 
 (def test-simu
   {:name "Test simulation"

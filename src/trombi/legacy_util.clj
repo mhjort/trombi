@@ -1,13 +1,16 @@
-(ns clj-gatling.legacy-util
-  (:require [clj-gatling.httpkit :as http]
-            [clojure.set :refer [rename-keys]]
+(ns trombi.legacy-util
+  (:require [clojure.set :refer [rename-keys]]
             [clojure.core.async :as async :refer [put!]]))
 
 (set! *warn-on-reflection* true)
 
 (defn- convert-legacy-fn [request]
   (let [f (if-let [url (:http request)]
-            (partial http/async-http-request url)
+            (do
+              ;In Trombi httpkit is an optional dependency
+              ;This way httpkit is loaded only when it is used
+              (require '[trombi.httpkit :as http])
+              (partial (eval 'http/async-http-request) url))
             (:fn request))
         c (async/chan)]
     (fn [ctx]

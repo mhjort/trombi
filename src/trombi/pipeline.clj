@@ -1,11 +1,11 @@
-(ns clj-gatling.pipeline
-  (:require [clj-gatling.report :refer [combine-with-reporters
+(ns trombi.pipeline
+  (:require [trombi.report :refer [combine-with-reporters
                                         generate-with-reporters
                                         as-str-with-reporters
                                         parse-in-batches]]
-            [clj-gatling.simulation :as simu]
-            [clj-gatling.stats :as stats]
-            [clj-gatling.simulation-util :refer [eval-if-needed
+            [trombi.simulation :as simu]
+            [trombi.stats :as stats]
+            [trombi.simulation-util :refer [eval-if-needed
                                                  split-equally
                                                  split-number-equally]]
             [clojure.string :as string]

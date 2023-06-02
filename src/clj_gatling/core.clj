@@ -1,24 +1,18 @@
 (ns clj-gatling.core
-  (:import (java.time ZonedDateTime))
-  (:require [clojider-gatling-highcharts-reporter.core :refer [gatling-highcharts-reporter]]
-            [clojider-gatling-highcharts-reporter.reporter :refer [csv-writer]]
-            [clojider-gatling-highcharts-reporter.generator :refer [create-chart]]
-            [clj-gatling.report :as report]
-            [clj-gatling.reporters.short-summary :as short-summary]
-            [clj-gatling.schema :as schema]
-            [clj-gatling.progress-tracker :as progress-tracker]
-            [schema.core :refer [validate]]
-            [clj-gatling.pipeline :as pipeline]
-            [clj-gatling.legacy-util :refer [legacy-scenarios->scenarios
-                                             legacy-reporter->reporter]]
-            [clj-gatling.simulation-util :refer [create-dir
+  (:require [trombi.core :as trombi]
+            [trombi.report :as report]
+            [trombi.simulation :as simulation]
+            [trombi.progress-tracker :as progress-tracker]
+            [trombi-gatling-highcharts-reporter.core :as highcharts]
+            [trombi-gatling-highcharts-reporter.reporter :refer [csv-writer]]
+            [trombi-gatling-highcharts-reporter.generator :refer [create-chart]]
+            [trombi.legacy-util :refer [legacy-scenarios->scenarios]]
+            [trombi.simulation-util :refer [create-dir
                                                  path-join
                                                  weighted-scenarios
-                                                 eval-if-needed
                                                  choose-runner
-                                                 create-report-name]]
-            [clj-gatling.simulation :as simulation]
-            [clojure.core.async :refer [thread]]))
+                                                 create-report-name]])
+  (:import (java.time ZonedDateTime)))
 
 (def buffer-size 20000)
 
@@ -53,67 +47,17 @@
     (println (str "Open " results-dir "/index.html"))
     summary))
 
-(defn- create-reporters [reporter results-dir simulation]
-  (let [r (if reporter
-            (do
-              (println "Warn! :reporter option is deprecated. Use :reporters instead")
-              (legacy-reporter->reporter :custom
-                                         reporter
-                                         simulation))
-            (legacy-reporter->reporter :highcharts
-                                       (gatling-highcharts-reporter results-dir)
-                                       simulation))]
-    [short-summary/reporter r]))
+;clj-gatling used to have both short summary and highcharts reporters as default reporters
+;Trombi has only short summary as a default
+(defn- add-backwards-compatible-reporters [options]
+  (let [final-reporters (when-not (:reporters options)
+                          (concat trombi/default-reporters
+                                  [highcharts/reporter]))
+        final-options (assoc options :reporters final-reporters)]
+    final-options))
 
-(defn- run-with-pipeline [simulation {:keys [concurrency concurrency-distribution rate rate-distribution root
-                                             timeout-in-ms context requests duration reporter reporters error-file
-                                             executor nodes progress-tracker experimental-test-runner-stats?] :as options
-                                      :or {concurrency 1
-                                           root "target/results"
-                                           executor pipeline/local-executor
-                                           nodes 1
-                                           timeout-in-ms 5000
-                                           context {}
-                                           experimental-test-runner-stats? false}}]
-  (validate schema/Options options)
-  (let [simulation-name (:name (eval-if-needed simulation))
-        results-dir (create-results-dir root simulation-name)
-        default-progress-tracker (progress-tracker/create-console-progress-tracker)
-        reporters (or reporters
-                      (create-reporters reporter results-dir simulation))]
-    (pipeline/run simulation (assoc options
-                                    :concurrency concurrency
-                                    :concurrency-distribution concurrency-distribution
-                                    :rate rate
-                                    :rate-distribution rate-distribution
-                                    :timeout-in-ms timeout-in-ms
-                                    :context context
-                                    :executor executor
-                                    :progress-tracker (or progress-tracker default-progress-tracker)
-                                    :default-progress-tracker default-progress-tracker
-                                    :reporters reporters
-                                    :results-dir results-dir
-                                    :nodes nodes
-                                    :batch-size buffer-size
-                                    :requests requests
-                                    :error-file (or error-file
-                                                    (path-join results-dir "error.log"))
-                                    :duration duration
-                                    :experimental-test-runner-stats? experimental-test-runner-stats?))))
+(defn run [simulation options]
+  (trombi/run simulation (add-backwards-compatible-reporters options)))
 
-(defn run [simulation {:keys [reporters] :as options}]
-  (let [multiple-reporters? (not (nil? reporters))
-        {:keys [summary]} (run-with-pipeline simulation options)]
-    (if multiple-reporters?
-      @summary
-      (:short @summary))))
-
-(defn run-async [simulation {:keys [reporters] :as options}]
-  (let [multiple-reporters? (not (nil? reporters))
-        {:keys [summary force-stop-fn]} (run-with-pipeline simulation options)]
-    (if multiple-reporters?
-      {:results summary :force-stop-fn force-stop-fn}
-      (let [results (promise)]
-        (thread
-          (deliver results (:short @summary)))
-        {:results results :force-stop-fn force-stop-fn}))))
+(defn run-async [simulation options]
+  (trombi/run-async simulation (add-backwards-compatible-reporters options)))

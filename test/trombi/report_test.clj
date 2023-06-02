@@ -1,7 +1,7 @@
-(ns clj-gatling.report-test
+(ns trombi.report-test
   (:require [clojure.test :refer :all]
-            [clj-gatling.report :as report]
-            [clj-gatling.reporters.short-summary :as short-summary]
+            [trombi.report :as report]
+            [trombi.reporters.short-summary :as short-summary]
             [clojure.core.async :as a :refer [onto-chan chan]]
             [clj-containment-matchers.clojure-test :refer :all])
   (:import (java.time LocalDateTime)))
