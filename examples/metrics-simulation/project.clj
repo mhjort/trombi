@@ -6,6 +6,7 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [com.github.mhjort/trombi "1.0.0"]
                  [ring/ring-core "1.9.6"]
+                 [http-kit "2.6.0"]
                  [javax.servlet/servlet-api "2.5"]
                  [compojure "1.7.0"]]
   :aliases {"run-test-server" ["run" "-m" "metrics-simulation.test-server/run"]}
