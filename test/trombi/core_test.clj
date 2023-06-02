@@ -1,17 +1,12 @@
 (ns trombi.core-test
-  (:require [clojure.test :refer :all]
-            [clj-async-test.core :refer :all]
+  (:require [clojure.test :refer [deftest is use-fixtures]]
+            [clj-async-test.core :refer-macros [approximately==]]
+            [trombi-gatling-highcharts-reporter.core :as highcharts]
             [trombi.test-helpers :as th]
             [trombi.reporters.raw-reporter :as raw-reporter]
-            [trombi.core :refer [run run-async run-simulation]]))
+            [trombi.core :refer [run run-async]]))
 
 (use-fixtures :once th/setup-error-file-path)
-
-(def legacy-scenario
-  {:name "Test scenario"
-   :context {}
-   :requests [{:name "Request1" :fn th/successful-request}
-              {:name "Request2" :fn th/failing-request}]})
 
 (defn- simulation [simu-name]
   {:name simu-name
@@ -27,10 +22,6 @@
                {:name "Test scenario2"
                 :steps [(th/step "Step1" true)
                         (th/step "Step2" false)]}]})
-
-(deftest legacy-simulation-returns-summary
-  (let [summary (run-simulation [legacy-scenario] 1 {})]
-    (is (= {:ok 1 :ko 1} summary))))
 
 (defn- mean [data]
   (Math/round (double (/ (reduce + data) (count data)))))
@@ -63,6 +54,13 @@
     (is (approximately== (:ko @results) 50 :accuracy 5))))
 
 ;;TODO Test also with multiple-reporters
+
+(deftest simulation-returns-results-with-gatling-highcharts-reporter
+  (let [summary (run (simulation "test-highcharts")
+                     {:reporters [highcharts/reporter]
+                      :requests 100
+                      :concurrency 1})]
+    (is (not (nil? (:highcharts summary))))))
 
 (deftest simulation-can-be-stopped-when-running-asynchronously
   (let [tracker-calls (atom 0)

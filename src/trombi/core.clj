@@ -1,23 +1,14 @@
 (ns trombi.core
-  (:import (java.time ZonedDateTime))
-  (:require [clojider-gatling-highcharts-reporter.core :refer [gatling-highcharts-reporter]]
-            [clojider-gatling-highcharts-reporter.reporter :refer [csv-writer]]
-            [clojider-gatling-highcharts-reporter.generator :refer [create-chart]]
-            [trombi.report :as report]
-            [trombi.reporters.short-summary :as short-summary]
+  (:require [trombi.reporters.short-summary :as short-summary]
             [trombi.schema :as schema]
             [trombi.progress-tracker :as progress-tracker]
             [schema.core :refer [validate]]
             [trombi.pipeline :as pipeline]
-            [trombi.legacy-util :refer [legacy-scenarios->scenarios
-                                             legacy-reporter->reporter]]
+            [trombi.legacy-util :refer [legacy-reporter->reporter]]
             [trombi.simulation-util :refer [create-dir
                                                  path-join
-                                                 weighted-scenarios
                                                  eval-if-needed
-                                                 choose-runner
                                                  create-report-name]]
-            [trombi.simulation :as simulation]
             [clojure.core.async :refer [thread]]))
 
 (def buffer-size 20000)
@@ -29,41 +20,14 @@
      (create-dir (path-join results-dir "input"))
      results-dir)))
 
-;;Legacy function for running tests with old format (pre 0.8)
-(defn run-simulation [legacy-scenarios concurrency & [options]]
-  (let [start-time (ZonedDateTime/now)
-        results-dir (create-results-dir (or (:root options) "target/results"))
-        step-timeout (or (:timeout-in-ms options) 5000)
-        scenarios (legacy-scenarios->scenarios legacy-scenarios)
-        {:keys [results]} (simulation/run-scenarios {:runner (choose-runner scenarios concurrency options)
-                                                     :timeout-in-ms step-timeout
-                                                     :concurrency concurrency
-                                                     :context (:context options)
-                                                     :error-file (or (:error-file options)
-                                                                     (path-join results-dir "error.log"))
-                                                     :progress-tracker (progress-tracker/create-console-progress-tracker)}
-                                                    (weighted-scenarios (range concurrency) scenarios))
-        summary (report/create-result-lines {:name "Simulation" :scenarios scenarios}
-                                            buffer-size
-                                            results
-                                            (partial csv-writer
-                                                     (path-join results-dir "input")
-                                                     start-time))]
-    (create-chart results-dir)
-    (println (str "Open " results-dir "/index.html"))
-    summary))
+(def default-reporters [short-summary/reporter])
 
-(defn- create-reporters [reporter results-dir simulation]
-  (let [r (if reporter
-            (do
-              (println "Warn! :reporter option is deprecated. Use :reporters instead")
-              (legacy-reporter->reporter :custom
-                                         reporter
-                                         simulation))
-            (legacy-reporter->reporter :highcharts
-                                       (gatling-highcharts-reporter results-dir)
-                                       simulation))]
-    [short-summary/reporter r]))
+(defn- parse-deprecated-reporter-option [reporter simulation]
+  (when reporter
+    (println "Warn! :reporter option is deprecated. Use :reporters instead")
+    (legacy-reporter->reporter :custom
+                               reporter
+                               simulation)))
 
 (defn- run-with-pipeline [simulation {:keys [concurrency concurrency-distribution rate rate-distribution root
                                              timeout-in-ms context requests duration reporter reporters error-file
@@ -80,7 +44,7 @@
         results-dir (create-results-dir root simulation-name)
         default-progress-tracker (progress-tracker/create-console-progress-tracker)
         reporters (or reporters
-                      (create-reporters reporter results-dir simulation))]
+                      (concat default-reporters (parse-deprecated-reporter-option reporter simulation)))]
     (pipeline/run simulation (assoc options
                                     :concurrency concurrency
                                     :concurrency-distribution concurrency-distribution

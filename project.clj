@@ -1,4 +1,4 @@
-(defproject trombi "1.0.0-beta1"
+(defproject com.github.mhjort/trombi "1.0.0-beta2"
   :description "Clojure library for load testing"
   :url "http://github.com/mhjort/trombi"
   :license {:name "Eclipse Public License"
@@ -6,12 +6,12 @@
   :dependencies [[org.clojure/clojure "1.11.1"]
                  [org.clojure/core.async "1.5.648"]
                  [http-kit "2.6.0"]
-                 [prismatic/schema "1.4.1"]
-                 [clojider-gatling-highcharts-reporter "0.4.0"]]
+                 [prismatic/schema "1.4.1"]]
   :profiles {:dev {:global-vars {*warn-on-reflection* false}
                    :source-paths ["examples"]
                    :jvm-opts ["-Dclojure.tools.logging.factory=clojure.tools.logging.impl/log4j2-factory"]
-                   :dependencies [[clj-time "0.15.2"]
+                   :dependencies [[com.github.mhjort/trombi-gatling-highcharts-reporter "1.0.0"]
+                                  [clj-time "0.15.2"]
                                   [clj-async-test "0.0.5"]
                                   [org.clojure/test.check "1.1.1"]
                                   [clj-containment-matchers "1.0.1"]
