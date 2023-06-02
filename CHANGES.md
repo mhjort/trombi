@@ -1,5 +1,12 @@
 # Changes
 
+## 1.0.0
+
+* Project renamed to Trombi
+* Gatling Highcharts and http-kit dependencies are not included by default
+* Only short summary reporter is used when reporters config option is omitted
+* Bump dependencies
+
 ## 0.18.0
 
 * Fix a bug in concurrency weight between multiple scenarios
