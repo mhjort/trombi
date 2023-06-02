@@ -8,7 +8,7 @@ Conduct load tests with Clojure, obtaining results as Clojure data or graphical 
 
 Add the following to your `project.clj` `:dependencies`:
 
-[![Clojars Project](https://img.shields.io/clojars/v/trombi.svg)](https://clojars.org/trombi)
+[![Clojars Project](https://img.shields.io/clojars/v/com.github.mhjort/trombi.svg)](https://clojars.org/com.github.mhjort/trombi)
 
 > This tool name used to be `clj-gatling`. The project started as a simple wrapper to Gatling.
 However, today the library has evolved into a separate tool with its own design.
