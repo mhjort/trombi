@@ -387,7 +387,7 @@ actions and the actual scenario definition is an map.
 
 ### Distributed load testing
 
-[Clojider](http://clojider.io) is a experimental tool that can run trombi in a distributed manner.
+[Clojider](https://github.com/mhjort/clojider) is a experimental tool that can run trombi in a distributed manner.
 It uses AWS Lambda technology for running distributed load tests in the cloud.
 
 ## Contribute
