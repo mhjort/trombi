@@ -1,4 +1,4 @@
-(defproject com.github.mhjort/trombi "1.0.0-beta2"
+(defproject com.github.mhjort/trombi "1.0.0"
   :description "Clojure library for load testing stateful apps"
   :url "http://github.com/mhjort/trombi"
   :license {:name "Eclipse Public License"
