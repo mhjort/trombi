@@ -340,7 +340,7 @@ However, `trombi` is backwards compatible and if you still want to use clj-time 
 
 See example project here: [metrics-simulation](https://github.com/mhjort/trombi/tree/master/examples/metrics-simulation)
 
-[Here](youtube.com/watch?v=4yQw8aaA_DQ) is a presentation on how to test stateful applications with Trombi
+[Here](https://youtube.com/watch?v=4yQw8aaA_DQ) is a presentation on how to test stateful applications with Trombi
 
 ### Tuning the test runner
 
