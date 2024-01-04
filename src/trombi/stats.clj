@@ -11,16 +11,18 @@
 (defn no-op []
   {:stop-fn #() :print-fn #()})
 
+(defn- create-stats-row-item []
+  {:timestamp (LocalDateTime/now)
+   :active-thread-count (.getThreadCount (ManagementFactory/getThreadMXBean))})
+
 (defn start-stats-gathering []
   (let [poison-pill (chan)
         stats-ch
         (go
-          (loop [stat-rows []]
+          (loop [stat-rows [(create-stats-row-item)]]
             (let [[_ ch] (alts! [poison-pill (timeout 200)])]
               (if-not (= poison-pill ch)
-                (let [stats-row-item {:timestamp (LocalDateTime/now)
-                                      :active-thread-count (.getThreadCount (ManagementFactory/getThreadMXBean))}]
-                  (recur (conj stat-rows stats-row-item)))
+                (recur (conj stat-rows (create-stats-row-item)))
                 stat-rows))))]
     {:stop-fn #(>!! poison-pill true)
      :print-fn #(println "Test runner statistics:" (calculate-stats (<!! stats-ch)))}))

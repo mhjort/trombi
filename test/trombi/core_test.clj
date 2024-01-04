@@ -46,6 +46,13 @@
                       :concurrency 1})]
     (is (= summary {:a 1 :b 1}))))
 
+(deftest simulation-works-with-stats-running
+  (let [summary (run (simulation "test-stats")
+                     {:reporters [th/a-reporter]
+                      :experimental-test-runner-stats? true
+                      :concurrency 1})]
+    (is (= summary {:a 1}))))
+
 (deftest simulation-can-be-run-asynchronously
   (let [{:keys [results]} (run-async (simulation "test-summary")
                                      {:requests 100
