@@ -1,5 +1,9 @@
 # Changes
 
+## 1.0.1
+
+* Fix division by zero bug in experimental stats
+
 ## 1.0.0
 
 * Project renamed to Trombi
