@@ -40,6 +40,7 @@
                                            context {}
                                            experimental-test-runner-stats? false}}]
   (validate schema/Options options)
+  (validate schema/Simulation (eval-if-needed simulation))
   (let [simulation-name (:name (eval-if-needed simulation))
         results-dir (create-results-dir root simulation-name)
         default-progress-tracker (progress-tracker/create-console-progress-tracker)

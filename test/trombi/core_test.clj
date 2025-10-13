@@ -26,6 +26,12 @@
 (defn- mean [data]
   (Math/round (double (/ (reduce + data) (count data)))))
 
+(deftest simulation-validate-early
+  ;; This test tries to run invalid simulation, ensures validation
+  (let [ex (try (run {} {}) (catch Exception ex (ex-data ex)))]
+    (is (= (:type ex) :schema.core/error))
+    (is (= (-> ex :error :name) 'missing-required-key))))
+
 (deftest simulation-returns-summary
   ;This test tries to test that trombi can split concurrency to multiple scenarios in parallel
   ;and that concurrency is stable and request count still matches
