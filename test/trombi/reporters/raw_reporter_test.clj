@@ -1,8 +1,10 @@
 (ns trombi.reporters.raw-reporter-test
   (:require [clojure.test :refer :all]
+            [clojure.java.io :as io]
             [trombi.simulation-util :refer [eval-if-needed]]
             [trombi.reporters.raw-reporter :as raw])
-  (:import (java.nio.file Files)
+  (:import (java.io File)
+           (java.nio.file Files)
            (java.nio.file.attribute FileAttribute)))
 
 (def scenario-results
@@ -32,6 +34,13 @@
 (defn- create-temp-dir []
   (str (Files/createTempDirectory "raw-reporter-test" (into-array FileAttribute []))))
 
+(defn- files-in [dir]
+  (sort (map #(.getName %) (.listFiles (File. dir)))))
+
+(defn- read-raw-log [dir]
+  (with-open [rdr (io/reader (str dir "/raw.log"))]
+    (mapv read-string (line-seq rdr))))
+
 (deftest file-reporter
   (let [results-dir (create-temp-dir)
         params {:results-dir results-dir :context {}}
@@ -39,4 +48,16 @@
         generator ((eval-if-needed (:generator raw/file-reporter)) params)
         [report as-str] (simulate-report-generation collector generator)]
     (is (= scenario-results report))
-    (is (= (str "Generated raw report to " results-dir "/raw.log") as-str))))
+    (is (= (str "Generated raw report to " results-dir "/raw.log") as-str))
+    (is (= ["raw.log"] (files-in results-dir)))
+    (is (= scenario-results (read-raw-log results-dir)))))
+
+(deftest file-reporter-with-single-batch
+  (let [results-dir (create-temp-dir)
+        params {:results-dir results-dir :context {}}
+        {:keys [collect]} ((eval-if-needed (:collector raw/file-reporter)) params)
+        {:keys [generate]} ((eval-if-needed (:generator raw/file-reporter)) params)
+        report (generate (collect {} {:batch scenario-results :node-id 0 :batch-id 0}))]
+    (is (= scenario-results report))
+    (is (= ["raw.log"] (files-in results-dir)))
+    (is (= scenario-results (read-raw-log results-dir)))))

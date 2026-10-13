@@ -61,11 +61,17 @@
 (def file-generator
   (fn [{:keys [results-dir]}]
     {:generate (fn [[writer file-name]]
+                 ;;When there is only one batch, combine is never called
+                 ;;and the batch file has to be appended to raw file here
+                 (when-not (= file-name (raw-file-name results-dir))
+                   (let [[lines-seq cleanup-fn] (file->lines-seq file-name)]
+                     (append-edns-as-lines writer lines-seq)
+                     (cleanup-fn)))
                  ;;In here we are sure that new results are not generated anymore
                  ;;and log collector writer can be closed
                  (.close writer)
                  ;;Note! Returned reader is never closed. For now this is by design
-                 (first (file->lines-seq file-name)))
+                 (first (file->lines-seq (raw-file-name results-dir))))
      :as-str (constantly (str "Generated raw report to " (raw-file-name results-dir)))}))
 
 (def file-reporter

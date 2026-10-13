@@ -3,6 +3,7 @@
 ## Unreleased
 
 * Validate simulation before starting the run. Previously an invalid simulation made `run` hang instead of throwing an error (#99)
+* Fix file based raw reporter leaving `raw.log` empty when simulation produces fewer than 20000 results (#80)
 
 ## 1.0.1
 
