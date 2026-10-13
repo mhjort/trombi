@@ -13,31 +13,34 @@
                                         :weight (gen/choose 1 100))
                           1 10))
 
+;;Splitting by weight throws when total is too small for the weights
+;;(see throws-exception-if-too-few-requests). Total of at least the sum of
+;;weights guarantees that every scenario gets at least one without overflow.
+(def weighted-input-generator
+  (gen/let [scenarios scenario-generator
+            users     (gen/choose (max 100 (reduce + (map :weight scenarios))) 5000)
+            rate      (gen/choose (max 10 (reduce + (map :weight scenarios))) 2000)]
+    {:scenarios scenarios :users users :rate rate}))
+
 (def all-user-ids-are-distributed
-  (prop/for-all [users     (gen/choose 100 5000)
-                 scenarios scenario-generator]
+  (prop/for-all [{:keys [users scenarios]} weighted-input-generator]
     (= users
        (count (mapcat :users
                       (simulation-util/weighted-scenarios (range users) scenarios))))))
 
 (def at-least-one-user-is-distributed-to-every-scenario
-  (prop/for-all [users     (gen/choose 100 5000)
-                 scenarios scenario-generator]
+  (prop/for-all [{:keys [users scenarios]} weighted-input-generator]
     (every? pos? (map #(count (:users %))
                       (simulation-util/weighted-scenarios (range users) scenarios)))))
 
 (def rate-is-distributed-if-given
-  (prop/for-all [users     (gen/choose 100 5000)
-                 rate      (gen/choose 10 2000)
-                 scenarios scenario-generator]
+  (prop/for-all [{:keys [users rate scenarios]} weighted-input-generator]
     (= rate
        (apply + (map :rate
                      (simulation-util/weighted-scenarios (range users) rate scenarios))))))
 
 (def every-scenario-has-some-rate-if-given
-  (prop/for-all [users     (gen/choose 100 5000)
-                 rate      (gen/choose 10 2000)
-                 scenarios scenario-generator]
+  (prop/for-all [{:keys [users rate scenarios]} weighted-input-generator]
     (every? pos? (map :rate
                       (simulation-util/weighted-scenarios (range users) rate scenarios)))))
 
