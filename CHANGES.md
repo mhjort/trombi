@@ -1,5 +1,9 @@
 # Changes
 
+## Unreleased
+
+* Validate simulation before starting the run. Previously an invalid simulation made `run` hang instead of throwing an error (#99)
+
 ## 1.0.1
 
 * Fix division by zero bug in experimental stats
