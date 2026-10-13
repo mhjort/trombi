@@ -1,6 +1,6 @@
 # trombi
 
-[![CircleCI](https://circleci.com/gh/mhjort/trombi/tree/master.svg?style=svg)](https://circleci.com/gh/mhjort/trombi/tree/master)
+[![CI](https://github.com/mhjort/trombi/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/mhjort/trombi/actions/workflows/ci.yml)
 
 Conduct load tests with Clojure, obtaining results as Clojure data or graphical charts. This tool targets stateful applications needing scripted logic in tests.
 
