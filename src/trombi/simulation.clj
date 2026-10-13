@@ -195,11 +195,20 @@
     (go-loop [context starting-context]
       (while (> @init-sync 0)
         (<! (timers/timeout 100)))
-      (let [[old-total expected] (prepare-run scenario simulation-requests scenario-requests scenario-runs)]
-        (while (and (continue? old-total (LocalDateTime/now)) (not (should-run-now?)))
-          (<! (timers/timeout (rand-int 20))))
+      (let [[old-total expected] (prepare-run scenario simulation-requests scenario-requests scenario-runs)
+            ;;should-run-now? increments concurrency only when it returns true
+            acquired? (loop []
+                        (cond
+                          (not (continue? old-total (LocalDateTime/now))) false
+                          (should-run-now?) true
+                          :else (do (<! (timers/timeout (rand-int 20)))
+                                    (recur))))]
         (if (continue? (:sent @simulation-requests) (LocalDateTime/now))
           (do
+            ;;Scenario can still run without acquiring concurrency when there
+            ;;are pending requests. Track it so that the dec below stays balanced
+            (when-not acquired?
+              (swap! concurrent-scenarios inc))
             (let [[result final-context] (<! (run-scenario-once options scenario context))]
               (swap! concurrent-scenarios dec)
               (complete-run simulation-requests scenario-runs expected (count result))
@@ -208,7 +217,8 @@
                 (post-hook final-context))
               (recur (scenario-context options scenario user-id))))
           (do
-            (swap! concurrent-scenarios dec)
+            (when acquired?
+              (swap! concurrent-scenarios dec))
             (close! c)))))
     c))
 

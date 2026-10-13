@@ -653,6 +653,17 @@
     (is (< 1 @progress-tracker-call-count))
     (is (= true @default-progress-tracker-defined?))))
 
+(deftest progress-tracker-concurrency-is-never-negative
+  (let [concurrencies (atom [])]
+    (run-single-scenario {:name "concurrency-tracking-scenario"
+                          :steps [(step "step" true 300)]}
+                         :concurrency 10
+                         :duration (Duration/ofMillis 500)
+                         :progress-tracker (fn [{:keys [total-concurrency]}]
+                                             (swap! concurrencies conj total-concurrency)))
+    (is (seq @concurrencies))
+    (is (every? #(<= 0 % 10) @concurrencies) (str "Concurrency values: " @concurrencies))))
+
 (deftest scenario-weight
   (let [main-scenario {:name "Main"
                        :weight 2
