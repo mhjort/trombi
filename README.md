@@ -12,14 +12,6 @@ Add the following to your `project.clj` `:dependencies`:
 
 [![Clojars Project](https://img.shields.io/clojars/v/com.github.mhjort/trombi.svg)](https://clojars.org/com.github.mhjort/trombi)
 
-> This tool name used to be `clj-gatling`. The project started as a simple wrapper to Gatling.
-However, today the library has evolved into a separate tool with its own design.
-Gatling Highcharts is now only an optional dependency that is used for generating graphical results.
-So the name was misleading and project was renamed to `Trombi` (It is a Finnish word meaning Tornado).
-
-> Note for `clj-gatling` users! `trombi` is backwards compatible and you can still run the existing tests without any code change.
-However, `trombi` does not include all the dependencies by default anymore. See section Additional Dependencies.
-
 ## What's new in 2.0.0
 
 trombi 2.0.0 runs every virtual user and every request in its own
@@ -429,6 +421,18 @@ And when increasing the concurrency these numbers should not increase accordingl
 use `go` blocks (see [Tuning parallelism](#tuning-parallelism)).
 
 ## Change History
+
+### From clj-gatling to trombi
+
+This tool name used to be `clj-gatling`. The project started as a simple wrapper to Gatling.
+However, today the library has evolved into a separate tool with its own design.
+Gatling Highcharts is now only an optional dependency that is used for generating graphical results.
+So the name was misleading and project was renamed to `Trombi` (It is a Finnish word meaning Tornado).
+
+Note for `clj-gatling` users! `trombi` is backwards compatible and you can still run the existing tests without any code change.
+However, `trombi` does not include all the dependencies by default anymore. See section [Additional dependencies](#additional-dependencies).
+
+### Older versions
 
 Note! Version 0.8.0 includes a few changes on how simulations are defined.
 See more details in [change history](CHANGES.md). All changes are backwards
