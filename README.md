@@ -4,6 +4,8 @@
 
 Conduct load tests with Clojure, obtaining results as Clojure data or graphical charts. This tool targets stateful applications needing scripted logic in tests.
 
+![trombi running a simulation against a local test server](doc/demo/demo.gif)
+
 ## Installation
 
 trombi requires Java 21 or later.
@@ -482,6 +484,9 @@ Use [GitHub issues](https://github.com/mhjort/trombi/issues) and [Pull Requests]
 
 Tests and the REPL use deps.edn: run `make test` for tests and `make repl` for a REPL.
 Leiningen (`project.clj`) is used for releasing to Clojars, so keep dependencies in sync in both files.
+
+The animation at the top of this page is recorded with [VHS](https://github.com/charmbracelet/vhs).
+To update it after output changes, run `vhs doc/demo/demo.tape` in the repository root.
 
 ## License
 
