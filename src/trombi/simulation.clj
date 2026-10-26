@@ -185,7 +185,7 @@
    {:keys [post-hook] :as scenario}
    user-id
    starting-context
-   results]
+   emit]
   (let [continue?        (continue-fn {:runner runner
                                        :simulation-start simulation-start
                                        :force-stop force-stop})
@@ -221,7 +221,7 @@
             (let [[result final-context] (run-scenario-once options scenario context)]
               (swap! concurrent-scenarios dec)
               (complete-run simulation-requests scenario-runs expected (count result))
-              (>!! results (response->result scenario result))
+              (emit (response->result scenario result))
               (when post-hook
                 (post-hook final-context))
               (recur (scenario-context options scenario user-id))))
@@ -260,7 +260,7 @@
    {:keys [post-hook] :as scenario}
    user-id
    starting-context
-   results]
+   emit]
   (let [continue?    (continue-fn {:runner runner
                                    :simulation-start simulation-start
                                    :force-stop force-stop})
@@ -292,7 +292,7 @@
             (let [[result final-context] (run-scenario-once options scenario context)]
               (swap! concurrent-scenarios dec)
               (complete-run simulation-requests scenario-runs expected (count result))
-              (>!! results (response->result scenario result))
+              (emit (response->result scenario result))
               (when post-hook
                 (post-hook final-context)))
             (recur (scenario-context options scenario user-id))))))))
@@ -310,6 +310,22 @@
             (catch ExecutionException e
               (throw (.getCause e)))))
         futures))
+
+;;Users do not put results directly to the shared results channel. Putting from
+;;thousands of threads to a single channel is slow because of contention.
+;;Instead every user collects results to a local buffer and puts them as chunks.
+(def ^:private result-chunk-size 100)
+
+(defn- result-emitter [chunks]
+  (let [buffer (volatile! [])]
+    {:emit (fn [result]
+             (when (>= (count (vswap! buffer conj result)) result-chunk-size)
+               (>!! chunks @buffer)
+               (vreset! buffer [])))
+     :flush (fn []
+              (when (seq @buffer)
+                (>!! chunks @buffer)
+                (vreset! buffer [])))}))
 
 (defn- prepare-users
   "Creates starting contexts (runs scenario pre-hooks) for all the users of the
@@ -353,6 +369,7 @@
         scenario-concurrency-trackers (scenario-trackers scenarios 0)
         rate-run-trackers (when rate (scenario-trackers scenarios nil))
         simulation-requests (atom {:sent 0 :pending 0})
+        chunks (async/chan 1024)
         results (async/chan 1024)
         scenario-options (fn [{:keys [name]}]
                            (assoc options
@@ -378,8 +395,18 @@
                                                        :default-progress-tracker default-progress-tracker
                                                        :progress-tracker progress-tracker})
         users (mapv (fn [[user-options scenario user-id context]]
-                      (submit #(run-constantly-fn user-options scenario user-id context results)))
-                    prepared-users)]
+                      (submit #(let [{:keys [emit flush]} (result-emitter chunks)]
+                                 (try
+                                   (run-constantly-fn user-options scenario user-id context emit)
+                                   (finally
+                                     (flush))))))
+                    prepared-users)
+        ;;Single thread moves results from chunks to results channel
+        forwarder (submit #(loop []
+                             (when-some [chunk (<!! chunks)]
+                               (doseq [result chunk]
+                                 (>!! results result))
+                               (recur))))]
     (submit (fn []
               (try
                 ;;Wait for every user even if some of them fail
@@ -391,6 +418,8 @@
                         (log-exception (:error-file options) cause)
                         (binding [*out* *err*]
                           (println "Unexpected error when running scenario:" cause))))))
+                (close! chunks)
+                (.get forwarder)
                 (finally
                   (close! results)
                   (stop-progress-tracker)
