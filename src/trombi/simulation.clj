@@ -421,9 +421,13 @@
                 (close! chunks)
                 (.get forwarder)
                 (finally
-                  (close! results)
-                  (stop-progress-tracker)
-                  (when post-hook (post-hook context))))))
+                  ;;Closing results tells the caller that simulation has finished.
+                  ;;So it has to be done last, after post-hook has been called
+                  (try
+                    (stop-progress-tracker)
+                    (when post-hook (post-hook context))
+                    (finally
+                      (close! results)))))))
     {:results results :force-stop-fn force-stop-fn}))
 
 (defn run [{:keys [scenarios pre-hook post-hook] :as simulation}

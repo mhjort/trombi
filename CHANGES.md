@@ -1,5 +1,9 @@
 # Changes
 
+## Unreleased
+
+* Fix a race where `run` could return before the simulation `post-hook` had been called (regression in 2.0.0)
+
 ## 2.0.0
 
 * Breaking: Java 21 or later is required
