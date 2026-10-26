@@ -1,6 +1,6 @@
 # Changes
 
-## Unreleased
+## 2.0.0
 
 * Breaking: Java 21 or later is required
 * Run virtual users and requests in virtual threads instead of core.async go blocks.
