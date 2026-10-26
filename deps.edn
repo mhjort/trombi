@@ -1,6 +1,6 @@
 {:deps
  {org.clojure/clojure                                                       {:mvn/version "1.12.6"},
-  org.clojure/core.async                                                    {:mvn/version "1.6.673"},
+  org.clojure/core.async                                                    {:mvn/version "1.9.865"},
   prismatic/schema                                                          {:mvn/version "1.4.2"}}
  :aliases
  {:dev
