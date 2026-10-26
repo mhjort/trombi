@@ -6,11 +6,21 @@ Conduct load tests with Clojure, obtaining results as Clojure data or graphical 
 
 ## Installation
 
-Trombi requires Java 21 or later.
-
-Add the following to your `project.clj` `:dependencies`:
+trombi requires Java 21 or later.
 
 [![Clojars Project](https://img.shields.io/clojars/v/com.github.mhjort/trombi.svg)](https://clojars.org/com.github.mhjort/trombi)
+
+Leiningen (`project.clj`):
+
+```clojure
+[com.github.mhjort/trombi "2.0.0"]
+```
+
+deps.edn:
+
+```clojure
+com.github.mhjort/trombi {:mvn/version "2.0.0"}
+```
 
 ## What's new in 2.0.0
 
@@ -86,7 +96,7 @@ Where `ok` means number of successful requests and `ko` number of failed ones. R
 If you want to see a graphical report instead you can call `trombi` with additional options and add additional deps.
 (See sections Reporters and Additional Dependencies for more details)
 
-```
+```clojure
 (require '[trombi-gatling-highcharts-reporter.core])
 (trombi/run your-simulation {:concurrency 100 :reporters [trombi-gatling-highcharts-reporter.core/reporter]})
 ```
@@ -97,7 +107,7 @@ Calling `run` function will block while simulation is running. If you want more 
 
 - `results`: A promise that is delivered once the simulation finishes.
 - `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit.
-                   When simulation is force stopped `trombi` does not guarantee that results are very reliable. So it is better to ignore the results when you finish the simulation with force stop.
+  When simulation is force stopped `trombi` does not guarantee that results are very reliable. So it is better to ignore the results when you finish the simulation with force stop.
 
 ### Concepts
 
@@ -105,8 +115,9 @@ trombi runs simulations to simulate load. A simulation consists of one or multip
 scenarios that will be run in parallel. One scenario contains one or multiple steps
 that are run sequentially. One simulation is configured to run with a given number
 of virtual users or with given rate of new virtual users per second.
-As a result the tool returns response times (min, max, average, percentiles)
-and requests per second. Internally millisecond is used as a precision for benchmarks. Therefore
+As a result the tool returns the number of successful and failed requests and response times
+(min, max and mean). The Gatling Highcharts reporter (see [Reporters](#reporters)) additionally shows
+percentiles and requests per second. Internally millisecond is used as a precision for benchmarks. Therefore
 this is not suited for testing systems with less than one millisecond response times.
 
 A simulation is specified as a Clojure map like this:
@@ -116,13 +127,13 @@ A simulation is specified as a Clojure map like this:
  :pre-hook (fn [ctx] (do-some-setup) (assoc ctx :new-value value)) ;Optional
  :post-hook (fn [ctx] (do-some-teardown)) ;Optional
  :scenarios [{:name "Scenario1"
-              :context ;Optional (default {})
+              :context {:locale "en"} ;Optional (default {})
               :weight 2 ;Optional (default 1)
               :skip-next-after-failure? false ;Optional (default true)
               :allow-early-termination? true ;Optional (default false)
               :pre-hook (fn [ctx] (scenario-setup) (assoc ctx :new-val value)) ;Optional
               :post-hook (fn [ctx] (scenario-teardown)) ;Optional
-              :step-fn ;Optional. Can be used instead of list of steps
+              ;Instead of :steps you can give :step-fn (see Dynamic scenarios)
               :steps [{:name "Step 1"
                        :request step1-fn}
                       {:name "Step 2"
@@ -134,7 +145,7 @@ A simulation is specified as a Clojure map like this:
                        :request another-step-fn}]}]}
 ```
 
-#### Global simulation Hooks
+#### Global simulation hooks
 
 You can define a `pre-hook` function that is executed once before running the simulation.
 Function takes in the `context` map. You can change the context (e.g. by adding new keys)
@@ -162,8 +173,7 @@ optional `:context` key.
 Each scenario consists of one or multiple steps. Steps are run always in sequence.
 Step has a name and user specified function (request) which is supposed to call
 the system under test (SUT). Function takes in a scenario context as a map and
-has to return either directly as a boolean or then with core.async channel with
-a message of type boolean.
+has to return either directly a boolean or a core.async channel that delivers a boolean.
 
 ```clojure
 ;;Returning boolean directly
@@ -172,15 +182,7 @@ a message of type boolean.
   true) ;Return true/false based on the result of the call
 ```
 
-```clojure
-;;Returning core.async channel
-(defn request-returning-channel [context]
-  (go
-     ;;Call the system under test here using non-blocking call
-     true)) ;Return true/false based on the result of the non-blocking call
-```
-
-Both approaches scale well. trombi runs every virtual user and every request in its own
+trombi runs every virtual user and every request in its own
 [virtual thread](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html),
 so a request function that blocks (e.g. using `clj-http` or JDBC) does not block other users.
 Returning a boolean directly is therefore the easiest way to get started.
@@ -189,6 +191,7 @@ If you use an asynchronous client library (e.g. `http-kit`), the most efficient 
 return a channel that the client's callback delivers the result to:
 
 ```clojure
+;;Returning core.async channel
 (defn request-with-callback [context]
   (let [result (promise-chan)]
     (http/get "http://localhost" {} (fn [{:keys [status]}] (put! result (= status 200))))
@@ -200,11 +203,13 @@ are mostly `go` blocks see [Tuning parallelism](#tuning-parallelism).
 
 If the function returns false trombi counts the step as failed. If a function
 throws an exception it will be considered as a failure too. trombi also provides a
-global timeout (see Options) for a step. If a request function takes more time it will be
-cancelled and step is again considered as a failure.
+global timeout (see Options) for a step. If a request function takes more time, trombi
+stops waiting for it and the step is again considered as a failure. Note that the
+request function itself is not interrupted.
 
 Note! trombi reports only step failures and successes. At the moment there is no support for
-different kinds of errors in reporting level. All errors are logged to `target/results/<sim-name>/error.log`.
+different kinds of errors in reporting level. All errors are logged to
+`target/results/<SimulationName>-<timestamp>/error.log` (see `:error-file` option).
 
 Context map contains all values that you specified as a simulation context when calling
 `run` method (See options) and trombi provided `user-id` value. The purpose of user-id
@@ -212,10 +217,9 @@ is to have a way to specify different functionality for different users. For exa
 
 ```clojure
 (defn request-fn [{:keys [user-id]}]
-  (go
-    (if (odd? user-id)
-      (open-document-a)
-      (open-document-b))))
+  (if (odd? user-id)
+    (open-document-a)
+    (open-document-b)))
 ```
 
 If your scenario contains multiple steps you can also pass values from a step to the next step
@@ -224,14 +228,12 @@ inside a scenario instance (same user) by returning a tuple instead of a boolean
 ```clojure
 ;;step 1
 (defn login [context]
-  (go
-    (let [user-name (login-to-system)]
-      [true (assoc context :user-name user-name)])))
+  (let [user-name (login-to-system)]
+    [true (assoc context :user-name user-name)]))
 
 ;;step 2
 (defn open-frontpage [context]
-  (go
-    (open-page-with-name (:user-name context))))
+  (open-page-with-name (:user-name context)))
 ```
 
 
@@ -274,13 +276,14 @@ Second parameter to `trombi.core/run` function is options map. Options map conta
  :root "/tmp" ;Directory where trombi temporary files and final results are written. Defaults to "target/results".
  :concurrency 100 ;Number of concurrent users trombi tries to use. Defaults to 1.
  :concurrency-distribution ;Function for defining how the concurrent users are distributed during the simulation. Optional.
- :rate 100 ;Number of new requests to add per second. Note! If rate is given, concurrency value will be ignored.
+ :rate 100 ;Number of new scenario runs (virtual users) to start per second. Note! If rate is given, concurrency value will be ignored.
  :rate-distribution ;Function for defining how the rate is adjusted during the simulation. Optional.
  :progress-tracker ;Function used for tracking simulation progress. Optional.
  :reporters ;List of reporters to use. Optional. If omitted only short summary reporter is used.
- :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation.
+ :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to concurrency multiplied by the number of steps in simulation.
  :duration (java.time.Duration/ofMinutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored.
- :error-file "/tmp/error.log"} ;The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
+ :error-file "/tmp/error.log" ;The file to log errors to. Defaults to "target/results/<SimulationName>-<timestamp>/error.log".
+ :experimental-test-runner-stats? true} ;Print thread statistics of the test runner. Defaults to false. See Tuning the test runner.
 ```
 
 #### Ramp-up
@@ -333,7 +336,7 @@ If you want to disable this functionality you can specify option `:progress-trac
 Following keys are passed to progress tracker function:
 - `progress`: Progress as a floating point number between 0.0 and 1.0.
 - `sent-requests`: Number of requests sent so far
-- `total-concurrency`: How many concurrent requests are in progress at the moment
+- `total-concurrency`: How many scenario runs (virtual users) are in progress at the moment
 - `default-progress-tracker`: Function for default behaviour. This can be used to also call the default tracker from user-provided progress tracker
 - `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit.
 
@@ -376,7 +379,9 @@ Note! The older system property `clojure.core.async.pool-size` is not supported 
 
 By default, trombi generates one report which is a short summary report.
 
-When you call the `trombi/run` function it will return all the reports with reporter keys (e.g. `:short` for the short summary reporter).
+When you call the `trombi/run` function without the `:reporters` option it returns the short summary directly
+(see Trivial example). When you give the `:reporters` option it returns a map with all the reports under their
+reporter keys (e.g. `:short` for the short summary reporter and `:raw` for the raw reporters).
 Reporters also generate report to stdout and some reporters may generate results to file.
 
 If you don't want to use the default reports you can specify a list of reporters with the `:reporters` key in the options. Available reporters are following:
@@ -390,11 +395,11 @@ You can also specify your own custom reporter. Check https://github.com/mhjort/t
 
 ### Additional dependencies
 
-`Trombi` by default uses only few libraries. However, it supports some features that might need additional dependencies.
+`trombi` by default uses only few libraries. However, it supports some features that might need additional dependencies.
 
 If you want to use Gatling Highcharts reporter you have to include the dependency `[com.github.mhjort/trombi-gatling-highcharts-reporter "1.0.0"]`.
 
-If you want to use http-kit as your http client library you have to include the dependency `[http-kit "2.6.0"]`.
+If you want to use http-kit as your http client library you have to include the dependency `[http-kit "2.8.1"]`.
 
 Note that in `trombi` clj-time dependency is not included anymore because from Java SE 8 onward, users are asked to migrate to java.time (JSR-310).
 However, `trombi` is backwards compatible and if you still want to use clj-time please add `[clj-time "0.15.2"]` as a dependency.
@@ -404,7 +409,7 @@ However, `trombi` is backwards compatible and if you still want to use clj-time 
 
 See example project here: [metrics-simulation](https://github.com/mhjort/trombi/tree/master/examples/metrics-simulation)
 
-[Here](https://youtube.com/watch?v=4yQw8aaA_DQ) is a presentation on how to test stateful applications with Trombi
+[Here](https://youtube.com/watch?v=4yQw8aaA_DQ) is a presentation on how to test stateful applications with trombi.
 
 ### Tuning the test runner
 
@@ -427,7 +432,7 @@ use `go` blocks (see [Tuning parallelism](#tuning-parallelism)).
 This tool name used to be `clj-gatling`. The project started as a simple wrapper to Gatling.
 However, today the library has evolved into a separate tool with its own design.
 Gatling Highcharts is now only an optional dependency that is used for generating graphical results.
-So the name was misleading and project was renamed to `Trombi` (It is a Finnish word meaning Tornado).
+So the name was misleading and project was renamed to `trombi` (It is a Finnish word meaning Tornado).
 
 Note for `clj-gatling` users! `trombi` is backwards compatible and you can still run the existing tests without any code change.
 However, `trombi` does not include all the dependencies by default anymore. See section [Additional dependencies](#additional-dependencies).
@@ -441,7 +446,7 @@ may be deprecated in future. You can see documentation for old versions [here](R
 
 ## Jenkins
 
-This is compatible with Jenkins Gatling Plugin. https://wiki.jenkins.io/display/JENKINS/Gatling+Plugin#GatlingPlugin-Configuration
+This is compatible with [Jenkins Gatling Plugin](https://plugins.jenkins.io/gatling).
 
 ## Why
 
@@ -475,10 +480,11 @@ Use [GitHub issues](https://github.com/mhjort/trombi/issues) and [Pull Requests]
 
 ### Development
 
-By default Leiningen is used for development. There is also experimental support for deps.edn (See Makefile).
+Tests and the REPL use deps.edn: run `make test` for tests and `make repl` for a REPL.
+Leiningen (`project.clj`) is used for releasing to Clojars, so keep dependencies in sync in both files.
 
 ## License
 
-Copyright (C) 2014-2023 Markus Hjort
+Copyright (C) 2014-2026 Markus Hjort
 
 Distributed under the Eclipse Public License, the same as Clojure.
