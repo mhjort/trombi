@@ -1,5 +1,4 @@
-(ns trombi.reporters.short-summary
-  (:require [clojure.set :refer [rename-keys]]))
+(ns trombi.reporters.short-summary)
 
 (def generator
   (fn [_]
@@ -11,9 +10,6 @@
                       ", successful: " ok
                       ", failed: " ko
                       " with mean " (-> response-time :global :mean) " ms.")))}))
-
-(defn- mean [data]
-  (Math/round (double (/ (reduce + data) (count data)))))
 
 (defn- weighted-mean [value1 sample-size1 value2 sample-size2]
   ;Return weighted mean based on sample sizes
@@ -48,19 +44,26 @@
                    sample-size2))))
 
 (defn- collect [_ {:keys [batch]}]
-  (let [request-results (mapcat #(map :result (:requests %)) batch)
-
-        request-times (mapcat #(map (fn [{:keys [start end]}]
-                                      (- end start)) (:requests %)) batch)
-        freqs (frequencies request-results)
-        ;;TODO Simulation should not return nil (it should return false instead)
-        req-counts (merge-with + (rename-keys freqs {true :ok
-                                                     false :ko
-                                                     nil :ko})
-                               {:ok 0 :ko 0})]
-    (assoc req-counts :response-time {:global {:min (apply min request-times)
-                                               :max (apply max request-times)
-                                               :mean (mean request-times)}})))
+  ;;Calculated in one pass because this is called for every batch of results
+  (let [[ok ko min-time max-time sum-time]
+        (reduce (fn [acc {:keys [requests]}]
+                  (reduce (fn [[ok ko min-time max-time sum-time] {:keys [result start end]}]
+                            (let [t (- end start)]
+                              [(if (true? result) (inc ok) ok)
+                               ;;TODO Simulation should not return nil (it should return false instead)
+                               (if (true? result) ko (inc ko))
+                               (if min-time (min min-time t) t)
+                               (if max-time (max max-time t) t)
+                               (+ sum-time t)]))
+                          acc
+                          requests))
+                [0 0 nil nil 0]
+                batch)]
+    {:ok ok
+     :ko ko
+     :response-time {:global {:min min-time
+                              :max max-time
+                              :mean (Math/round (double (/ sum-time (+ ok ko))))}}}))
 
 (def collector
   (fn [_]
