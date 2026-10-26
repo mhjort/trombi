@@ -1,6 +1,6 @@
 # Changes
 
-## Unreleased
+## 2.0.1
 
 * Fix a race where `run` could return before the simulation `post-hook` had been called (regression in 2.0.0)
 

@@ -15,13 +15,13 @@ trombi requires Java 21 or later.
 Leiningen (`project.clj`):
 
 ```clojure
-[com.github.mhjort/trombi "2.0.0"]
+[com.github.mhjort/trombi "2.0.1"]
 ```
 
 deps.edn:
 
 ```clojure
-com.github.mhjort/trombi {:mvn/version "2.0.0"}
+com.github.mhjort/trombi {:mvn/version "2.0.1"}
 ```
 
 ## What's new in 2.0.0
