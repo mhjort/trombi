@@ -3,11 +3,11 @@
   :url "http://example.com/FIXME"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
-  :dependencies [[org.clojure/clojure "1.11.1"]
+  :dependencies [[org.clojure/clojure "1.12.6"]
                  [com.github.mhjort/trombi "1.0.2"]
-                 [ring/ring-core "1.9.6"]
-                 [http-kit "2.6.0"]
+                 [ring/ring-core "1.15.6"]
+                 [http-kit "2.8.1"]
                  [javax.servlet/servlet-api "2.5"]
-                 [compojure "1.7.0"]]
+                 [compojure "1.7.2"]]
   :aliases {"run-test-server" ["run" "-m" "metrics-simulation.test-server/run"]}
   :main metrics-simulation.core)

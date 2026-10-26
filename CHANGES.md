@@ -1,5 +1,9 @@
 # Changes
 
+## Unreleased
+
+* Bump dependencies (Clojure 1.12.6, Prismatic Schema 1.4.2)
+
 ## 1.0.2
 
 * Validate simulation before starting the run. Previously an invalid simulation made `run` hang instead of throwing an error (#99)
