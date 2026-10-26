@@ -33,3 +33,12 @@
                                                     :mean 154}}}
               "Total number of requests: 5, successful: 4, failed: 1 with mean 154 ms."]
              (simulate-report-generation collector generator))))))
+
+(deftest short-summary-counts-both-false-and-nil-results-as-failed
+  (let [{:keys [collect]} ((eval-if-needed (:collector reporter)) {})
+        batch [{:requests [{:start 0 :end 10 :result true}
+                           {:start 0 :end 20 :result false}
+                           {:start 0 :end 30 :result nil}
+                           {:start 0 :end 40 :result false}]}]]
+    (is (= {:ok 1 :ko 3 :response-time {:global {:min 10 :max 40 :mean 25}}}
+           (collect {} {:batch batch})))))

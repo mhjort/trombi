@@ -6,6 +6,8 @@ Conduct load tests with Clojure, obtaining results as Clojure data or graphical 
 
 ## Installation
 
+Trombi requires Java 21 or later.
+
 Add the following to your `project.clj` `:dependencies`:
 
 [![Clojars Project](https://img.shields.io/clojars/v/com.github.mhjort/trombi.svg)](https://clojars.org/com.github.mhjort/trombi)
@@ -149,10 +151,23 @@ a message of type boolean.
      true)) ;Return true/false based on the result of the non-blocking call
 ```
 
-The latter is the recommended approach. When you use that it makes trombi able
-to utilize (=share) threads and makes it possible to generate more load with one machine.
-However, the former is probably easier to use at the beginning and is therefore a good
-starting point when writing your first trombi tests.
+Both approaches scale well. trombi runs every virtual user and every request in its own
+[virtual thread](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html),
+so a request function that blocks (e.g. using `clj-http` or JDBC) does not block other users.
+Returning a boolean directly is therefore the easiest way to get started.
+
+If you use an asynchronous client library (e.g. `http-kit`), the most efficient way is to
+return a channel that the client's callback delivers the result to:
+
+```clojure
+(defn request-with-callback [context]
+  (let [result (promise-chan)]
+    (http/get "http://localhost" {} (fn [{:keys [status]}] (put! result (= status 200))))
+    result))
+```
+
+Note! Code inside `go` blocks runs in core.async's own thread pool. If your request functions
+are mostly `go` blocks see [Tuning parallelism](#tuning-parallelism).
 
 If the function returns false trombi counts the step as failed. If a function
 throws an exception it will be considered as a failure too. trombi also provides a
@@ -304,9 +319,29 @@ e.g.
 
 #### Tuning parallelism
 
-Internally trombi uses `core.async`, which has a fixed size thread pool. For load test scripts that use a high performance, asynchronous, non-blocking I/O (e.g. `http-kit`) library this is not a big issue. However, for libraries that require a thread per get request (e.g. `clj-http`) this is a real limitation.
+trombi runs virtual users and requests in virtual threads, so there is no thread pool to tune
+for request functions that block or that return a channel delivered by a callback.
 
-The latest version of `core.async` supports setting the thread pool size using system property `clojure.core.async.pool-size`. With that the thread pool could be set to match the concurrency used in the simulation.
+`go` blocks in your own request functions are different: they run in core.async's dispatch thread pool.
+Since core.async 1.8 that pool is an unbounded cached thread pool. When thousands of `go` blocks are
+runnable at the same time it can create a lot of threads, and the test runner itself may become the
+bottleneck. If your request functions are mostly `go` blocks you can switch core.async back to a
+fixed size pool with the system property `clojure.core.async.executor-factory`:
+
+```clojure
+(ns my-simulation.executors
+  (:import (java.util.concurrent Executors)))
+
+(defn fixed-pool [workload]
+  (when (= workload :core-async-dispatch)
+    (Executors/newFixedThreadPool 8)))
+```
+
+```
+-Dclojure.core.async.executor-factory=my-simulation.executors/fixed-pool
+```
+
+Note! The older system property `clojure.core.async.pool-size` is not supported anymore since core.async 1.8.
 
 ### Reporters
 
@@ -345,15 +380,16 @@ See example project here: [metrics-simulation](https://github.com/mhjort/trombi/
 ### Tuning the test runner
 
 In load testing the goal is to generate load to the system under the test. However, sometimes the test runner can be also a bottleneck.
-trombi has been built on the idea that the request functions should be non-blocking. This way the test runner does not need to use
-that many threads and it is possible to generate a huge amount of requests from a single machine. To track this behaviour there is now
-an experimental support for tracking active thread count in test client. By setting `:experimental-test-runner-stats? true` you can get
+trombi runs virtual users and requests in virtual threads, which are cheap. This way the test runner does not need to use
+many platform threads and it is possible to generate a huge amount of requests from a single machine. To track this behaviour there is
+an experimental support for tracking active platform thread count in test client. By setting `:experimental-test-runner-stats? true` you can get
 statistics about thread count during the test simulation. In the end trombi will produce following output to console:
 
 `Test runner statistics: {:active-thread-count {:average 30, :max 33}}`
 
-In general these numbers should be lower than the number of concurrency in the simulation. And when increasing the concurrency these numbers
-should not increase accordingly.
+Virtual threads are not included in these numbers. In general these numbers should be lower than the number of concurrency in the simulation.
+And when increasing the concurrency these numbers should not increase accordingly. If they do, check whether your request functions
+use `go` blocks (see [Tuning parallelism](#tuning-parallelism)).
 
 ## Change History
 

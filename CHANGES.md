@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+* Breaking: Java 21 or later is required
+* Run virtual users and requests in virtual threads instead of core.async go blocks.
+  Request functions that block (e.g. `clj-http`, JDBC) no longer need a tuned thread pool.
+  In benchmarks throughput was 11x higher for blocking request functions, 3x higher for
+  callback based request functions (e.g. `http-kit`) and the maximum throughput of the runner itself was ~10x higher
+* Bump core.async to 1.9.865. The `clojure.core.async.pool-size` system property is not supported anymore.
+  See README section Tuning parallelism
+* Fix short summary reporter undercounting failed requests when a batch had both `false` and `nil` results
+* Remove `trombi.simulation/asynchronize` and `trombi.simulation/async-function-with-timeout`, which were internal functions
 * Bump dependencies (Clojure 1.12.6, Prismatic Schema 1.4.2)
 
 ## 1.0.2

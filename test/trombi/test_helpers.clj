@@ -78,7 +78,7 @@
                                        {:concurrency concurrency
                                         :requests requests
                                         :timeout-in-ms 5000
-                                        :users (or users (range (* concurrency 5)))
+                                        :users (or users (range concurrency))
                                         :error-file error-file-path
                                         :progress-tracker (fn [_])}))))
 

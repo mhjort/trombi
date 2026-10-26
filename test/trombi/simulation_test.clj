@@ -664,6 +664,17 @@
     (is (seq @concurrencies))
     (is (every? #(<= 0 % 10) @concurrencies) (str "Concurrency values: " @concurrencies))))
 
+(deftest simulation-finishes-with-other-users-when-one-user-fails
+  (let [result (run-single-scenario {:name "failing-user-scenario"
+                                     :steps [(step "step" true)]
+                                     :post-hook (fn [{:keys [user-id]}]
+                                                  (when (= 0 user-id)
+                                                    (throw (ex-info "Post hook failed" {}))))}
+                                    :concurrency 2
+                                    :requests 100)]
+    (is (approximately== (count result) 100 :accuracy 5))
+    (is (= 1 (count (filter #(= 0 (:id %)) result))))))
+
 (deftest scenario-weight
   (let [main-scenario {:name "Main"
                        :weight 2
@@ -673,7 +684,7 @@
                          :weight 1
                          :steps [(step "step1" true)]}
         result (group-by :name
-                         (run-two-scenarios main-scenario second-scenario :concurrency 10 :requests 10000))
+                         (run-two-scenarios main-scenario second-scenario :concurrency 12 :requests 10000))
         count-requests (fn [name] (reduce + (map #(count (:requests %)) (get result name))))]
     (is (approximately== (count-requests "Main") 6666 :accuracy 35))
     (is (approximately== (count-requests "Second") 3333 :accuracy 35))
