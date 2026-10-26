@@ -20,6 +20,43 @@ So the name was misleading and project was renamed to `Trombi` (It is a Finnish 
 > Note for `clj-gatling` users! `trombi` is backwards compatible and you can still run the existing tests without any code change.
 However, `trombi` does not include all the dependencies by default anymore. See section Additional Dependencies.
 
+## What's new in 2.0.0
+
+trombi 2.0.0 runs every virtual user and every request in its own
+[virtual thread](https://docs.oracle.com/en/java/javase/21/core/virtual-threads.html)
+instead of core.async go blocks. Request functions that block no longer need a tuned thread pool,
+and one machine can generate much more load. Compared to 1.0.2 in benchmarks
+(16 cores, 10ms responses):
+
+| Request function style                     | 1.0.2         | 2.0.0         |
+|--------------------------------------------|---------------|---------------|
+| Blocking (e.g. `clj-http`, JDBC)           | 664 req/s     | 7,665 req/s   |
+| Callback based (e.g. `http-kit`)           | 58k req/s     | 178k req/s    |
+| Runner overhead (function returns `true`)  | 106k req/s    | 1.02M req/s   |
+
+Measured response times stay accurate: the mean reported for 10ms responses was 11–12ms.
+
+### Upgrading from 1.x
+
+Most simulations work without code changes. Check the following:
+
+* **Java 21 or later is required.**
+* **Remove `-Dclojure.core.async.pool-size`** if you used it. core.async 1.8+ ignores it and
+  blocking request functions do not need it anymore.
+* **Request functions written as `go` blocks** run in core.async's own thread pool, which is
+  unbounded since core.async 1.8. They still work, but can be slower and report higher response
+  times under heavy load. Either rewrite them as plain blocking code or callbacks (see
+  [Scenario steps](#scenario-steps)), or switch core.async to a fixed size pool as described in
+  [Tuning parallelism](#tuning-parallelism).
+* **Scenario `pre-hook` functions run in parallel** for all users before the simulation starts,
+  so they must be safe to call concurrently.
+* **Failed request counts may be higher** than with 1.x in the short summary if your request
+  functions return `nil`. 1.x undercounted failures when a batch had both `false` and `nil` results.
+* `trombi.simulation/asynchronize` and `trombi.simulation/async-function-with-timeout`
+  have been removed. They were internal functions.
+
+See [CHANGES.md](CHANGES.md) for the full list of changes.
+
 ## Usage
 
 ### Trivial example
