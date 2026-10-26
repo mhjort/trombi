@@ -13,7 +13,7 @@ Add the following to your `project.clj` `:dependencies`:
 > This tool name used to be `clj-gatling`. The project started as a simple wrapper to Gatling.
 However, today the library has evolved into a separate tool with its own design.
 Gatling Highcharts is now only an optional dependency that is used for generating graphical results.
-So the name was misleading and project was renamed to `Trombi` (It is Finnish word meaning Tornado).
+So the name was misleading and project was renamed to `Trombi` (It is a Finnish word meaning Tornado).
 
 > Note for `clj-gatling` users! `trombi` is backwards compatible and you can still run the existing tests without any code change.
 However, `trombi` does not include all the dependencies by default anymore. See section Additional Dependencies.
@@ -50,9 +50,9 @@ Running the simulation prints some statistics to stdout and returns a result lik
                                         :mean 154}}}
 ```
 
-Where `ok` means number of succesful requests and `ko` number of failed ones. Response times are in milliseconds.
+Where `ok` means number of successful requests and `ko` number of failed ones. Response times are in milliseconds.
 
-If you want to get see a graphical report instead you can call `trombi` with additional options and add additional deps.
+If you want to see a graphical report instead you can call `trombi` with additional options and add additional deps.
 (See sections Reporters and Additional Dependencies for more details)
 
 ```
@@ -62,10 +62,10 @@ If you want to get see a graphical report instead you can call `trombi` with add
 
 This call will use Gatling Highcharts reporter and will generate a graphical report. Location of the report is returned and can also be found from stdout output.
 
-Calling `run` function will block while simulation is running. If you want to more control you can also call `run-async` function. It takes same parameters as the synchronous call. However, it returns immediately and returns map with following keys:
+Calling `run` function will block while simulation is running. If you want more control you can also call `run-async` function. It takes the same parameters as the synchronous call. However, it returns immediately and returns a map with the following keys:
 
 - `results`: A promise that is delivered once the simulation finishes.
-- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit
+- `force-stop-fn`: Function that stops the execution of the simulation. Function does not take any parameters. Stopping does not kill scenarios/requests that are in progress. They will be finished before the exit.
                    When simulation is force stopped `trombi` does not guarantee that results are very reliable. So it is better to ignore the results when you finish the simulation with force stop.
 
 ### Concepts
@@ -117,13 +117,13 @@ Concurrent users are divided between the scenarios based on their weights.
 For example:
 
 * Simulation concurrency: 100
-* Scenario1 with weight 5 => concurrency 80
+* Scenario1 with weight 4 => concurrency 80
 * Scenario2 with weight 1 => concurrency 20
 
 Scenario weight is optional key with default value 1. In that case the users
 are split evenly between the scenarios.
 
-Scenarios are also able to specific their own additional context via the
+Scenarios are also able to specify their own additional context via the
 optional `:context` key.
 
 #### Scenario steps
@@ -154,13 +154,13 @@ to utilize (=share) threads and makes it possible to generate more load with one
 However, the former is probably easier to use at the beginning and is therefore a good
 starting point when writing your first trombi tests.
 
-If the function returns a false trombi counts the step as a failed. If a function
+If the function returns false trombi counts the step as failed. If a function
 throws an exception it will be considered as a failure too. trombi also provides a
 global timeout (see Options) for a step. If a request function takes more time it will be
 cancelled and step is again considered as a failure.
 
 Note! trombi reports only step failures and successes. At the moment there is no support for
-different kinds of errors in reporting level. All errors are logged to `target/results/<sim-name>/errors.log`.
+different kinds of errors in reporting level. All errors are logged to `target/results/<sim-name>/error.log`.
 
 Context map contains all values that you specified as a simulation context when calling
 `run` method (See options) and trombi provided `user-id` value. The purpose of user-id
@@ -171,11 +171,11 @@ is to have a way to specify different functionality for different users. For exa
   (go
     (if (odd? user-id)
       (open-document-a)
-      (open-document-b-))))
+      (open-document-b))))
 ```
 
-If your scenario contains multiple steps you can also pass values from a step to next a step
-inside an scenario instance (same user) by returning a tuple instead of a boolean.
+If your scenario contains multiple steps you can also pass values from a step to the next step
+inside a scenario instance (same user) by returning a tuple instead of a boolean.
 
 ```clojure
 ;;step 1
@@ -227,13 +227,13 @@ Second parameter to `trombi.core/run` function is options map. Options map conta
 ```clojure
 {:context {:environment "test"} ;Context that is passed to user defined functions. Defaults to empty map.
  :timeout-in-ms 3000 ;Timeout for a request function. Defaults to 5000.
- :root "/tmp" ;Directory where cl-gatling temporary files and final results are written. Defaults to "target/results".
- :concurrency 100 ;Number of concurrent users trombi tries to use. Default to 1.
+ :root "/tmp" ;Directory where trombi temporary files and final results are written. Defaults to "target/results".
+ :concurrency 100 ;Number of concurrent users trombi tries to use. Defaults to 1.
  :concurrency-distribution ;Function for defining how the concurrent users are distributed during the simulation. Optional.
  :rate 100 ;Number of new requests to add per second. Note! If rate is given, concurrency value will be ignored.
  :rate-distribution ;Function for defining how the rate is adjusted during the simulation. Optional.
  :progress-tracker ;Function used for tracking simulation progress. Optional.
- :reporters ;List of reporters to use. Optional. If omitted short summary reporter and highchart reporter are used.
+ :reporters ;List of reporters to use. Optional. If omitted only short summary reporter is used.
  :requests 10000 ;Total number of requests to run before ending the simulation. Defaults to the number of steps in simulation.
  :duration (java.time.Duration/ofMinutes 5) ;The time to run the simulation. Note! If duration is given, requests value will be ignored.
  :error-file "/tmp/error.log"} ;The file to log errors to. Defaults to "target/results/<sim-name>/error.log".
@@ -241,7 +241,7 @@ Second parameter to `trombi.core/run` function is options map. Options map conta
 
 #### Ramp-up
 
-If you only set the `concurrency` the trombi will use same concurrency from the beginning till end.
+If you only set the `concurrency` trombi will use same concurrency from the beginning till end.
 If you want to have more control for that (for example ramp-up period) you can specify your own
 concurrency distribution function. The concurrency and rate distribution functions both have a legacy (version < 0.17.0)
 and new possible format.
@@ -261,7 +261,7 @@ e.g.
 ```
 
 In new mode, the user-provided function should be unary (1-arity). The single argument provided will be a map, which can
-be destructured at will, and allows extensibility for new arguments without breaking backwards compatability. Currently,
+be destructured at will, and allows extensibility for new arguments without breaking backwards compatibility. Currently,
 the provided keys are:
 - `progress`: The percentage progress through the simulation (as defined by either `duration` or `requests`), as a
   floating point number that goes from 0.0 to 1.0.
@@ -308,11 +308,11 @@ Internally trombi uses `core.async`, which has a fixed size thread pool. For loa
 
 The latest version of `core.async` supports setting the thread pool size using system property `clojure.core.async.pool-size`. With that the thread pool could be set to match the concurrency used in the simulation.
 
-###  Reporters
+### Reporters
 
 By default, trombi generates one report which is a short summary report.
 
-When you call the `trombi/run` function it will return all the reports with reporter keys (e.g `:short` for the short summary reporter).
+When you call the `trombi/run` function it will return all the reports with reporter keys (e.g. `:short` for the short summary reporter).
 Reporters also generate report to stdout and some reporters may generate results to file.
 
 If you don't want to use the default reports you can specify a list of reporters with the `:reporters` key in the options. Available reporters are following:
@@ -328,11 +328,11 @@ You can also specify your own custom reporter. Check https://github.com/mhjort/t
 
 `Trombi` by default uses only few libraries. However, it supports some features that might need additional dependencies.
 
-If you want to use Gatling Highcharts reporter you have to include the depenency `[com.github.mhjort/trombi-gatling-highcharts-reporter "1.0.0"]`.
+If you want to use Gatling Highcharts reporter you have to include the dependency `[com.github.mhjort/trombi-gatling-highcharts-reporter "1.0.0"]`.
 
 If you want to use http-kit as your http client library you have to include the dependency `[http-kit "2.6.0"]`.
 
-Note that in `trombi` clj-time dependency is not included anymore because from Java SE 8 onward, users are asked to migrate to java.time (JSR-310)
+Note that in `trombi` clj-time dependency is not included anymore because from Java SE 8 onward, users are asked to migrate to java.time (JSR-310).
 However, `trombi` is backwards compatible and if you still want to use clj-time please add `[clj-time "0.15.2"]` as a dependency.
 
 
@@ -346,7 +346,7 @@ See example project here: [metrics-simulation](https://github.com/mhjort/trombi/
 
 In load testing the goal is to generate load to the system under the test. However, sometimes the test runner can be also a bottleneck.
 trombi has been built on the idea that the request functions should be non-blocking. This way the test runner does not need to use
-that many threads and it is possible to generate huge amount of requests from the single machine. To track this behaviour there is now
+that many threads and it is possible to generate a huge amount of requests from a single machine. To track this behaviour there is now
 an experimental support for tracking active thread count in test client. By setting `:experimental-test-runner-stats? true` you can get
 statistics about thread count during the test simulation. In the end trombi will produce following output to console:
 
@@ -368,7 +368,7 @@ This is compatible with Jenkins Gatling Plugin. https://wiki.jenkins.io/display/
 
 ## Why
 
-AFAIK there are no other load testing tool where you can specify your tests in Clojure and which is suitable for testing large stateful applications.
+AFAIK there are no other load testing tools where you can specify your tests in Clojure and which is suitable for testing large stateful applications.
 In my opinion Clojure syntax is very good for this purpose.
 
 ## Design Philosophy
@@ -379,17 +379,17 @@ Idea is to test the system/application by simulating how multiple users access t
 After the simulation you get comprehensive results: both as Clojure data and nice graphs if you want.
 
 If you want to just test single web page with huge amounts of requests simpler tools like Apache Benchmark can do that.
-Of course, trombi can do that also but it might be an bit of an overkill for that job.
+Of course, trombi can do that also but it might be a bit of an overkill for that job.
 
 ### No DSL
 
 I am not a fan of complex DSLs. trombi tries to avoid DSL approach.
 Idea is that you should write just ordinary Clojure code to specify the
-actions and the actual scenario definition is an map.
+actions and the actual scenario definition is a map.
 
 ### Distributed load testing
 
-[Clojider](https://github.com/mhjort/clojider) is a experimental tool that can run trombi in a distributed manner.
+[Clojider](https://github.com/mhjort/clojider) is an experimental tool that can run trombi in a distributed manner.
 It uses AWS Lambda technology for running distributed load tests in the cloud.
 
 ## Contribute
